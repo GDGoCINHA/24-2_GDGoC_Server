@@ -1,4 +1,4 @@
-package inha.gdgoc.domain.question.domain;
+package inha.gdgoc.domain.question.entity;
 
 import lombok.Getter;
 

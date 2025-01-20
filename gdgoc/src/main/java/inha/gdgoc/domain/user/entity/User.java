@@ -1,4 +1,4 @@
-package inha.gdgoc.domain.user.domain;
+package inha.gdgoc.domain.user.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

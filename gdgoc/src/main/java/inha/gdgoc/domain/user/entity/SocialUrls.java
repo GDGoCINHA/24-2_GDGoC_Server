@@ -1,4 +1,4 @@
-package inha.gdgoc.domain.user.domain;
+package inha.gdgoc.domain.user.entity;
 
 import java.io.Serializable;
 import lombok.AccessLevel;

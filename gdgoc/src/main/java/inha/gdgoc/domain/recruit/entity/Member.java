@@ -1,4 +1,4 @@
-package inha.gdgoc.domain.recruit.domain;
+package inha.gdgoc.domain.recruit.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

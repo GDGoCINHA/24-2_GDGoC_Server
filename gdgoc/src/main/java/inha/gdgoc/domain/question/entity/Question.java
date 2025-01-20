@@ -1,4 +1,4 @@
-package inha.gdgoc.domain.question.domain;
+package inha.gdgoc.domain.question.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

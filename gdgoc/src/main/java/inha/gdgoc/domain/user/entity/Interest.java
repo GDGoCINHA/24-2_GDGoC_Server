@@ -1,4 +1,4 @@
-package inha.gdgoc.domain.user.domain;
+package inha.gdgoc.domain.user.entity;
 
 import lombok.Getter;
 
