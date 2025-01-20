@@ -24,7 +24,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class MemberRecruit {
+public class Member {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
