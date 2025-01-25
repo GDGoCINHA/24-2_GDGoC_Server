@@ -1,4 +1,4 @@
-package inha.gdgoc.domain.user.entity;
+package inha.gdgoc.domain.user.enums;
 
 import lombok.Getter;
 

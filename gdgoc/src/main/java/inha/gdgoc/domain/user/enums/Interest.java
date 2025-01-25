@@ -1,9 +1,9 @@
-package inha.gdgoc.domain.user.entity;
+package inha.gdgoc.domain.user.enums;
 
 import lombok.Getter;
 
 @Getter
-enum Interest {
+public enum Interest {
     FRONTEND("Frontend"),
     BACKEND("Backend"),
     UI_UX("UI/UX"),

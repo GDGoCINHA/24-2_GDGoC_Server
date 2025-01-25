@@ -1,9 +1,9 @@
-package inha.gdgoc.domain.recruit.entity;
+package inha.gdgoc.domain.recruit.enums;
 
 import lombok.Getter;
 
 @Getter
-enum Nationality {
+public enum Nationality {
     SOUTH_KOREA("대한민국"),
     ETC("기타");
 

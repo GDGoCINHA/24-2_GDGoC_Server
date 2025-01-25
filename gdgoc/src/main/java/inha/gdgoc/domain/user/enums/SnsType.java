@@ -1,9 +1,9 @@
-package inha.gdgoc.domain.user.entity;
+package inha.gdgoc.domain.user.enums;
 
 import lombok.Getter;
 
 @Getter
-enum SnsType {
+public enum SnsType {
     GITHUB("Github"),
     INSTAGRAM("Instagram"),
     LINKEDIN("Linkedin");

@@ -1,9 +1,9 @@
-package inha.gdgoc.domain.recruit.entity;
+package inha.gdgoc.domain.recruit.enums;
 
 import lombok.Getter;
 
 @Getter
-enum Gender {
+public enum Gender {
     MALE("남자 (Male)"),
     FEMALE("여자 (Female)"),
     ETC("기타 (Etc.)");

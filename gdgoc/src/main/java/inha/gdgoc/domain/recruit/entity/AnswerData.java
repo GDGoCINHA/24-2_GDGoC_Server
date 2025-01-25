@@ -1,6 +1,6 @@
 package inha.gdgoc.domain.recruit.entity;
 
-import inha.gdgoc.domain.question.entity.DataType;
+import inha.gdgoc.domain.question.enums.InputType;
 import java.io.Serializable;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public abstract class AnswerData implements Serializable {
-    private DataType type;
+    private InputType type;
 
     public abstract void validate();
 }

@@ -1,5 +1,7 @@
 package inha.gdgoc.domain.question.entity;
 
+import inha.gdgoc.domain.question.enums.InputType;
+import inha.gdgoc.domain.question.enums.SurveyType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -32,11 +34,11 @@ public class Question {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
-    private Type type;
+    private SurveyType surveyType;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "data_type", nullable = false)
-    private DataType dataType;
+    private InputType dataType;
 
     @Column(name = "order", nullable = false)
     private int order;

@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.user.entity;
 
+import inha.gdgoc.domain.user.enums.SnsType;
 import java.io.Serializable;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

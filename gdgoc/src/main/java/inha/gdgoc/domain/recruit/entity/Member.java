@@ -1,5 +1,7 @@
 package inha.gdgoc.domain.recruit.entity;
 
+import inha.gdgoc.domain.recruit.enums.Gender;
+import inha.gdgoc.domain.recruit.enums.Nationality;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

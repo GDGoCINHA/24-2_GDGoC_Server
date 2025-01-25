@@ -1,5 +1,7 @@
 package inha.gdgoc.domain.user.entity;
 
+import inha.gdgoc.domain.user.enums.CoreType;
+import inha.gdgoc.domain.user.enums.Interest;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
