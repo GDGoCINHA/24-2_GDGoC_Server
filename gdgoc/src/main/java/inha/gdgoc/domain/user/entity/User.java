@@ -2,6 +2,7 @@ package inha.gdgoc.domain.user.entity;
 
 import inha.gdgoc.domain.user.enums.CoreType;
 import inha.gdgoc.domain.user.enums.Interest;
+import inha.gdgoc.global.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -25,7 +26,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class User {
+public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -70,12 +71,4 @@ public class User {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "careers")
     private Careers careers;
-
-    @CreatedDate
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
 }
