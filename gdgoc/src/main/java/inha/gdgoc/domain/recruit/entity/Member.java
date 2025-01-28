@@ -15,6 +15,7 @@ import jakarta.persistence.OneToMany;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -69,7 +70,7 @@ public class Member extends BaseEntity {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "majors", nullable = false)
-    private Majors majors;
+    private Map<String, Object> Majors;
 
     @Column(name = "route", nullable = false)
     private String route;
