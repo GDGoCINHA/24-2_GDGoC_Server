@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,6 +42,6 @@ public class Answer extends BaseEntity {
     private User user;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "content", nullable = true)
-    private AnswerData answerData;
+    @Column(name = "response_value", nullable = true)
+    private Map<String, Object> ResponseValue;
 }
