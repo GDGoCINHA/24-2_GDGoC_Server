@@ -37,9 +37,9 @@ public class Question extends BaseEntity {
     @Column(name = "type", nullable = false)
     private SurveyType surveyType;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "data_type", nullable = false)
-    private InputType dataType;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "input_type", nullable = false)
+    private InputType inputType;
 
     @Column(name = "order", nullable = false)
     private int order;
