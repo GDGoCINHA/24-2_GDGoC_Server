@@ -6,7 +6,7 @@ import inha.gdgoc.domain.question.enums.SurveyType;
 import lombok.Data;
 
 @Data
-public class QuestionRequestDto {
+public class QuestionRequest {
     private SurveyType surveyType;
     private InputType inputType;
     private int order;
