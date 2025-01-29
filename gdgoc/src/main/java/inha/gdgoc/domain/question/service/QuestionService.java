@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 public class QuestionService {
     private final QuestionRepository questionRepository;
 
-    public Question save(QuestionRequest questionRequest) {
+    public Question create(QuestionRequest questionRequest) {
         return questionRepository.save(questionRequest.toEntity());
     }
 }

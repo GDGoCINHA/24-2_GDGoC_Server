@@ -16,9 +16,8 @@ public class QuestionController {
 
     @PostMapping("/question")
     public ApiResponse<Long> createQuestion(@RequestBody QuestionRequest questionRequest) {
-        Question savedQuestion = questionService.save(questionRequest);
+        Question savedQuestion = questionService.create(questionRequest);
 
         return ApiResponse.success(savedQuestion.getId(), "질문이 성공적으로 생성되었습니다.");
     }
-
 }
