@@ -44,8 +44,11 @@ public class Question extends BaseEntity {
     @Column(name = "order", nullable = false)
     private int order;
 
-    @Column(name = "content", nullable = false)
-    private String content;
+    @Column(name = "title", nullable = false)
+    private String title;
+
+    @Column(name = "description", nullable = true, columnDefinition = "Text")
+    private String description;
 
     @Column(name = "is_required", nullable = false)
     private boolean isRequired;
