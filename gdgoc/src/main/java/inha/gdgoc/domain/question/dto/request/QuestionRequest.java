@@ -1,4 +1,4 @@
-package inha.gdgoc.domain.question.dto;
+package inha.gdgoc.domain.question.dto.request;
 
 import inha.gdgoc.domain.question.entity.Question;
 import inha.gdgoc.domain.question.enums.InputType;
