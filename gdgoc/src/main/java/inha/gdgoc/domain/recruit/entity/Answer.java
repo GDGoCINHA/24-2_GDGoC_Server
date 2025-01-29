@@ -43,4 +43,8 @@ public class Answer extends BaseEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "content", nullable = true)
     private AnswerData answerData;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
+    private Member member;
 }
