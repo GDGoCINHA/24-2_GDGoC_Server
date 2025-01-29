@@ -41,8 +41,8 @@ public class Question extends BaseEntity {
     @Column(name = "input_type", nullable = false)
     private InputType inputType;
 
-    @Column(name = "order", nullable = false)
-    private int order;
+    @Column(name = "question_order", nullable = false)
+    private int questionOrder;
 
     @Column(name = "content", nullable = false)
     private String content;

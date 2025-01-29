@@ -8,6 +8,7 @@ class GdgocApplicationTests {
 
 	@Test
 	void contextLoads() {
+
 	}
 
 }
