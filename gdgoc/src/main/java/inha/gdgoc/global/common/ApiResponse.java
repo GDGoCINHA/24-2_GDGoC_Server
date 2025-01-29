@@ -6,30 +6,30 @@ import lombok.Getter;
 @Getter
 public class ApiResponse<T> {
     private boolean isSuccess;       // 성공 여부
-    private String message;        // 응답 메시지
-    private T data;                // 실제 데이터
     private int statusCode;
+    private T data;                // 실제 데이터
+    private String message;        // 응답 메시지
 
-    private ApiResponse(boolean isSuccess, String message, T data, int statusCode) {
+    private ApiResponse(boolean isSuccess, int statusCode, T data, String message) {
         this.isSuccess = isSuccess;
-        this.message = message;
-        this.data = data;
         this.statusCode = statusCode;
+        this.data = data;
+        this.message = message;
     }
 
     public static <T> ApiResponse<T> success(T data) {
-        return new ApiResponse<>(true, "요청이 성공적으로 처리되었습니다.", data, HttpStatus.OK.value());
+        return new ApiResponse<>(true, HttpStatus.OK.value(), data, "요청이 성공적으로 처리되었습니다.");
     }
 
     public static <T> ApiResponse<T> success(String message, T data) {
-        return new ApiResponse<>(true, message, data, HttpStatus.OK.value());
+        return new ApiResponse<>(true, HttpStatus.OK.value(), data, message);
     }
 
     public static <T> ApiResponse<T> success(String message, T data, HttpStatus status) {
-        return new ApiResponse<>(true, message, data, status.value());
+        return new ApiResponse<>(true, HttpStatus.OK.value(), data, message);
     }
 
     public static ApiResponse<?> failure(String message, HttpStatus status) {
-        return new ApiResponse<>(false, message, null, status.value());
+        return new ApiResponse<>(false, status.value(), null, message);
     }
 }
