@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.recruit.entity;
 
+import inha.gdgoc.domain.recruit.enums.EnrolledClassification;
 import inha.gdgoc.domain.recruit.enums.Gender;
 import inha.gdgoc.domain.recruit.enums.Nationality;
 import inha.gdgoc.global.common.BaseEntity;
@@ -15,14 +16,11 @@ import jakarta.persistence.OneToMany;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Entity
 @Getter
@@ -44,6 +42,10 @@ public class Member extends BaseEntity {
 
     @Column(name = "student_id", nullable = false, unique = true)
     private int studentId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "enrolled_classification", nullable = false)
+    private EnrolledClassification enrolledClassification;
 
     @Column(name = "phone_number", nullable = false, unique = true)
     private String phoneNumber;
@@ -68,9 +70,11 @@ public class Member extends BaseEntity {
     @Column(name = "school", nullable = false)
     private String school;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "majors", nullable = false)
-    private Map<String, Object> Majors;
+    @Column(name = "major", nullable = false)
+    private String major;
+
+    @Column(name = "double_major", nullable = true)
+    private String doubleMajor;
 
     @Column(name = "route", nullable = false)
     private String route;
