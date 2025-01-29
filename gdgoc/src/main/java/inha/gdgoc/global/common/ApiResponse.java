@@ -21,15 +21,15 @@ public class ApiResponse<T> {
         return new ApiResponse<>(true, HttpStatus.OK.value(), data, "요청이 성공적으로 처리되었습니다.");
     }
 
-    public static <T> ApiResponse<T> success(String message, T data) {
+    public static <T> ApiResponse<T> success(T data, String message) {
         return new ApiResponse<>(true, HttpStatus.OK.value(), data, message);
     }
 
-    public static <T> ApiResponse<T> success(String message, T data, HttpStatus status) {
-        return new ApiResponse<>(true, HttpStatus.OK.value(), data, message);
+    public static <T> ApiResponse<T> success( HttpStatus status, T data, String message) {
+        return new ApiResponse<>(true, status.value(), data, message);
     }
 
-    public static ApiResponse<?> failure(String message, HttpStatus status) {
+    public static ApiResponse<?> failure(HttpStatus status, String message) {
         return new ApiResponse<>(false, status.value(), null, message);
     }
 }
