@@ -8,12 +8,12 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @Builder
+@Getter
 @Entity
 @Table(name = "users")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class User extends BaseEntity {
 
     @Id
@@ -31,7 +31,7 @@ public class User extends BaseEntity {
     @Column(name = "interest", nullable = false)
     private Interest interest;
 
-    @Column(name = "interest_etc", nullable = true)
+    @Column(name = "interest_etc")
     private String interestEtc;
 
     @Column(name = "email", nullable = false)
@@ -40,7 +40,7 @@ public class User extends BaseEntity {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name = "google_id", nullable = true)
+    @Column(name = "google_id")
     private String googleId;
 
     @Column(name = "core_type", nullable = false)
@@ -49,7 +49,7 @@ public class User extends BaseEntity {
     @Column(name = "salt", nullable = false)
     private String salt;
 
-    @Column(name = "image", nullable = true)
+    @Column(name = "image")
     private String image;
 
     @JdbcTypeCode(SqlTypes.JSON)
@@ -59,4 +59,19 @@ public class User extends BaseEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "careers")
     private Careers careers;
+
+    //TODO create 값 추가해야함, 테스트삼아 몇개 인자만 넣음
+    public static User create(String salt, CoreType coreType, String googleId, String password, String email, String interestEtc, Interest interest, String major, String name) {
+        User user = new User();
+        user.name = name;
+        user.major = major;
+        user.interest = interest;
+        user.interestEtc = interestEtc;
+        user.email = email;
+        user.password = password;
+        user.googleId = googleId;
+        user.coreType = coreType;
+        user.salt = salt;
+        return user;
+    }
 }
