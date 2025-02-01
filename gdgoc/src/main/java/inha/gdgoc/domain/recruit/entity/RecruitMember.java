@@ -67,21 +67,15 @@ public class RecruitMember extends BaseEntity {
     @Column(name = "birth", nullable = false)
     private LocalDate birth;
 
-    @Column(name = "school", nullable = false)
-    private String school;
-
     @Column(name = "major", nullable = false)
     private String major;
 
     @Column(name = "double_major", nullable = true)
     private String doubleMajor;
 
-    @Column(name = "route", nullable = false)
-    private String route;
-
     @Column(name = "is_payed", nullable = false)
     private boolean isPayed;
 
-    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "recruit_member", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Answer> answers = new ArrayList<>();
 }
