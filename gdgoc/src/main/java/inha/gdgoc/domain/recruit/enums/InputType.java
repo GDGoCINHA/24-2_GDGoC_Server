@@ -20,4 +20,13 @@ public enum InputType {
         this.question = question;
         this.dataType = dataType;
     }
+
+    public static InputType fromQuestion(String question) {
+        for (InputType inputType : InputType.values()) {
+            if(inputType.question.equals(question)){
+                return inputType;
+            }
+        }
+        throw new IllegalArgumentException("Invalid question value: " + question);
+    }
 }

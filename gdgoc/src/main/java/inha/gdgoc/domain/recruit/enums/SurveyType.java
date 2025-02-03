@@ -14,4 +14,13 @@ public enum SurveyType {
     SurveyType(String type){
         this.type = type;
     }
+
+    public static SurveyType fromType (String type) {
+        for(SurveyType surveyType : SurveyType.values()) {
+            if(surveyType.type.equals(type)) {
+                return surveyType;
+            }
+        }
+        throw new IllegalArgumentException("Invalid SurveyType value: " + type);
+    }
 }

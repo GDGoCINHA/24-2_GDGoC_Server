@@ -15,4 +15,13 @@ public enum EnrolledClassification {
     EnrolledClassification(String status) {
         this.status = status;
     }
+
+    public static EnrolledClassification fromStatus(String status) {
+        for (EnrolledClassification classification : EnrolledClassification.values()) {
+            if (classification.status.equals(status)) {
+                return classification;
+            }
+        }
+        throw new IllegalArgumentException("Invalid enrolledClassification value: " + status);
+    }
 }
