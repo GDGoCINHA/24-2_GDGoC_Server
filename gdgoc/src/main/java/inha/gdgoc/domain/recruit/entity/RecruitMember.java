@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.recruit.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import inha.gdgoc.domain.recruit.enums.EnrolledClassification;
 import inha.gdgoc.domain.recruit.enums.Gender;
 import inha.gdgoc.domain.recruit.enums.Nationality;
@@ -38,10 +39,10 @@ public class RecruitMember extends BaseEntity {
     private String name;
 
     @Column(name = "grade", nullable = false)
-    private int grade;
+    private String grade;
 
     @Column(name = "student_id", nullable = false, unique = true)
-    private int studentId;
+    private String studentId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "enrolled_classification", nullable = false)
@@ -64,6 +65,7 @@ public class RecruitMember extends BaseEntity {
     @Column(name = "gender", nullable = false)
     private Gender gender;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Column(name = "birth", nullable = false)
     private LocalDate birth;
 
@@ -76,6 +78,6 @@ public class RecruitMember extends BaseEntity {
     @Column(name = "is_payed", nullable = false)
     private boolean isPayed;
 
-    @OneToMany(mappedBy = "recruit_member", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "recruitMember", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Answer> answers = new ArrayList<>();
 }
