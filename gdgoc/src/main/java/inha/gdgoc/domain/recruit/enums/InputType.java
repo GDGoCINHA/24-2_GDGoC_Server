@@ -4,14 +4,14 @@ import lombok.Getter;
 
 @Getter
 public enum InputType {
-    APPLY_MOTIVATION("apply motivation", "String"),
-    LIFE_STORY("life story", "String"),
-    INTERESTS("interests", "List"),
-    GDG_PERIOD("GDG period", "List"),
-    ROUTE_TO_KNOW("route to know", "String"),
-    WANT_TO_GET("want to get", "String"),
-    EXPECTED_ACTIVITY("expected activity", "String"),
-    FEEDBACK("feedback", "String");
+    APPLY_MOTIVATION("gdgUserMotive", "String"),
+    LIFE_STORY("gdgUserStory", "String"),
+    INTERESTS("gdgInterest", "List"),
+    GDG_PERIOD("gdgPeriod", "List"),
+    ROUTE_TO_KNOW("gdgRoute", "String"),
+    WANT_TO_GET("gdgExpect", "String"),
+    EXPECTED_ACTIVITY("gdgWish", "List"),
+    FEEDBACK("gdgFeedback", "String");
 
     private final String question;
     private final String dataType;
@@ -23,7 +23,7 @@ public enum InputType {
 
     public static InputType fromQuestion(String question) {
         for (InputType inputType : InputType.values()) {
-            if(inputType.question.equals(question)){
+            if (inputType.question.equals(question)) {
                 return inputType;
             }
         }
