@@ -13,7 +13,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,7 +34,7 @@ public class Answer extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "recruit_member")
     private RecruitMember recruitMember;
 
     @Enumerated(EnumType.STRING)
@@ -47,6 +46,13 @@ public class Answer extends BaseEntity {
     private InputType inputType;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "response_value", nullable = true)
-    private Map<String, Object> ResponseValue;
+    @Column(columnDefinition = "jsonb") // PostgreSQL jsonb 타입 지정
+    private String responseValue; // JSON 데이터를 문자열 형태로 저장
+
+    public Answer(RecruitMember recruitMember, SurveyType surveyType, InputType inputType, String responseValue) {
+        this.recruitMember = recruitMember;
+        this.surveyType = surveyType;
+        this.inputType = inputType;
+        this.responseValue = responseValue;
+    }
 }
