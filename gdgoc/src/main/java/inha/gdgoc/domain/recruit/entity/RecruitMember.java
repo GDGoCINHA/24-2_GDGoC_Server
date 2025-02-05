@@ -78,6 +78,7 @@ public class RecruitMember extends BaseEntity {
     @Column(name = "is_payed", nullable = false)
     private boolean isPayed;
 
+    @Builder.Default
     @OneToMany(mappedBy = "recruitMember", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Answer> answers = new ArrayList<>();
 }
