@@ -1,17 +1,18 @@
 package inha.gdgoc.domain.recruit.entity;
 
-import inha.gdgoc.domain.question.entity.Question;
-import inha.gdgoc.domain.user.entity.User;
+import inha.gdgoc.domain.recruit.enums.InputType;
+import inha.gdgoc.domain.recruit.enums.SurveyType;
 import inha.gdgoc.global.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,19 +33,26 @@ public class Answer extends BaseEntity {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "question_id")
-    private Question question;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
+    @JoinColumn(name = "recruit_member")
+    private RecruitMember recruitMember;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "survey_type", nullable = false)
+    private SurveyType surveyType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "input_type", nullable = false)
+    private InputType inputType;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "content", nullable = true)
-    private AnswerData answerData;
+    @Column(columnDefinition = "jsonb") // PostgreSQL jsonb 타입 지정
+    private String responseValue; // JSON 데이터를 문자열 형태로 저장
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id")
-    private Member member;
+    public Answer(RecruitMember recruitMember, SurveyType surveyType, InputType inputType, String responseValue) {
+        this.recruitMember = recruitMember;
+        this.surveyType = surveyType;
+        this.inputType = inputType;
+        this.responseValue = responseValue;
+    }
 }

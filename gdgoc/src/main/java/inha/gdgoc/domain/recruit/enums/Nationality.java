@@ -12,4 +12,13 @@ public enum Nationality {
     Nationality(String nation) {
         this.nation = nation;
     }
+
+    public static Nationality fromNation(String nation) {
+        for (Nationality nationality : Nationality.values()) {
+            if(nationality.nation.equals(nation)) {
+                return nationality;
+            }
+        }
+        throw new IllegalArgumentException("Invalid nationality value: " + nation);
+    }
 }
