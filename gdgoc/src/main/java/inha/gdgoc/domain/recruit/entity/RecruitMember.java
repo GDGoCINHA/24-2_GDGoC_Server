@@ -3,7 +3,6 @@ package inha.gdgoc.domain.recruit.entity;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import inha.gdgoc.domain.recruit.enums.EnrolledClassification;
 import inha.gdgoc.domain.recruit.enums.Gender;
-import inha.gdgoc.domain.recruit.enums.Nationality;
 import inha.gdgoc.global.common.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -51,12 +50,8 @@ public class RecruitMember extends BaseEntity {
     @Column(name = "phone_number", nullable = false, unique = true)
     private String phoneNumber;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "nationality", nullable = false)
-    private Nationality nationality;
-
-    @Column(name = "nationality_content", nullable = true)
-    private String nationalityContent;
+    private String nationality;
 
     @Column(name = "email", nullable = false)
     private String email;
