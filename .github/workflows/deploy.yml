@@ -30,6 +30,8 @@ jobs:
         echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
         echo "DB_USERNAME=${{ secrets.DB_USER }}" >> .env
         echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+        echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}" >> .env
+        echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env
 
     - name: Zip source code
       run: zip -r deploy.zip . -x "*.git*"
