@@ -49,4 +49,4 @@ jobs:
         aws deploy create-deployment \
           --application-name "$CODEDEPLOY_APP_NAME" \
           --deployment-group-name "$CODEDEPLOY_DG_NAME" \
-          --s3-location bucket="$BUCKET_NAME",key="deploy.zip",bundleType=zip
+          --s3-location bucket="$S3_BUCKET_NAME",key="deploy.zip",bundleType=zip
