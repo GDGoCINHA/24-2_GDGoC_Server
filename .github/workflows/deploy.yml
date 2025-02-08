@@ -44,7 +44,7 @@ jobs:
     - name: Deploy with CodeDeploy
       env:
         CODEDEPLOY_APP_NAME: ${{ secrets.CODEDEPLOY_APP_NAME }}
-        CODEDEPLOY_GROUP_NAME: ${{ secrets.CODEDEPLOY_DG_NAME }}
+        CODEDEPLOY_DG_NAME: ${{ secrets.CODEDEPLOY_DG_NAME }}
       run: |
         aws deploy create-deployment \
           --application-name "$CODEDEPLOY_APP_NAME" \
