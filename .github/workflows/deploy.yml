@@ -39,7 +39,7 @@ jobs:
         S3_BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
       run: |
-        aws s3 cp deploy.zip s3://$BUCKET_NAME/deploy.zip --region $AWS_REGION
+        aws s3 cp deploy.zip s3://$S3_BUCKET_NAME/deploy.zip --region $AWS_REGION
 
     - name: Deploy with CodeDeploy
       env:
