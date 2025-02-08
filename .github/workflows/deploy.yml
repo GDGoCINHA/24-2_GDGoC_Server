@@ -45,6 +45,7 @@ jobs:
       env:
         CODEDEPLOY_APP_NAME: ${{ secrets.CODEDEPLOY_APP_NAME }}
         CODEDEPLOY_DG_NAME: ${{ secrets.CODEDEPLOY_DG_NAME }}
+        S3_BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
       run: |
         aws deploy create-deployment \
           --application-name "$CODEDEPLOY_APP_NAME" \
