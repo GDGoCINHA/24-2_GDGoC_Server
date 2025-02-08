@@ -1,0 +1,56 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up AWS CLI
+      run: |
+        sudo apt update
+        sudo apt install -y awscli
+
+    - name: Configure AWS credentials
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+      run: |
+        aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+        aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+        aws configure set region "$AWS_REGION"
+
+    - name: Create .env file
+      run: |
+        echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+        echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+        echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+        echo "DB_USERNAME=${{ secrets.DB_USER }}" >> .env
+        echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+
+    - name: Zip source code
+      run: zip -r deploy.zip . -x "*.git*"
+
+    - name: Upload to S3
+      env:
+        S3_BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+      run: |
+        aws s3 cp deploy.zip s3://$BUCKET_NAME/deploy.zip --region $AWS_REGION
+
+    - name: Deploy with CodeDeploy
+      env:
+        CODEDEPLOY_APP_NAME: ${{ secrets.CODEDEPLOY_APP_NAME }}
+        CODEDEPLOY_GROUP_NAME: ${{ secrets.CODEDEPLOY_DG_NAME }}
+      run: |
+        aws deploy create-deployment \
+          --application-name "$CODEDEPLOY_APP_NAME" \
+          --deployment-group-name "$CODEDEPLOY_DG_NAME" \
+          --s3-location bucket="$BUCKET_NAME",key="deploy.zip",bundleType=zip
