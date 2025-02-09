@@ -36,6 +36,7 @@ echo "ZIP 파일 삭제 중..."
 rm -f deploy.zip
 
 # gradle 빌드 -> JAR 파일 만들기
+cd gdgoc
 ./gradlew build
 
 
