@@ -35,8 +35,16 @@ unzip -o deploy.zip -d ./
 echo "ZIP 파일 삭제 중..."
 rm -f deploy.zip
 
-# gradle 빌드 -> JAR 파일 만들기
 cd gdgoc
+
+# 1️⃣ Gradle 데몬 중지 및 캐시 정리
+./gradlew --stop
+./gradlew clean
+
+# 2️⃣ Lombok과 QueryDSL이 정상적으로 적용되었는지 확인
+./gradlew compileQuerydsl
+
+# 3️⃣ JAR 파일 빌드
 ./gradlew build
 
 
