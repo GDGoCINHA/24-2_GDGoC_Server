@@ -35,6 +35,10 @@ unzip -o deploy.zip -d ./
 echo "ZIP 파일 삭제 중..."
 rm -f deploy.zip
 
+# gradle 빌드 -> JAR 파일 만들기
+./gradlew build
+
+
 # 실행할 JAR 파일 찾기
 JAR_FILE=$(ls build/libs/*.jar 2>/dev/null | head -n 1)
 
