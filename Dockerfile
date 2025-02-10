@@ -1,9 +1,8 @@
 FROM gradle:8.0.2-jdk17 AS build
 WORKDIR /app/gdgoc
 
-COPY gdgoc gdgoc
-WORKDIR /app/gdgoc
-
+COPY gdgoc/ .
+RUN ls -l
 RUN chmod +x gradlew
 RUN ./gradlew build
 
