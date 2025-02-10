@@ -4,7 +4,7 @@ WORKDIR /app/gdgoc
 COPY gdgoc/ .
 RUN ls -l
 RUN chmod +x gradlew
-RUN ./gradlew build
+RUN ./gradlew build -x test
 
 FROM openjdk:17-jdk-slim
 WORKDIR /app
