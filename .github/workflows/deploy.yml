@@ -7,10 +7,26 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted  # Self-Hosted Runner에서 실행
+    runs-on: self-hosted
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Grant execute permission for Gradle
+        run: |
+          cd gdgoc
+          chmod +x gradlew
+
+      - name: Build JAR file
+        run: |
+          cd gdgoc
+          ./gradlew build
 
       - name: Create .env file
         run: |
@@ -18,15 +34,17 @@ jobs:
           echo "SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
           echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
 
-      - name: Stop & Remove Existing Container (if exists)  # 기존 컨테이너 종료 및 삭제
+      - name: Build Docker Image
+        run: |
+          cd gdgoc
+          docker build -t my-app .
+
+      - name: Stop & Remove Existing Container (if exists) 
         run: |
           docker stop my-app || true
           docker rm my-app || true
 
-      - name: Build Docker Image  # Docker 이미지 빌드
+      - name: Run Docker Container  
         run: |
-          docker build -t my-app .
-
-      - name: Run Docker Container  # 새로운 컨테이너 실행
-        run: |
-          docker run -d --name my-app --env-file .env -p 8080:8080 my-app
+          cd gdgoc
+          docker run -d --name my-app --env-file ../.env -p 8080:8080 my-app
