@@ -12,18 +12,18 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Create .env file
+      - name: Create .env file  
         run: |
           echo "SPRING_DATASOURCE_URL=jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}" >> .env
           echo "SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
           echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
 
-      - name: Stop & Remove Existing Container (if exists)
+      - name: Stop & Remove Existing Container (if exists) 
         run: |
           docker stop my-app || true
           docker rm my-app || true
 
-      - name: Build & Run Docker Container
+      - name: Build & Run Docker Container 
         run: |
           docker build -t my-app .
           docker run -d --name my-app --env-file .env -p 8080:8080 my-app
