@@ -13,4 +13,6 @@ WORKDIR /app
 
 COPY --from=build /app/gdgoc/build/libs/app.jar app.jar
 
+COPY gdgoc/.env .env
+
 ENTRYPOINT ["java", "-jar", "app.jar"]

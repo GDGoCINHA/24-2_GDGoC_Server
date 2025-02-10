@@ -8,6 +8,9 @@ import org.springframework.context.annotation.Configuration;
 public class ApplicationConfig {
     @Bean
     public Dotenv dotenv() {
-        return Dotenv.load();
+        return Dotenv.configure()
+                .directory("/app")
+                .ignoreIfMissing()
+                .load();
     }
 }
