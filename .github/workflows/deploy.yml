@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -18,20 +18,12 @@ jobs:
           echo "SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
           echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
 
-      - name: Build Docker Image  # Docker 이미지 빌드
+      - name: Stop & Remove Existing Container (if exists)
+        run: |
+          docker stop my-app || true
+          docker rm my-app || true
+
+      - name: Build & Run Docker Container
         run: |
           docker build -t my-app .
-          docker save my-app > my-app.tar
-          scp -i my-key.pem my-app.tar ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu
-
-      - name: Deploy on EC2  # EC2에서 Docker 컨테이너 실행
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            docker load < my-app.tar
-            docker stop my-app || true
-            docker rm my-app || true
-            docker run -d --name my-app --env-file .env -p 8080:8080 my-app
+          docker run -d --name my-app --env-file .env -p 8080:8080 my-app
