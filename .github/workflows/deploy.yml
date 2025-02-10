@@ -1,4 +1,4 @@
-name: Deploy to AWS EC2
+name: Deploy to EC2
 
 on:
   push:
@@ -8,48 +8,30 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-    - name: Configure AWS credentials
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-      run: |
-        aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
-        aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
-        aws configure set region "$AWS_REGION"
+      - name: Create .env file
+        run: |
+          echo "SPRING_DATASOURCE_URL=jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}" >> .env
+          echo "SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
+          echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
 
-    - name: Create .env file
-      run: |
-        echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
-        echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
-        echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-        echo "DB_USERNAME=${{ secrets.DB_USER }}" >> .env
-        echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-        echo "S3_BUCKET_NAME=${{ secrets.BUCKET_NAME }}" >> .env
-        echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env
+      - name: Build Docker Image  # Docker 이미지 빌드
+        run: |
+          docker build -t my-app .
+          docker save my-app > my-app.tar
+          scp -i my-key.pem my-app.tar ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu
 
-    - name: Zip source code
-      run: zip -r deploy.zip . -x "*.git*"
-
-    - name: Upload to S3
-      env:
-        S3_BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-      run: |
-        aws s3 cp deploy.zip s3://$S3_BUCKET_NAME/deploy.zip --region $AWS_REGION
-
-    - name: Deploy with CodeDeploy
-      env:
-        CODEDEPLOY_APP_NAME: ${{ secrets.CODEDEPLOY_APP_NAME }}
-        CODEDEPLOY_DG_NAME: ${{ secrets.CODEDEPLOY_DG_NAME }}
-        S3_BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
-      run: |
-        aws deploy create-deployment \
-          --application-name "$CODEDEPLOY_APP_NAME" \
-          --deployment-group-name "$CODEDEPLOY_DG_NAME" \
-          --s3-location bucket="$S3_BUCKET_NAME",key="deploy.zip",bundleType=zip
+      - name: Deploy on EC2  # EC2에서 Docker 컨테이너 실행
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker load < my-app.tar
+            docker stop my-app || true
+            docker rm my-app || true
+            docker run -d --name my-app --env-file .env -p 8080:8080 my-app
