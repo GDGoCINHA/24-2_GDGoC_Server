@@ -5,9 +5,11 @@ import inha.gdgoc.domain.recruit.enums.EnrolledClassification;
 import inha.gdgoc.domain.recruit.enums.Gender;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -23,7 +25,7 @@ public class RecruitMemberRequest {
     private LocalDate birth; // 다시 확인
     private String major;
     private String doubleMajor;
-    private boolean isPayed;
+    private Boolean isPayed;
 
     public RecruitMember toEntity() {
         return RecruitMember.builder()

@@ -71,7 +71,7 @@ public class RecruitMember extends BaseEntity {
     private String doubleMajor;
 
     @Column(name = "is_payed", nullable = false)
-    private boolean isPayed;
+    private Boolean isPayed;
 
     @Builder.Default
     @OneToMany(mappedBy = "recruitMember", cascade = CascadeType.ALL, orphanRemoval = true)
