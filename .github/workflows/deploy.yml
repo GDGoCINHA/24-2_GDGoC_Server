@@ -21,6 +21,7 @@ jobs:
         run: |
           docker build -t my-app .
           docker run -d --name my-app \
+            -e SPRING_PROFILES_ACTIVE=prod \
             -e SPRING_DATASOURCE_URL="jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}" \
             -e SPRING_DATASOURCE_USERNAME="${{ secrets.DB_USERNAME }}" \
             -e SPRING_DATASOURCE_PASSWORD="${{ secrets.DB_PASSWORD }}" \
