@@ -29,7 +29,7 @@ public class ApiResponse<T> {
         return new ApiResponse<>(true, status.value(), data, message);
     }
 
-    public static ApiResponse<?> failure(HttpStatus status, String message) {
-        return new ApiResponse<>(false, status.value(), null, message);
+    public static <T> ApiResponse<T> failure(HttpStatus status, T data, String message) {
+        return new ApiResponse<>(false, status.value(), data, message);
     }
 }
