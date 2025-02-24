@@ -21,7 +21,7 @@ public class RecruitMemberService {
     private final ObjectMapper objectMapper;
 
     @Transactional
-    public void applyMember(ApplicationRequest applicationRequest) {
+    public void addRecruitMember(ApplicationRequest applicationRequest) {
         RecruitMember member = applicationRequest.getMember().toEntity();
         recruitMemberRepository.save(member);
 

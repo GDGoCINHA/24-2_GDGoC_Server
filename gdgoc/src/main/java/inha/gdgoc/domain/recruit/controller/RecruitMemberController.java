@@ -16,9 +16,9 @@ public class RecruitMemberController {
     private final RecruitMemberService recruitMemberService;
 
     @PostMapping("/apply")
-    public ResponseEntity<ApiResponse<ApplicationRequest>> applyMember(
+    public ResponseEntity<ApiResponse<ApplicationRequest>> recruitMemberAdd(
             @RequestBody ApplicationRequest applicationRequest) {
-        recruitMemberService.applyMember(applicationRequest);
+        recruitMemberService.addRecruitMember(applicationRequest);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 }
