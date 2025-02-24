@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
-public class ApplicationService {
+public class RecruitMemberService {
     private final RecruitMemberRepository recruitMemberRepository;
     private final AnswerRepository answerRepository;
     private final ObjectMapper objectMapper;
