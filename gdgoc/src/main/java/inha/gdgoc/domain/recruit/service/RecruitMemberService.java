@@ -15,13 +15,13 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
-public class ApplicationService {
+public class RecruitMemberService {
     private final RecruitMemberRepository recruitMemberRepository;
     private final AnswerRepository answerRepository;
     private final ObjectMapper objectMapper;
 
     @Transactional
-    public void applyMember(ApplicationRequest applicationRequest) {
+    public void addRecruitMember(ApplicationRequest applicationRequest) {
         RecruitMember member = applicationRequest.getMember().toEntity();
         recruitMemberRepository.save(member);
 
@@ -39,5 +39,13 @@ public class ApplicationService {
                 .toList();
 
         answerRepository.saveAll(answers);
+    }
+
+    public boolean isRegisteredStudentId(String studentId){
+        return recruitMemberRepository.existsByStudentId(studentId);
+    }
+
+    public boolean isRegisteredPhoneNumber(String phoneNumber) {
+        return recruitMemberRepository.existsByPhoneNumber(phoneNumber);
     }
 }
