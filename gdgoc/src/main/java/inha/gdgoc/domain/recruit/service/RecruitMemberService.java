@@ -41,7 +41,7 @@ public class RecruitMemberService {
         answerRepository.saveAll(answers);
     }
 
-    public boolean isRegisteredStudentId(String studentId){
+    public boolean isRegisteredStudentId(String studentId) {
         return recruitMemberRepository.existsByStudentId(studentId);
     }
 
