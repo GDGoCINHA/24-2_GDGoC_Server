@@ -40,4 +40,12 @@ public class RecruitMemberService {
 
         answerRepository.saveAll(answers);
     }
+
+    public boolean isRegisteredStudentId(String studentId){
+        return recruitMemberRepository.existsByStudentId(studentId);
+    }
+
+    public boolean isRegisteredPhoneNumber(String phoneNumber) {
+        return recruitMemberRepository.existsByPhoneNumber(phoneNumber);
+    }
 }
