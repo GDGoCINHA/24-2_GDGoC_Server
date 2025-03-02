@@ -9,6 +9,6 @@ import lombok.Setter;
 @Setter
 public class CheckStudentIdRequest {
     @NotBlank(message = "학번은 필수 입력 값입니다.")
-    @Pattern(regexp = "^[0-9]{8}$", message = "학번은 숫자로만 구성된 8자리여야 합니다.")
+    @Pattern(regexp = "^12[0-9]{6}$", message = "유효하지 않은 학번 값입니다.")
     private String studentId;
 }
