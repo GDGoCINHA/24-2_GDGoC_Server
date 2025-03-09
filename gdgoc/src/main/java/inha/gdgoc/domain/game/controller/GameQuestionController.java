@@ -1,6 +1,7 @@
 package inha.gdgoc.domain.game.controller;
 
 import inha.gdgoc.domain.game.dto.request.GameQuestionRequest;
+import inha.gdgoc.domain.game.dto.response.GameQuestionResponse;
 import inha.gdgoc.domain.game.entity.GameQuestion;
 import inha.gdgoc.domain.game.service.GameQuestionService;
 import inha.gdgoc.global.common.ApiResponse;
@@ -27,7 +28,7 @@ public class GameQuestionController {
     }
 
     @GetMapping("/game/questions")
-    public ResponseEntity<ApiResponse<List<GameQuestion>>> getRandomGameQuestions() {
+    public ResponseEntity<ApiResponse<List<GameQuestionResponse>>> getRandomGameQuestions() {
         return ResponseEntity.ok(ApiResponse.success(gameQuestionService.getRandomQuestionsByLanguage()));
     }
 }

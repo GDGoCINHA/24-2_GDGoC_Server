@@ -1,6 +1,7 @@
 package inha.gdgoc.domain.game.service;
 
 import inha.gdgoc.domain.game.dto.request.GameQuestionRequest;
+import inha.gdgoc.domain.game.dto.response.GameQuestionResponse;
 import inha.gdgoc.domain.game.entity.GameQuestion;
 import inha.gdgoc.domain.game.repository.GameQuestionRepository;
 import java.util.ArrayList;
@@ -22,14 +23,14 @@ public class GameQuestionService {
         gameQuestionRepository.save(request.toEntity());
     }
 
-    public List<GameQuestion> getRandomQuestionsByLanguage() {
-        List<GameQuestion> selectedQuestions = new ArrayList<>();
+    public List<GameQuestionResponse> getRandomQuestionsByLanguage() {
+        List<GameQuestionResponse> selectedQuestions = new ArrayList<>();
 
         for (String language : LANGUAGES) {
             List<GameQuestion> questions = gameQuestionRepository.findByLanguage(language);
             if (!questions.isEmpty()) {
                 int index = random.nextInt(questions.size());
-                selectedQuestions.add(questions.get(index));
+                selectedQuestions.add(new GameQuestionResponse(questions.get(index)));
             }
         }
 
