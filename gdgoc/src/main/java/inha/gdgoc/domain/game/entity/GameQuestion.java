@@ -28,4 +28,7 @@ public class GameQuestion {
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
+
+    @Column(name = "result", nullable = false)
+    private String result;
 }
