@@ -15,7 +15,8 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(@NonNull CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:3000", "https://gdgocinha.com")
+                        .allowedOrigins("http://localhost:3000", "https://gdgocinha.com",
+                                "https://typing-game-alpha-umber.vercel.app")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);
