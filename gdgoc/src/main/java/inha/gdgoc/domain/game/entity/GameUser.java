@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.game.entity;
 
+import inha.gdgoc.global.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -8,13 +9,15 @@ import jakarta.persistence.Id;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@Getter
 @Builder
-public class GameResult {
+public class GameUser extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,6 +26,9 @@ public class GameResult {
 
     @Column(name = "name", nullable = false)
     private String name;
+
+    @Column(name = "major", nullable = false)
+    private String major;
 
     @Column(name = "student_id", nullable = false)
     private String studentId;
