@@ -9,11 +9,13 @@ import lombok.NoArgsConstructor;
 public class GameQuestionRequest {
     private String language;
     private String content;
+    private String result;
 
     public GameQuestion toEntity() {
         return GameQuestion.builder()
                 .language(language)
                 .content(content)
+                .result(result)
                 .build();
     }
 }
