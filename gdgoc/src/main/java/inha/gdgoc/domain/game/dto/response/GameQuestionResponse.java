@@ -9,10 +9,12 @@ public class GameQuestionResponse {
     private Long id;
     private String language;
     private String content;
+    private String result;
 
     public GameQuestionResponse(GameQuestion gameQuestion) {
         this.id = gameQuestion.getId();
         this.language = gameQuestion.getLanguage();
         this.content = gameQuestion.getContent();
+        this.result = gameQuestion.getResult();
     }
 }
