@@ -13,8 +13,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Check directory
-        run: ls -al
+      - name: Check Required Files
+        run: |
+          pwd
+          
+          if [ ! -f "docker-compose.yml" ]; then echo "docker-compose.yml not found!"; exit 1; fi
+          if [ ! -f "deploy.sh" ]; then echo "deploy.sh not found!"; exit 1; fi
+          if [ ! -f "gdgoc/appspec.yml" ]; then echo "gdgoc/appspec.yml not found!"; exit 1; fi
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
