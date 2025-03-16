@@ -21,8 +21,14 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:latest .
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:latest
+          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/gdgoc-be-app:latest .
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/gdgoc-be-app:latest
+
+      - name: move files to Root
+        run: |
+          cp gdgoc/docker-compose.yml docker-compose.yml
+          cp gdgoc/deploy.sh deploy.sh
+          cp gdgoc/appspec.yml
 
       - name: Create Deployment Package
         run: |
@@ -33,7 +39,7 @@ jobs:
           echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
           echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
           
-          zip -r deploy.zip .env gdgoc/docker-compose.yml gdgoc/deploy.sh gdgoc/appspec.yml
+          zip -r deploy.zip .env docker-compose.yml deploy.sh appspec.yml
 
       - name: Configure AWS credentials
         run: |
