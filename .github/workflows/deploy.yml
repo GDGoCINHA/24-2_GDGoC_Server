@@ -26,9 +26,9 @@ jobs:
 
       - name: move files to Root
         run: |
-          cp gdgoc/docker-compose.yml docker-compose.yml
-          cp gdgoc/deploy.sh deploy.sh
-          cp gdgoc/appspec.yml
+          cp gdgoc/docker-compose.yml ./docker-compose.yml
+          cp gdgoc/deploy.sh ./deploy.sh
+          cp gdgoc/appspec.yml ./appspec.yml
 
       - name: Create Deployment Package
         run: |
