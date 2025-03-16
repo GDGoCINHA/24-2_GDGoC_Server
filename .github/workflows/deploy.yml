@@ -6,12 +6,15 @@ on:
       - main
 
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+
+      - name: Check directory
+        run: ls -al
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -19,15 +22,12 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Build Docker Image
+      - name: Build and Push Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/gdgoc-be-app:latest .
+          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:latest .
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:latest
 
-      - name: Push Docker Image to Docker Hub
-        run: |
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/gdgoc-be-app:latest
-
-      - name: Generate .env file
+      - name: Create Deployment Package
         run: |
           echo "DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}" > .env
           echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
@@ -35,10 +35,20 @@ jobs:
           echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
           echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
           echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-          zip -r deploy.zip docker-compose.yml deploy.sh appspec.yml .env
+          
+          zip -r deploy.zip .env docker-compose.yml deploy.sh gdgoc/appspec.yml
+
+      - name: Configure AWS credentials
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region ${{ secrets.AWS_REGION }}
+
+      - name: Upload Deployment Package to S3
+        run: |
           aws s3 cp deploy.zip s3://${{ secrets.AWS_S3_BUCKET }}/deploy.zip
 
-      - name: Trigger AWS CodeDeploy
+      - name: Deploy to AWS CodeDeploy
         run: |
           aws deploy create-deployment \
             --application-name ${{ secrets.AWS_CODEDEPLOY_APP }} \
