@@ -13,14 +13,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Check Required Files
-        run: |
-          pwd
-          
-          if [ ! -f "docker-compose.yml" ]; then echo "docker-compose.yml not found!"; exit 1; fi
-          if [ ! -f "deploy.sh" ]; then echo "deploy.sh not found!"; exit 1; fi
-          if [ ! -f "gdgoc/appspec.yml" ]; then echo "gdgoc/appspec.yml not found!"; exit 1; fi
-
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -41,7 +33,7 @@ jobs:
           echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
           echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
           
-          zip -r deploy.zip .env docker-compose.yml deploy.sh gdgoc/appspec.yml
+          zip -r deploy.zip .env gdgoc/docker-compose.yml gdgoc/deploy.sh gdgoc/appspec.yml
 
       - name: Configure AWS credentials
         run: |
