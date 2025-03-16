@@ -13,9 +13,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Check directory
-        run: ls -al
-
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -36,7 +33,7 @@ jobs:
           echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
           echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
           
-          zip -r deploy.zip .env docker-compose.yml deploy.sh gdgoc/appspec.yml
+          zip -r deploy.zip .env gdgoc/docker-compose.yml gdgoc/deploy.sh gdgoc/appspec.yml
 
       - name: Configure AWS credentials
         run: |
