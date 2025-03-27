@@ -24,3 +24,8 @@ logging:
   level:
     org.hibernate.SQL: debug
     org.hibername.type: trace
+
+jwt:
+  googleIssuer: ${GOOGLE_ISSUER}
+  selfIssuer: ${SELF_ISSUER}
+  secretKey: ${SECRET_KEY}

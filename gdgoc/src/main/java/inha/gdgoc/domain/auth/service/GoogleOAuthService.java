@@ -1,5 +1,10 @@
-package inha.gdgoc.domain.user.service;
+package inha.gdgoc.domain.auth.service;
 
+import inha.gdgoc.config.jwt.TokenProvider;
+import inha.gdgoc.domain.user.entity.User;
+import jakarta.servlet.http.Cookie;
+import java.util.Optional;
+import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,10 +34,10 @@ public class GoogleOAuthService {
     private String redirectUri;
 
     private final UserRepository userRepository;
-
     private final RestTemplate restTemplate = new RestTemplate();
+    private final TokenProvider tokenProvider;
 
-    public void processOAuthLogin(String code, HttpServletResponse response) {
+    public Map<String, Object> processOAuthLogin(String code, HttpServletResponse response) {
         // 1. code → access token 요청
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -51,11 +56,11 @@ public class GoogleOAuthService {
                 Map.class
         );
 
-        String accessToken = (String) tokenResponse.getBody().get("access_token");
+        String googleAccessToken = (String) tokenResponse.getBody().get("access_token");
 
         // 2. access token → 사용자 정보 요청
         HttpHeaders userInfoHeaders = new HttpHeaders();
-        userInfoHeaders.setBearerAuth(accessToken);
+        userInfoHeaders.setBearerAuth(googleAccessToken);
         HttpEntity<Void> userInfoRequest = new HttpEntity<>(userInfoHeaders);
 
         ResponseEntity<Map> userInfoResponse = restTemplate.exchange(
@@ -63,6 +68,38 @@ public class GoogleOAuthService {
                 HttpMethod.GET,
                 userInfoRequest,
                 Map.class
+        );
+
+        // 3. Google에서 가져온 이름, 이메일로 가입된 정보가 없으면 회원가입, 있으면 로그인
+
+        Map userInfo = userInfoResponse.getBody();
+        String email = (String) userInfo.get("email");
+        String name = (String) userInfo.get("name");
+
+        Optional<User> foundUser = userRepository.findByEmail(email);
+        if (foundUser.isEmpty()) {
+            return Map.of(
+                    "exists", false, // 회원 없음 => 회원가입 필요
+                    "email", email,
+                    "name", name
+            );
+        }
+
+        User user = foundUser.get();
+
+        String jwtAccessToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofHours(1));
+        String refreshToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofDays(14));
+
+        Cookie cookie = new Cookie("refresh_token", refreshToken);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(60 * 60 * 24 * 14); // 2주
+        response.addCookie(cookie);
+
+        return Map.of(
+                "exists", true, // 회원 존재 & 로그인
+                "accessToken", jwtAccessToken
         );
     }
 }
