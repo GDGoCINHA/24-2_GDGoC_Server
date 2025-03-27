@@ -41,7 +41,7 @@ jobs:
           echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
           echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
           echo "GOOGLE_REDIRECT_URI=${{ secrets.GOOGLE_REDIRECT_URI }}" >> .env
-          echo "GOOGLE_ISSUER=${{serets.GOOGLE_ISSUER}}" >> .env
+          echo "GOOGLE_ISSUER=${{secrets.GOOGLE_ISSUER}}" >> .env
           echo "SELF_ISSUER=${{secrets.SELF_ISSUER}}" >> .env
           echo "SECRET_KEY=${{secrets.SECRET_KEY}}" >> .env
           
