@@ -10,9 +10,7 @@ public class DotenvLoader {
     @PostConstruct
     public void loadEnv() {
         try {
-            Dotenv dotenv = Dotenv.configure()
-                    .directory("/home/ubuntu/gdgoc-be-app")  // .env 파일 디렉토리 명시
-                    .load();
+            Dotenv dotenv = Dotenv.load();
             System.setProperty("GOOGLE_CLIENT_ID", dotenv.get("GOOGLE_CLIENT_ID"));
             System.setProperty("GOOGLE_CLIENT_SECRET", dotenv.get("GOOGLE_CLIENT_SECRET"));
             System.setProperty("GOOGLE_REDIRECT_URI", dotenv.get("GOOGLE_REDIRECT_URI"));
