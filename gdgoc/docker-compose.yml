@@ -13,4 +13,4 @@ services:
       SPRING_DATASOURCE_USERNAME: "${DB_USERNAME}"
       SPRING_DATASOURCE_PASSWORD: "${DB_PASSWORD}"
     env_file:
-      - .env
+      - /home/ubuntu/gdgoc-be-app/.env

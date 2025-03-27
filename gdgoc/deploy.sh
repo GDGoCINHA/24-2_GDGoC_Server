@@ -32,4 +32,4 @@ export $(grep -v '^#' .env | xargs)
 docker pull ${DOCKER_HUB_USERNAME}/gdgoc-be-app:latest
 
 # 컨테이너 실행
-docker-compose --env-file .env up -d
+docker-compose --env-file /home/ubuntu/gdgoc-be-app/.env up -d
