@@ -1,6 +1,6 @@
 package inha.gdgoc.domain.user.entity;
 
-import inha.gdgoc.domain.user.enums.CoreType;
+import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.enums.Interest;
 import inha.gdgoc.global.common.BaseEntity;
 import jakarta.persistence.Column;
@@ -38,12 +38,11 @@ public class User extends BaseEntity {
     @Column(name = "major", nullable = false)
     private String major;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "interest", nullable = false)
-    private Interest interest;
+    @Column(name = "studentId", nullable = false)
+    private String studentId;
 
-    @Column(name = "interest_etc")
-    private String interestEtc;
+    @Column(name = "phone_number", nullable = false)
+    private String phoneNumber;
 
     @Column(name = "email", nullable = false)
     private String email;
@@ -54,8 +53,8 @@ public class User extends BaseEntity {
     @Column(name = "google_id")
     private String googleId;
 
-    @Column(name = "core_type", nullable = false)
-    private CoreType coreType;
+    @Column(name = "user_role", nullable = false)
+    private UserRole userRole;
 
     @Column(name = "salt", nullable = false)
     private String salt;
@@ -70,19 +69,4 @@ public class User extends BaseEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "careers")
     private Careers careers;
-
-    //TODO create 값 추가해야함, 테스트삼아 몇개 인자만 넣음
-    public static User create(String salt, CoreType coreType, String googleId, String password, String email, String interestEtc, Interest interest, String major, String name) {
-        User user = new User();
-        user.name = name;
-        user.major = major;
-        user.interest = interest;
-        user.interestEtc = interestEtc;
-        user.email = email;
-        user.password = password;
-        user.googleId = googleId;
-        user.coreType = coreType;
-        user.salt = salt;
-        return user;
-    }
 }
