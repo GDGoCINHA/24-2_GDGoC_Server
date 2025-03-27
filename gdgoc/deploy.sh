@@ -31,8 +31,5 @@ docker volume prune -f
 export $(grep -v '^#' .env | xargs)
 docker pull ${DOCKER_HUB_USERNAME}/gdgoc-be-app:latest
 
-# 컨테이너 내부로 `.env` 파일을 복사하는 명령 추가
-docker run --rm -v /home/ubuntu/gdgoc-be-app/.env:/app/.env ${DOCKER_HUB_USERNAME}/gdgoc-be-app:latest sh -c "cat /app/.env"
-
 # 컨테이너 실행
 docker-compose --env-file .env up -d
