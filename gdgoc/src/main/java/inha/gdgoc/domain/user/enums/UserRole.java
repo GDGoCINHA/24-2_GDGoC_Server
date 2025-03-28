@@ -8,9 +8,9 @@ public enum UserRole {
     MEMBER("Member"),
     ADMIN("ADMIN");
 
-    private final String core;
+    private final String role;
 
-    UserRole(String core){
-        this.core = core;
+    UserRole(String role){
+        this.role = role;
     }
 }
