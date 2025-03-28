@@ -38,7 +38,7 @@ public class User extends BaseEntity {
     @Column(name = "major", nullable = false)
     private String major;
 
-    @Column(name = "studentId", nullable = false)
+    @Column(name = "student_id", nullable = false)
     private String studentId;
 
     @Column(name = "phone_number", nullable = false)
@@ -69,4 +69,24 @@ public class User extends BaseEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "careers")
     private Careers careers;
+
+    @Builder
+    public User(
+            String name, String major, String studentId, String phoneNumber,
+            String email, String password, String googleId, UserRole userRole,
+            String salt, String image, SocialUrls social, Careers careers) {
+        this.name = name;
+        this.major = major;
+        this.studentId = studentId;
+        this.phoneNumber = phoneNumber;
+        this.email = email;
+        this.password = password;
+        this.googleId = googleId;
+        this.userRole = userRole;
+        this.salt = salt;
+        this.image = image;
+        this.social = social != null ? social : new SocialUrls();
+        this.careers = careers != null ? careers : new Careers();
+    }
+
 }
