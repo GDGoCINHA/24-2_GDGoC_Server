@@ -1,5 +1,6 @@
 package inha.gdgoc.config.jwt;
 
+import inha.gdgoc.domain.auth.enums.LoginType;
 import inha.gdgoc.domain.user.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Header;
@@ -63,7 +64,7 @@ public class TokenProvider {
         );
 
         Set<SimpleGrantedAuthority> authorities = Collections.singleton(
-                new SimpleGrantedAuthority("ROLE_USER")
+                new SimpleGrantedAuthority("Guest")
         );
 
         return new UsernamePasswordAuthenticationToken(
@@ -91,6 +92,7 @@ public class TokenProvider {
                 .setSubject(user.getEmail())
                 .claim("id", user.getId())
                 .claim("loginType", loginType.name())
+                .claim("role", user.getUserRole().getRole())
                 .signWith(SignatureAlgorithm.HS256,
                         Base64.getEncoder().encodeToString(
                                 jwtProperties.getSecretKey().getBytes()
@@ -108,11 +110,5 @@ public class TokenProvider {
                 )
                 .parseClaimsJws(token)
                 .getBody();
-    }
-
-    // 로그인 타입 열거형 추가
-    public enum LoginType {
-        SELF_SIGNUP,
-        GOOGLE_LOGIN
     }
 }
