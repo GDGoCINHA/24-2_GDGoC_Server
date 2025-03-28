@@ -2,6 +2,7 @@ package inha.gdgoc.config.jwt;
 
 import inha.gdgoc.domain.auth.enums.LoginType;
 import inha.gdgoc.domain.user.entity.User;
+import inha.gdgoc.domain.user.enums.UserRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Header;
 import io.jsonwebtoken.Jwts;
@@ -59,12 +60,10 @@ public class TokenProvider {
 
     public Authentication getAuthentication(String token) {
         Claims claims = getClaims(token);
-        LoginType loginType = LoginType.valueOf(
-                claims.get("loginType", String.class)
-        );
+        UserRole userRole = UserRole.valueOf(claims.get("role", String.class));
 
         Set<SimpleGrantedAuthority> authorities = Collections.singleton(
-                new SimpleGrantedAuthority("Guest")
+                new SimpleGrantedAuthority(userRole.getRole())
         );
 
         return new UsernamePasswordAuthenticationToken(
