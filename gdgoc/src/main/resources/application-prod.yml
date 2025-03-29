@@ -9,12 +9,11 @@ spring:
   jpa:
     database: postgresql
     hibernate:
-      ddl-auto: update
-      jdbc:
-        time_zone: Asia/Seoul
+      ddl-auto: none
     properties:
       hibernate:
         default_batch_fetch_size: 100
+        time_zone: Asia/Seoul
     show-sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
