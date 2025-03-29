@@ -9,9 +9,8 @@ spring:
   jpa:
     database: postgresql
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
       jdbc:
-        time_zone: Asia/Seoul
     properties:
       hibernate:
         default_batch_fetch_size: 100
