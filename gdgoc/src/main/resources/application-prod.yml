@@ -10,10 +10,10 @@ spring:
     database: postgresql
     hibernate:
       ddl-auto: none
-      jdbc:
     properties:
       hibernate:
         default_batch_fetch_size: 100
+        time_zone: Asia/Seoul
     show-sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
