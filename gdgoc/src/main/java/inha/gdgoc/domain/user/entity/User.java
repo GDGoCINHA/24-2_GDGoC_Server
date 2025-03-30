@@ -51,7 +51,7 @@ public class User extends BaseEntity {
     private UserRole userRole;
 
     @Column(name = "salt", nullable = false)
-    private String salt;
+    private byte[] salt;
 
     @Column(name = "image")
     private String image;
@@ -68,7 +68,7 @@ public class User extends BaseEntity {
     public User(
             String name, String major, String studentId, String phoneNumber,
             String email, String password, UserRole userRole,
-            String salt, String image, SocialUrls social, Careers careers) {
+            byte[] salt, String image, SocialUrls social, Careers careers) {
         this.name = name;
         this.major = major;
         this.studentId = studentId;
