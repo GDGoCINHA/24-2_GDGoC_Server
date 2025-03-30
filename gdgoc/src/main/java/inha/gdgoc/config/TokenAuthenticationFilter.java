@@ -1,7 +1,7 @@
 package inha.gdgoc.config;
 
 import inha.gdgoc.config.jwt.TokenProvider;
-import inha.gdgoc.config.jwt.TokenProvider.LoginType;
+import inha.gdgoc.domain.auth.enums.LoginType;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,11 +30,9 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         String authorizationHeader = request.getHeader(HEADER_AUTHORIZATION);
         String token = getAccessToken(authorizationHeader);
 
-        // 토큰이 null이 아닐 때만 검증
         if (token != null) {
-            // 기본적으로 SELF_SIGNUP으로 검증
-            // 실제로는 프론트나 요청 특성에 따라 달라질 수 있음
-            if (tokenProvider.validToken(token, LoginType.SELF_SIGNUP)) {
+            if (tokenProvider.validToken(token, LoginType.SELF_SIGNUP) || tokenProvider.validToken(token,
+                    LoginType.GOOGLE_LOGIN)) {
                 Authentication authentication = tokenProvider.getAuthentication(token);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }

@@ -1,12 +1,9 @@
 package inha.gdgoc.domain.user.entity;
 
 import inha.gdgoc.domain.user.enums.UserRole;
-import inha.gdgoc.domain.user.enums.Interest;
 import inha.gdgoc.global.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -38,7 +35,7 @@ public class User extends BaseEntity {
     @Column(name = "major", nullable = false)
     private String major;
 
-    @Column(name = "studentId", nullable = false)
+    @Column(name = "student_id", nullable = false)
     private String studentId;
 
     @Column(name = "phone_number", nullable = false)
@@ -50,14 +47,11 @@ public class User extends BaseEntity {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name = "google_id")
-    private String googleId;
-
     @Column(name = "user_role", nullable = false)
     private UserRole userRole;
 
     @Column(name = "salt", nullable = false)
-    private String salt;
+    private byte[] salt;
 
     @Column(name = "image")
     private String image;
@@ -69,4 +63,23 @@ public class User extends BaseEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "careers")
     private Careers careers;
+
+    @Builder
+    public User(
+            String name, String major, String studentId, String phoneNumber,
+            String email, String password, UserRole userRole,
+            byte[] salt, String image, SocialUrls social, Careers careers) {
+        this.name = name;
+        this.major = major;
+        this.studentId = studentId;
+        this.phoneNumber = phoneNumber;
+        this.email = email;
+        this.password = password;
+        this.userRole = userRole;
+        this.salt = salt;
+        this.image = image;
+        this.social = social != null ? social : new SocialUrls();
+        this.careers = careers != null ? careers : new Careers();
+    }
+
 }
