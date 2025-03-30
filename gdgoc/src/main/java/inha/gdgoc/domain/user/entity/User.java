@@ -1,12 +1,9 @@
 package inha.gdgoc.domain.user.entity;
 
 import inha.gdgoc.domain.user.enums.UserRole;
-import inha.gdgoc.domain.user.enums.Interest;
 import inha.gdgoc.global.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -50,9 +47,6 @@ public class User extends BaseEntity {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name = "google_id")
-    private String googleId;
-
     @Column(name = "user_role", nullable = false)
     private UserRole userRole;
 
@@ -73,7 +67,7 @@ public class User extends BaseEntity {
     @Builder
     public User(
             String name, String major, String studentId, String phoneNumber,
-            String email, String password, String googleId, UserRole userRole,
+            String email, String password, UserRole userRole,
             String salt, String image, SocialUrls social, Careers careers) {
         this.name = name;
         this.major = major;
@@ -81,7 +75,6 @@ public class User extends BaseEntity {
         this.phoneNumber = phoneNumber;
         this.email = email;
         this.password = password;
-        this.googleId = googleId;
         this.userRole = userRole;
         this.salt = salt;
         this.image = image;
