@@ -22,7 +22,7 @@ public class RecruitMemberRequest {
     private String nationality;
     private String email;
     private String gender;
-    private LocalDate birth; // 다시 확인
+    private LocalDate birth;
     private String major;
     private String doubleMajor;
     private Boolean isPayed;
