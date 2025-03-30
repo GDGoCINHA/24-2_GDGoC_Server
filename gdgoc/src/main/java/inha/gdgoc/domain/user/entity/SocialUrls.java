@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-class SocialUrls implements Serializable {
+public class SocialUrls implements Serializable {
     private SnsType snsType;
     private String url;
 

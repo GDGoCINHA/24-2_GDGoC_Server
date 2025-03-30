@@ -1,28 +1,34 @@
 package inha.gdgoc.domain.auth.entity;
 
+import inha.gdgoc.domain.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor( access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 @Entity
 public class RefreshToken {
     @Id
-    private Long userId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String token;
 
-    public RefreshToken(Long userId, String token) {
-        this.userId = userId;
-        this.token = token;
-    }
+    @OneToOne
+    @JoinColumn(name = "user", nullable = false)
+    private User user;
 
-    public RefreshToken update(String newToken) {
-        this.token = newToken;
-        return this;
-    }
+    private LocalDateTime expiryDate;
 }
-
