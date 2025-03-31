@@ -1,6 +1,12 @@
 package inha.gdgoc.config;
 
 import inha.gdgoc.config.jwt.TokenProvider;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.SignatureException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,13 +34,11 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         String token = getAccessToken(request);
 
         if (token != null) {
-            if (tokenProvider.validToken(token)) {
+            try {
                 Authentication authentication = tokenProvider.getAuthentication(token);
-                try {
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                } catch (Exception e) {
-                    SecurityContextHolder.clearContext();
-                }
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            } catch (Exception e) {
+                SecurityContextHolder.clearContext();
             }
         }
 
