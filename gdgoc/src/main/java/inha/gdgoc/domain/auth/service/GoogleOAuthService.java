@@ -92,15 +92,16 @@ public class GoogleOAuthService {
 
         User user = foundUser.get();
 
-        String jwtAccessToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofHours(1));
-        String refreshToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofDays(14));
-        refreshTokenService.saveRefreshToken(refreshToken, user, Duration.ofDays(14));
+        // TODO 시간 바꾸기
+        String jwtAccessToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofMinutes(1));
+        String refreshToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofMinutes(2));
+        refreshTokenService.saveRefreshToken(refreshToken, user, Duration.ofMinutes(2));
 
         Cookie cookie = new Cookie("refresh_token", refreshToken);
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setPath("/");
-        cookie.setMaxAge(60 * 60 * 24 * 14); // 2주
+        cookie.setMaxAge(60 * 2); // 2주로 변경 하기
         response.addCookie(cookie);
 
         return Map.of(
