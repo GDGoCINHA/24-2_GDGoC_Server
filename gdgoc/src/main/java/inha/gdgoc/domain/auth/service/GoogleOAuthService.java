@@ -97,7 +97,7 @@ public class GoogleOAuthService {
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setPath("/");
-        cookie.setMaxAge(60 * 2); // 2주로 변경 하기
+        cookie.setMaxAge(60 * 10); // 2주로 변경하기
         response.addCookie(cookie);
 
         return Map.of(
