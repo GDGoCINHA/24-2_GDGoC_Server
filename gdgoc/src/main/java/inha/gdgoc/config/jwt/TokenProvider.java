@@ -97,7 +97,7 @@ public class TokenProvider {
                 .setSubject(user.getEmail())
                 .claim("id", user.getId())
                 .claim("loginType", loginType.name())
-                .claim("role", user.getUserRole().getRole())
+                .claim("role", user.getUserRole().name())
                 .signWith(SignatureAlgorithm.HS256,
                         Base64.getEncoder().encodeToString(
                                 jwtProperties.getSecretKey().getBytes()
