@@ -24,6 +24,12 @@ public class RefreshTokenService {
     public void saveRefreshToken(String refreshToken, User user, Duration expiredAt) {
         LocalDateTime expiryDate = LocalDateTime.now().plus(expiredAt);
 
+        Optional<RefreshToken> existingToken = refreshTokenRepository.findByUser(user);
+        if(existingToken.isPresent()) {
+            existingToken.get().update(refreshToken, expiryDate);
+            return;
+        }
+
         RefreshToken tokenEntity = RefreshToken.builder()
                 .token(refreshToken)
                 .user(user)

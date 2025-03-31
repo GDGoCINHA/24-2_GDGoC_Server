@@ -1,11 +1,8 @@
 package inha.gdgoc.domain.auth.service;
 
 import inha.gdgoc.config.jwt.TokenProvider;
-import inha.gdgoc.domain.auth.entity.RefreshToken;
-import inha.gdgoc.domain.auth.repository.RefreshTokenRepository;
 import inha.gdgoc.domain.user.entity.User;
 import jakarta.servlet.http.Cookie;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,7 +24,6 @@ import org.springframework.web.client.RestTemplate;
 @RequiredArgsConstructor
 public class GoogleOAuthService {
 
-    private final RefreshTokenRepository refreshTokenRepository;
     private final RefreshTokenService refreshTokenService;
     @Value("${google.client-id}")
     private String clientId;
@@ -93,9 +89,9 @@ public class GoogleOAuthService {
         User user = foundUser.get();
 
         // TODO 시간 바꾸기
-        String jwtAccessToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofMinutes(1));
-        String refreshToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofMinutes(2));
-        refreshTokenService.saveRefreshToken(refreshToken, user, Duration.ofMinutes(2));
+        String jwtAccessToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofMinutes(5));
+        String refreshToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofMinutes(10));
+        refreshTokenService.saveRefreshToken(refreshToken, user, Duration.ofMinutes(10));
 
         Cookie cookie = new Cookie("refresh_token", refreshToken);
         cookie.setHttpOnly(true);
