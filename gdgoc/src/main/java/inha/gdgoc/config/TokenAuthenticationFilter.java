@@ -46,11 +46,27 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String getAccessToken(HttpServletRequest request) {
-        String HEADER_AUTHORIZATION = "Authorization";
-        String TOKEN_PREFIX = "Bearer ";
+        final String HEADER_AUTHORIZATION = "Authorization";
+        final String TOKEN_PREFIX = "Bearer ";
 
         String bearerToken = request.getHeader(HEADER_AUTHORIZATION);
 
-        return (bearerToken != null && bearerToken.startsWith(TOKEN_PREFIX)) ? bearerToken.substring(7) : null;
+        if (bearerToken == null || !bearerToken.startsWith(TOKEN_PREFIX)) {
+            return null;
+        }
+
+        String token = bearerToken.substring(TOKEN_PREFIX.length());
+
+        token = token.trim();
+
+        for (char c : token.toCharArray()) {
+            if (c < 32) {
+                log.info("토큰에 유효하지 않은 제어 문자가 포함되어 있습니다.");
+                throw new IllegalArgumentException("토큰에 유효하지 않은 제어 문자가 포함되어 있습니다.");
+            }
+        }
+
+        return token;
     }
+
 }
