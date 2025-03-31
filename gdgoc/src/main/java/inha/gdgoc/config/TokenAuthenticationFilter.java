@@ -1,7 +1,6 @@
 package inha.gdgoc.config;
 
 import inha.gdgoc.config.jwt.TokenProvider;
-import inha.gdgoc.domain.auth.enums.LoginType;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,34 +17,32 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
     private final TokenProvider tokenProvider;
 
-    private final static String HEADER_AUTHORIZATION = "Authorization";
-    private final static String TOKEN_PREFIX = "Bearer ";
+    private final String HEADER_AUTHORIZATION = "Authorization";
+    private final String TOKEN_PREFIX = "Bearer ";
 
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
-
-        String authorizationHeader = request.getHeader(HEADER_AUTHORIZATION);
-        String token = getAccessToken(authorizationHeader);
+        String token = getAccessToken(request);
 
         if (token != null) {
-            if (tokenProvider.validToken(token, LoginType.SELF_SIGNUP) || tokenProvider.validToken(token,
-                    LoginType.GOOGLE_LOGIN)) {
+            if (tokenProvider.validToken(token)) {
                 Authentication authentication = tokenProvider.getAuthentication(token);
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                try {
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                } catch (Exception e) {
+                    SecurityContextHolder.clearContext();
+                }
             }
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private String getAccessToken(String authorizationHeader) {
-        if (authorizationHeader != null && authorizationHeader.startsWith(TOKEN_PREFIX)) {
-            return authorizationHeader.substring(TOKEN_PREFIX.length());
-        }
-
-        return null;
+    private String getAccessToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader(HEADER_AUTHORIZATION);
+        return (bearerToken != null && bearerToken.startsWith(TOKEN_PREFIX)) ? bearerToken.substring(7) : null;
     }
 }
