@@ -33,4 +33,12 @@ public class RefreshToken {
     private User user;
 
     private LocalDateTime expiryDate;
+
+    public void update(String token, LocalDateTime expiryDate) {
+        if (token == null || expiryDate == null) {
+            throw new IllegalArgumentException("토큰 갱신 정보가 유효하지 않습니다.");
+        }
+        this.token = token;
+        this.expiryDate = expiryDate;
+    }
 }
