@@ -3,16 +3,19 @@ package inha.gdgoc.domain.recruit.controller;
 import inha.gdgoc.domain.recruit.dto.request.ApplicationRequest;
 import inha.gdgoc.domain.recruit.dto.request.CheckPhoneNumberRequest;
 import inha.gdgoc.domain.recruit.dto.request.CheckStudentIdRequest;
+import inha.gdgoc.domain.recruit.dto.response.SpecifiedMemberResponse;
 import inha.gdgoc.domain.recruit.service.RecruitMemberService;
 import inha.gdgoc.global.common.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
@@ -48,5 +51,14 @@ public class RecruitMemberController {
 
         boolean exists = recruitMemberService.isRegisteredPhoneNumber(phoneNumberRequest.getPhoneNumber());
         return ResponseEntity.ok(ApiResponse.success(exists, exists ? "이미 등록된 전화번호입니다." : "사용 가능한 전화번호입니다."));
+    }
+
+    @GetMapping("/recruit/member")
+    public ResponseEntity<ApiResponse<SpecifiedMemberResponse>> getSpecifiedMember (
+            Authentication authentication,
+            @RequestParam Long userId
+    ) {
+        SpecifiedMemberResponse data = recruitMemberService.findSpecifiedMember(userId);
+        return ResponseEntity.ok(ApiResponse.success(data));
     }
 }

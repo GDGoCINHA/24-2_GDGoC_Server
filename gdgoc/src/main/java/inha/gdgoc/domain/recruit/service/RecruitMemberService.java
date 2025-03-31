@@ -2,6 +2,7 @@ package inha.gdgoc.domain.recruit.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import inha.gdgoc.domain.recruit.dto.request.ApplicationRequest;
+import inha.gdgoc.domain.recruit.dto.response.SpecifiedMemberResponse;
 import inha.gdgoc.domain.recruit.entity.Answer;
 import inha.gdgoc.domain.recruit.entity.RecruitMember;
 import inha.gdgoc.domain.recruit.enums.InputType;
@@ -10,6 +11,7 @@ import inha.gdgoc.domain.recruit.repository.AnswerRepository;
 import inha.gdgoc.domain.recruit.repository.RecruitMemberRepository;
 import jakarta.transaction.Transactional;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -47,5 +49,12 @@ public class RecruitMemberService {
 
     public boolean isRegisteredPhoneNumber(String phoneNumber) {
         return recruitMemberRepository.existsByPhoneNumber(phoneNumber);
+    }
+
+    public SpecifiedMemberResponse findSpecifiedMember(Long id) {
+        Optional<RecruitMember> foundMember = recruitMemberRepository.findById(id);
+        RecruitMember member = foundMember.get();
+        return new SpecifiedMemberResponse(member.getName(), member.getMajor(), member.getStudentId(),
+                member.getIsPayed());
     }
 }
