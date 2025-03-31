@@ -1,6 +1,7 @@
 package inha.gdgoc.domain.auth.entity;
 
 import inha.gdgoc.domain.user.entity.User;
+import inha.gdgoc.global.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -20,7 +21,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @Entity
 @Getter
-public class RefreshToken {
+public class RefreshToken extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
