@@ -4,9 +4,14 @@ import inha.gdgoc.domain.auth.enums.LoginType;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.UserRole;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Header;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.SignatureException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Collections;
@@ -43,18 +48,19 @@ public class TokenProvider {
         );
     }
 
-    public boolean validToken(String token, LoginType expectedLoginType) {
+    public Claims validToken(String token) {
         try {
-            Claims claims = getClaims(token);
-
-            // 로그인 타입 검증 추가
-            LoginType tokenLoginType = LoginType.valueOf(
-                    claims.get("loginType", String.class)
-            );
-
-            return tokenLoginType == expectedLoginType;
-        } catch (Exception e) {
-            return false;
+            return getClaims(token);
+        } catch (ExpiredJwtException e) {
+            throw new JwtException("Token has expired", e);
+        } catch (UnsupportedJwtException e) {
+            throw new JwtException("Unsupported JWT token", e);
+        } catch (MalformedJwtException e) {
+            throw new JwtException("Malformed JWT token", e);
+        } catch (SignatureException e) {
+            throw new JwtException("Invalid JWT signature", e);
+        } catch (IllegalArgumentException e) {
+            throw new JwtException("JWT claims string is empty", e);
         }
     }
 
