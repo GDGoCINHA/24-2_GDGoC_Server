@@ -1,11 +1,8 @@
 package inha.gdgoc.domain.auth.service;
 
 import inha.gdgoc.config.jwt.TokenProvider;
-import inha.gdgoc.domain.auth.entity.RefreshToken;
-import inha.gdgoc.domain.auth.repository.RefreshTokenRepository;
 import inha.gdgoc.domain.user.entity.User;
 import jakarta.servlet.http.Cookie;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,7 +24,6 @@ import org.springframework.web.client.RestTemplate;
 @RequiredArgsConstructor
 public class GoogleOAuthService {
 
-    private final RefreshTokenRepository refreshTokenRepository;
     private final RefreshTokenService refreshTokenService;
     @Value("${google.client-id}")
     private String clientId;
