@@ -36,16 +36,4 @@ public class UserRepositoryImpl implements UserRepositoryCustom {
 
         return Optional.ofNullable(foundUser);
     }
-
-    @Override
-    public Optional<User> findById(Long id) {
-        QUser user = QUser.user;
-
-        User foundUser = queryFactory
-                .selectFrom(user)
-                .where(user.id.eq(id))
-                .fetchOne();
-
-        return Optional.ofNullable(foundUser);
-    }
 }

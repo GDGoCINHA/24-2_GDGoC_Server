@@ -8,5 +8,4 @@ import java.util.Optional;
 public interface UserRepositoryCustom {
     List<User> findAllUsers();
     Optional<User> findByEmail(String email);
-    Optional<User> findById(Long id);
 }
