@@ -47,8 +47,8 @@ public class RefreshTokenService {
 
         Claims claims = tokenProvider.validToken(refreshToken);
         try {
-            Long userId = Long.parseLong(claims.getSubject());
-            Optional<User> optionalUser = userRepository.findById(userId);
+            String email = claims.getSubject(); // 이메일로 변경
+            Optional<User> optionalUser = userRepository.findByEmail(email);
 
             if (optionalUser.isEmpty()) {
                 throw new RuntimeException("User not found");
@@ -61,8 +61,9 @@ public class RefreshTokenService {
             }
 
             return tokenProvider.generateGoogleLoginToken(user, Duration.ofHours(1));
-        } catch (NumberFormatException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
+
 }
