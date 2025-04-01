@@ -56,7 +56,14 @@ public class RefreshTokenService {
             User user = optionalUser.get();
 
             Optional<RefreshToken> refreshTokenEntity = refreshTokenRepository.findByUser(user);
-            if (refreshTokenEntity.isEmpty() || !refreshTokenEntity.get().getToken().equals(refreshToken)) {
+            if(refreshTokenEntity.isEmpty()) {
+                log.info("없어요");
+            }
+            if (refreshTokenEntity.isEmpty() || !refreshTokenEntity.get().getToken().trim().equals(refreshToken)) {
+                log.info("비어있나요 :{}",refreshTokenEntity.isEmpty());
+                log.info("parameter:{}", refreshTokenEntity.get().getToken());
+
+                log.info("같은가요:{}",!refreshTokenEntity.get().getToken().trim().equals(refreshToken));
                 throw new RuntimeException("Invalid Refresh Token");
             }
 
