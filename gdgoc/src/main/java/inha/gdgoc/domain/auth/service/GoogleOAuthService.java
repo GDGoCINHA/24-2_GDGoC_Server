@@ -89,9 +89,9 @@ public class GoogleOAuthService {
         User user = foundUser.get();
 
         // TODO 시간 바꾸기
-        String jwtAccessToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofMinutes(5));
-        String refreshToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofMinutes(10));
-        refreshTokenService.saveRefreshToken(refreshToken, user, Duration.ofMinutes(10));
+        String jwtAccessToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofSeconds(5));
+        String refreshToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofSeconds(20));
+        refreshTokenService.saveRefreshToken(refreshToken, user, Duration.ofSeconds(20));
 
         Cookie cookie = new Cookie("refresh_token", refreshToken);
         cookie.setHttpOnly(true);
