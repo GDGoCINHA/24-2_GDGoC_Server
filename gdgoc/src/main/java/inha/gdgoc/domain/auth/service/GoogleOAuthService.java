@@ -2,7 +2,6 @@ package inha.gdgoc.domain.auth.service;
 
 import inha.gdgoc.config.jwt.TokenProvider;
 import inha.gdgoc.domain.user.entity.User;
-import jakarta.servlet.http.Cookie;
 import java.util.Optional;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +13,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -93,12 +93,17 @@ public class GoogleOAuthService {
         String refreshToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofSeconds(20));
         refreshTokenService.saveRefreshToken(refreshToken, user, Duration.ofSeconds(20));
 
-        Cookie cookie = new Cookie("refresh_token", refreshToken);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(20); // 2주로 변경하기
-        response.addCookie(cookie);
+        // ResponseCookie 객체 생성
+        ResponseCookie responseCookie = ResponseCookie.from("refresh_token", refreshToken)
+                .httpOnly(true)
+                .secure(true)  // HTTPS 사용 시
+                .path("/")
+                .maxAge(Duration.ofDays(7))
+                .sameSite("None")  // 크로스 사이트 요청 허용 (secure=true 필요)
+                .build();
+
+        // Set-Cookie 헤더로 추가
+        response.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
 
         return Map.of(
                 "exists", true, // 회원 존재 & 로그인
