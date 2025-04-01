@@ -98,7 +98,7 @@ public class GoogleOAuthService {
                 .httpOnly(true)
                 .secure(true)  // HTTPS 사용 시
                 .path("/")
-                .maxAge(Duration.ofDays(7))
+                .maxAge(Duration.ofSeconds(20))
                 .sameSite("None")  // 크로스 사이트 요청 허용 (secure=true 필요)
                 .build();
 
