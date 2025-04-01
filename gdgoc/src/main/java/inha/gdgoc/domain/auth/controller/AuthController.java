@@ -9,6 +9,7 @@ import inha.gdgoc.global.common.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,6 +47,9 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshAccessToken(
             @CookieValue(value = "refresh_token", required = false) String refreshToken) {
+        if (refreshToken == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh token is missing.");
+        }
         String newAccessToken = refreshTokenService.refreshAccessToken(refreshToken);
         AccessTokenResponse data = new AccessTokenResponse(newAccessToken);
         return ResponseEntity.ok(ApiResponse.success(data));
