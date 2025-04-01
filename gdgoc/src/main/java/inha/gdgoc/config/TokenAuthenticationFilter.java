@@ -26,6 +26,13 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             @NotNull HttpServletRequest request,
             @NotNull HttpServletResponse response,
             @NotNull FilterChain filterChain) throws ServletException, IOException {
+        String uri = request.getRequestURI();
+        if (uri.equals("/auth/refresh")) {
+            // 리프레시 토큰은 여기서 검사하지 않음
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String token = getAccessToken(request);
         log.info("요청 URI: {}, 추출된 access token: {}", request.getRequestURI(), token);
 
