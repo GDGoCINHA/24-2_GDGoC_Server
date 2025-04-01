@@ -9,6 +9,7 @@ import inha.gdgoc.global.common.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RequestMapping("/auth")
 @RestController
 @RequiredArgsConstructor
@@ -47,12 +49,23 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshAccessToken(
             @CookieValue(value = "refresh_token", required = false) String refreshToken) {
+
+        log.info("리프레시 토큰 요청 받음. 토큰 존재 여부: {}", refreshToken != null);
+
         if (refreshToken == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh token is missing.");
         }
-        String newAccessToken = refreshTokenService.refreshAccessToken(refreshToken);
-        AccessTokenResponse data = new AccessTokenResponse(newAccessToken);
-        return ResponseEntity.ok(ApiResponse.success(data));
+
+        log.info("리프레시 토큰 값: {}", refreshToken);
+
+        try {
+            String newAccessToken = refreshTokenService.refreshAccessToken(refreshToken);
+            AccessTokenResponse data = new AccessTokenResponse(newAccessToken);
+            return ResponseEntity.ok(ApiResponse.success(data));
+        } catch (Exception e) {
+            log.error("리프레시 토큰 처리 중 오류: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid refresh token: " + e.getMessage());
+        }
     }
 
 }

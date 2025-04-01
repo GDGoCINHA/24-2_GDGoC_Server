@@ -10,8 +10,10 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {
@@ -41,6 +43,8 @@ public class RefreshTokenService {
 
     // 새로운 access token 발급
     public String refreshAccessToken(String refreshToken) {
+        log.info("리프레시 토큰 서비스 호출됨. 토큰: {}", refreshToken);
+
         Claims claims = tokenProvider.validToken(refreshToken);
         try {
             Long userId = Long.parseLong(claims.getSubject());
