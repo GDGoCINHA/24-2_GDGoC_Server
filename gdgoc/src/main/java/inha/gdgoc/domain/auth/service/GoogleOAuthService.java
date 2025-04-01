@@ -102,7 +102,7 @@ public class GoogleOAuthService {
 
         return Map.of(
                 "exists", true, // 회원 존재 & 로그인
-                "accessToken", jwtAccessToken
+                "access_token", jwtAccessToken
         );
     }
 }
