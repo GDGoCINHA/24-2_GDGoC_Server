@@ -59,11 +59,11 @@ public class RefreshTokenService {
             if(refreshTokenEntity.isEmpty()) {
                 log.info("없어요");
             }
-            if (refreshTokenEntity.isEmpty() || !refreshTokenEntity.get().getToken().trim().equals(refreshToken)) {
+            if (refreshTokenEntity.isEmpty() || !refreshTokenEntity.get().getToken().trim().equals(refreshToken.trim())) {
                 log.info("비어있나요 :{}",refreshTokenEntity.isEmpty());
-                log.info("parameter:{}", refreshTokenEntity.get().getToken());
-
-                log.info("같은가요:{}",!refreshTokenEntity.get().getToken().trim().equals(refreshToken));
+                log.info("parameter:{}", refreshToken.trim());
+                log.info("기존에 있던 값:{}", refreshTokenEntity.get().getToken().trim());
+                log.info("같은가요:{}",refreshTokenEntity.get().getToken().trim().equals(refreshToken));
                 throw new RuntimeException("Invalid Refresh Token");
             }
 
