@@ -85,7 +85,7 @@ public class RefreshTokenService {
                 throw new RuntimeException("Invalid Refresh Token");
             }
 
-            return tokenProvider.generateGoogleLoginToken(user, Duration.ofHours(1));
+            return tokenProvider.generateGoogleLoginToken(user, Duration.ofSeconds(5));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
