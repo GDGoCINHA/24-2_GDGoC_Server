@@ -22,6 +22,20 @@ public class RefreshTokenService {
     private final TokenProvider tokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
 
+    public String getOrCreateRefreshToken(User user, Duration duration) {
+        Optional<RefreshToken> existingToken = refreshTokenRepository.findByUser(user);
+
+        // 유효한 토큰이 있으면 재사용
+        if (existingToken.isPresent() && existingToken.get().getExpiryDate().isAfter(LocalDateTime.now())) {
+            return existingToken.get().getToken();
+        }
+
+        // 없거나 만료되었으면 새로 생성
+        String newToken = tokenProvider.generateGoogleLoginToken(user, duration);
+        saveRefreshToken(newToken, user, duration);
+        return newToken;
+    }
+
     // 로그인 시 refresh 토큰 저장
     public void saveRefreshToken(String refreshToken, User user, Duration expiredAt) {
         LocalDateTime expiryDate = LocalDateTime.now().plus(expiredAt);
