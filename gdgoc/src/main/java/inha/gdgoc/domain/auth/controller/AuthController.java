@@ -7,6 +7,7 @@ import inha.gdgoc.domain.auth.service.GoogleOAuthService;
 import inha.gdgoc.domain.auth.service.RefreshTokenService;
 import inha.gdgoc.global.common.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,24 +48,32 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refreshAccessToken(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> refreshAccessToken(
             @CookieValue(value = "refresh_token", required = false) String refreshToken) {
 
         log.info("리프레시 토큰 요청 받음. 토큰 존재 여부: {}", refreshToken != null);
 
         if (refreshToken == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh token is missing.");
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.failure(HttpStatus.UNAUTHORIZED, null, "Refresh token is missing."));
         }
 
         log.info("리프레시 토큰 값: {}", refreshToken);
 
         try {
             String newAccessToken = refreshTokenService.refreshAccessToken(refreshToken);
-            AccessTokenResponse data = new AccessTokenResponse(newAccessToken);
+            log.info("새로운 AccessToken 값: {}", newAccessToken);
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("accessToken", newAccessToken);
+
             return ResponseEntity.ok(ApiResponse.success(data));
         } catch (Exception e) {
             log.error("리프레시 토큰 처리 중 오류: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid refresh token: " + e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.failure(HttpStatus.UNAUTHORIZED, null, "Invalid refresh token: " + e.getMessage()));
         }
     }
 
