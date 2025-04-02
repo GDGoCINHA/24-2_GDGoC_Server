@@ -7,7 +7,6 @@ import inha.gdgoc.domain.auth.service.GoogleOAuthService;
 import inha.gdgoc.domain.auth.service.RefreshTokenService;
 import inha.gdgoc.global.common.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +47,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> refreshAccessToken(
+    public ResponseEntity<ApiResponse<AccessTokenResponse>> refreshAccessToken(
             @CookieValue(value = "refresh_token", required = false) String refreshToken) {
 
         log.info("리프레시 토큰 요청 받음. 토큰 존재 여부: {}", refreshToken != null);
@@ -63,12 +62,8 @@ public class AuthController {
 
         try {
             String newAccessToken = refreshTokenService.refreshAccessToken(refreshToken);
-            log.info("새로운 AccessToken 값: {}", newAccessToken);
-
-            Map<String, Object> data = new HashMap<>();
-            data.put("accessToken", newAccessToken);
-
-            return ResponseEntity.ok(ApiResponse.success(data));
+            AccessTokenResponse accessTokenResponse = new AccessTokenResponse(newAccessToken);
+            return ResponseEntity.ok(ApiResponse.success(accessTokenResponse));
         } catch (Exception e) {
             log.error("리프레시 토큰 처리 중 오류: {}", e.getMessage(), e);
             return ResponseEntity
