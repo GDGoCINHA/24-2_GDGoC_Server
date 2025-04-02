@@ -6,6 +6,7 @@ import inha.gdgoc.domain.auth.repository.RefreshTokenRepository;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
+import jakarta.transaction.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class RefreshTokenService {
 
     private final UserRepository userRepository;
@@ -42,7 +44,9 @@ public class RefreshTokenService {
 
         Optional<RefreshToken> existingToken = refreshTokenRepository.findByUser(user);
         if(existingToken.isPresent()) {
+            log.info("Before update: {}", existingToken.get().getToken());
             existingToken.get().update(refreshToken, expiryDate);
+            log.info("After update: {}", existingToken.get().getToken());
             return;
         }
 
