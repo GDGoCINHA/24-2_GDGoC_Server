@@ -28,29 +28,29 @@ public class RecruitMemberController {
     public ResponseEntity<ApiResponse<ApplicationRequest>> recruitMemberAdd(
             @RequestBody ApplicationRequest applicationRequest) {
         recruitMemberService.addRecruitMember(applicationRequest);
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ResponseEntity.ok(ApiResponse.of(null));
     }
 
     @GetMapping("/check/studentId")
     public ResponseEntity<ApiResponse<Boolean>> duplicatedStudentIdDetails(
             @Valid @ModelAttribute CheckStudentIdRequest studentIdRequest, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
-            return ResponseEntity.ok(ApiResponse.failure(true, "학번 형식에 맞지 않는 값입니다."));
+            return ResponseEntity.ok(ApiResponse.of(true));
         }
 
         boolean exists = recruitMemberService.isRegisteredStudentId(studentIdRequest.getStudentId());
-        return ResponseEntity.ok(ApiResponse.success(exists, exists ? "이미 등록된 학번입니다." : "사용 가능한 학번입니다."));
+        return ResponseEntity.ok(ApiResponse.of(exists));
     }
 
     @GetMapping("/check/phoneNumber")
     public ResponseEntity<ApiResponse<Boolean>> duplicatedPhoneNumberDetails(
             @Valid @ModelAttribute CheckPhoneNumberRequest phoneNumberRequest, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
-            return ResponseEntity.ok(ApiResponse.failure(true, "전화번호 형식에 맞지 않는 값입니다."));
+            return ResponseEntity.ok(ApiResponse.of(true));
         }
 
         boolean exists = recruitMemberService.isRegisteredPhoneNumber(phoneNumberRequest.getPhoneNumber());
-        return ResponseEntity.ok(ApiResponse.success(exists, exists ? "이미 등록된 전화번호입니다." : "사용 가능한 전화번호입니다."));
+        return ResponseEntity.ok(ApiResponse.of(exists));
     }
 
     @GetMapping("/recruit/member")

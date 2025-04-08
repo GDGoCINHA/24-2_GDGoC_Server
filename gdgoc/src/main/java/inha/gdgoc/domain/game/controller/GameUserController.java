@@ -20,11 +20,11 @@ public class GameUserController {
 
     @PostMapping("/game/result")
     public ResponseEntity<ApiResponse<List<GameUserResponse>>> saveGameResult(@RequestBody GameUserRequest request) {
-        return ResponseEntity.ok(ApiResponse.success(gameUserService.saveGameResultAndGetRanking(request)));
+        return ResponseEntity.ok(ApiResponse.of(gameUserService.saveGameResultAndGetRanking(request)));
     }
 
     @GetMapping("/game/results")
     public ResponseEntity<ApiResponse<List<GameUserResponse>>> getUserRankings() {
-        return ResponseEntity.ok(ApiResponse.success(gameUserService.findUserRankings()));
+        return ResponseEntity.ok(ApiResponse.of(gameUserService.findUserRankings()));
     }
 }
