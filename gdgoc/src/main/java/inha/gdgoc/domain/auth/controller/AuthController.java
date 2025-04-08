@@ -1,7 +1,9 @@
 package inha.gdgoc.domain.auth.controller;
 
+import inha.gdgoc.domain.auth.dto.request.FindIdRequest;
 import inha.gdgoc.domain.auth.dto.request.UserSignupRequest;
 import inha.gdgoc.domain.auth.dto.response.AccessTokenResponse;
+import inha.gdgoc.domain.auth.dto.response.FindIdResponse;
 import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.auth.service.GoogleOAuthService;
 import inha.gdgoc.domain.auth.service.RefreshTokenService;
@@ -81,4 +83,15 @@ public class AuthController {
 
     // TODO 로그아웃
 
+    @GetMapping("/findId")
+    public ResponseEntity<?> findId(@RequestBody FindIdRequest findIdRequest) {
+        try {
+            FindIdResponse response = authService.findId(findIdRequest);
+            return ResponseEntity.ok(ApiResponse.of(response));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse("해당 정보로 가입된 사용자가 없습니다."));
+        }
+    }
 }
