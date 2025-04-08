@@ -6,6 +6,7 @@ import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.auth.service.GoogleOAuthService;
 import inha.gdgoc.domain.auth.service.RefreshTokenService;
 import inha.gdgoc.global.common.ApiResponse;
+import inha.gdgoc.global.common.ErrorResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -36,18 +37,22 @@ public class AuthController {
             HttpServletResponse response
     ) {
         Map<String, Object> data = googleOAuthService.processOAuthLogin(code, response);
-        return ResponseEntity.ok(ApiResponse.success(data));
+        return ResponseEntity.ok(ApiResponse.of(data, null));
     }
+
+    // TODO 학번 중복 조회
+
+    // TODO 이메일 중복 조회
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<String>> userSignup(
             @RequestBody UserSignupRequest userSignupRequest) {
         authService.saveUser(userSignupRequest);
-        return ResponseEntity.ok(ApiResponse.success("회원가입 성공"));
+        return ResponseEntity.ok(ApiResponse.of(null, null));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<AccessTokenResponse>> refreshAccessToken(
+    public ResponseEntity<?> refreshAccessToken(
             @CookieValue(value = "refresh_token", required = false) String refreshToken) {
 
         log.info("리프레시 토큰 요청 받음. 토큰 존재 여부: {}", refreshToken != null);
@@ -55,7 +60,7 @@ public class AuthController {
         if (refreshToken == null) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.failure(HttpStatus.UNAUTHORIZED, null, "Refresh token is missing."));
+                    .body(new ErrorResponse("Refresh token is missing."));
         }
 
         log.info("리프레시 토큰 값: {}", refreshToken);
@@ -63,13 +68,17 @@ public class AuthController {
         try {
             String newAccessToken = refreshTokenService.refreshAccessToken(refreshToken);
             AccessTokenResponse accessTokenResponse = new AccessTokenResponse(newAccessToken);
-            return ResponseEntity.ok(ApiResponse.success(accessTokenResponse));
+            return ResponseEntity.ok(ApiResponse.of(accessTokenResponse, null));
         } catch (Exception e) {
             log.error("리프레시 토큰 처리 중 오류: {}", e.getMessage(), e);
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.failure(HttpStatus.UNAUTHORIZED, null, "Invalid refresh token: " + e.getMessage()));
+                    .body(new ErrorResponse("Invalid refresh token: " + e.getMessage()));
         }
     }
+
+    // TODO 자체 로그인
+
+    // TODO 로그아웃
 
 }

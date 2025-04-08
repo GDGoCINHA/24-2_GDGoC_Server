@@ -24,11 +24,11 @@ public class GameQuestionController {
             @RequestBody GameQuestionRequest gameQuestionRequest) {
         gameQuestionService.saveQuestion(gameQuestionRequest);
 
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ResponseEntity.ok(ApiResponse.of(null));
     }
 
     @GetMapping("/game/questions")
     public ResponseEntity<ApiResponse<List<GameQuestionResponse>>> getRandomGameQuestions() {
-        return ResponseEntity.ok(ApiResponse.success(gameQuestionService.getRandomQuestionsByLanguage()));
+        return ResponseEntity.ok(ApiResponse.of(gameQuestionService.getRandomQuestionsByLanguage()));
     }
 }
