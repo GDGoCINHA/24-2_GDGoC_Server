@@ -83,7 +83,7 @@ public class AuthController {
 
     // TODO 로그아웃
 
-    @GetMapping("/findId")
+    @PostMapping("/findId")
     public ResponseEntity<?> findId(@RequestBody FindIdRequest findIdRequest) {
         try {
             FindIdResponse response = authService.findId(findIdRequest);
