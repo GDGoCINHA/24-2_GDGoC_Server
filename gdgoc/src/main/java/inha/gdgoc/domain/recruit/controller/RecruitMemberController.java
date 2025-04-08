@@ -59,6 +59,6 @@ public class RecruitMemberController {
             @RequestParam Long userId
     ) {
         SpecifiedMemberResponse data = recruitMemberService.findSpecifiedMember(userId);
-        return ResponseEntity.ok(ApiResponse.success(data));
+        return ResponseEntity.ok(ApiResponse.of(data));
     }
 }
