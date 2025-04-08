@@ -1,10 +1,13 @@
 package inha.gdgoc.domain.auth.service;
 
+import inha.gdgoc.domain.auth.dto.request.FindIdRequest;
 import inha.gdgoc.domain.auth.dto.request.UserSignupRequest;
+import inha.gdgoc.domain.auth.dto.response.FindIdResponse;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.Optional;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +27,23 @@ public class AuthService {
 
         User user = userSignupRequest.toEntity(hashedPassword, salt);
         userRepository.save(user);
+    }
+
+    public FindIdResponse findId(FindIdRequest findIdRequest) {
+        Optional<User> user = userRepository.findByNameAndMajorAndPhoneNumber(
+                findIdRequest.getName(),
+                findIdRequest.getMajor(),
+                findIdRequest.getPhoneNumber()
+        );
+
+        if (user.isEmpty()) {
+            throw new IllegalArgumentException("해당 정보를 가진 사용자를 찾을 수 없습니다.");
+        }
+
+        String email = user.get().getEmail();
+        String maskedEmail = maskEmail(email);
+
+        return new FindIdResponse(maskedEmail);
     }
 
     private String encrypt(String oldPassword, byte[] salt) {
@@ -50,5 +70,23 @@ public class AuthService {
         }
     }
 
+    private String maskEmail(String email) {
+        int atIndex = email.indexOf("@");
+        if (atIndex <= 5) {
+            // 너무 짧은 이메일은 앞 글자 1개만 보이게 처리
+            return email.charAt(0) + "*****" + email.substring(atIndex);
+        }
 
+        String localPart = email.substring(0, atIndex);
+        String domainPart = email.substring(atIndex);
+
+        int startLen = 2;
+        int endLen = 2;
+        int maskLen = Math.max(1, localPart.length() - startLen - endLen); // 최소 1개는 마스킹
+
+        return localPart.substring(0, startLen)
+                + "*".repeat(maskLen)
+                + localPart.substring(localPart.length() - endLen)
+                + domainPart;
+    }
 }

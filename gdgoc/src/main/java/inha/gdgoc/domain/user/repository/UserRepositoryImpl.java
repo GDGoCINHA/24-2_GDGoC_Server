@@ -36,4 +36,20 @@ public class UserRepositoryImpl implements UserRepositoryCustom {
 
         return Optional.ofNullable(foundUser);
     }
+
+    @Override
+    public Optional<User> findByNameAndMajorAndPhoneNumber(String name, String major, String phoneNumber) {
+        QUser user = QUser.user;
+
+        User foundUser = queryFactory
+                .selectFrom(user)
+                .where(
+                        user.name.eq(name),
+                        user.major.eq(major),
+                        user.phoneNumber.eq(phoneNumber)
+                )
+                .fetchOne();
+
+        return Optional.ofNullable(foundUser);
+    }
 }
