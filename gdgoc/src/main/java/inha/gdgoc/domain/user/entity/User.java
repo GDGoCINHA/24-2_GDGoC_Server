@@ -1,12 +1,16 @@
 package inha.gdgoc.domain.user.entity;
 
+import inha.gdgoc.domain.study.entity.Study;
+import inha.gdgoc.domain.study.entity.StudyAttendee;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.global.common.BaseEntity;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -15,6 +19,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Builder
 @Getter
@@ -63,6 +70,12 @@ public class User extends BaseEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "careers")
     private Careers careers;
+
+    @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Study> studies = new ArrayList<>();
+
+    @OneToMany(mappedBy = "attendee", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<StudyAttendee> attendees = new ArrayList<>();
 
     @Builder
     public User(
