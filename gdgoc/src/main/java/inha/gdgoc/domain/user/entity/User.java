@@ -71,11 +71,11 @@ public class User extends BaseEntity {
     @Column(name = "careers")
     private Careers careers;
 
-    @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Study> studies = new ArrayList<>();
 
-    @OneToMany(mappedBy = "attendee", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<StudyAttendee> attendees = new ArrayList<>();
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<StudyAttendee> studyAttendees = new ArrayList<>();
 
     @Builder
     public User(
@@ -95,4 +95,17 @@ public class User extends BaseEntity {
         this.careers = careers != null ? careers : new Careers();
     }
 
+    public void addStudy(Study study) {
+        this.studies.add(study);
+        if (study != null && study.getUser() != this) {
+            study.setUser(this);
+        }
+    }
+
+    public void addStudyAttendee(StudyAttendee studyAttendee) {
+        this.studyAttendees.add(studyAttendee);
+        if (studyAttendee != null && studyAttendee.getUser() != this) {
+            studyAttendee.setUser(this);
+        }
+    }
 }

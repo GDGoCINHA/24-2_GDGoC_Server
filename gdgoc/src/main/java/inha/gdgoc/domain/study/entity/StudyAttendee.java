@@ -45,6 +45,29 @@ public class StudyAttendee extends BaseEntity {
     private Study study;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "attendee_id")
-    private User attendee;
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    public static StudyAttendee create(
+            AttendeeStatus status,
+            String introduce,
+            String activityTime,
+            Study study,
+            User user
+    ) {
+        StudyAttendee studyAttendee = new StudyAttendee();
+        studyAttendee.status = status;
+        studyAttendee.introduce = introduce;
+        studyAttendee.activityTime = activityTime;
+        studyAttendee.study = study;
+        studyAttendee.setUser(user);
+        return studyAttendee;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+        if (user != null && !user.getStudies().contains(this)) {
+            user.addStudyAttendee(this);
+        }
+    }
 }

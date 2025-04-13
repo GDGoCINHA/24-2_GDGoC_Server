@@ -57,6 +57,12 @@ public class Study extends BaseEntity {
     @Column(length = 20, nullable = false)
     private StudyStatus status;
 
+    @Column(name = "expected_time", length = 100)
+    private String expectedTime;
+
+    @Column(name = "expected_place", length = 100)
+    private String expectedPlace;
+
     @Column(name = "recruit_start_date")
     private LocalDateTime recruitStartDate;
 
@@ -69,16 +75,51 @@ public class Study extends BaseEntity {
     @Column(name = "activity_end_date")
     private LocalDateTime activityEndDate;
 
-    @Column(name = "expected_time", length = 100)
-    private String expectedTime;
-
-    @Column(name = "expected_place", length = 100)
-    private String expectedPlace;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "creator_id")
-    private User creator;
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @OneToMany(mappedBy = "study", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<StudyAttendee> studyAttendees = new ArrayList<>();
+
+
+    public static Study create(
+            String title,
+            String simpleIntroduce,
+            String activityIntroduce,
+            String imagePath,
+            CreaterType createrType,
+            StudyStatus status,
+            String expectedTime,
+            String expectedPlace,
+            LocalDateTime recruitStartDate,
+            LocalDateTime recruitEndDate,
+            LocalDateTime activityStartDate,
+            LocalDateTime activityEndDate,
+            User user
+    ) {
+        Study study = new Study();
+        study.title = title;
+        study.simpleIntroduce = simpleIntroduce;
+        study.activityIntroduce = activityIntroduce;
+        study.imagePath = imagePath;
+        study.createrType = createrType;
+        study.status = status;
+        study.expectedTime = expectedTime;
+        study.expectedPlace = expectedPlace;
+        study.recruitStartDate = recruitStartDate;
+        study.recruitEndDate = recruitEndDate;
+        study.activityStartDate = activityStartDate;
+        study.activityEndDate = activityEndDate;
+        study.setUser(user);
+        study.studyAttendees = new ArrayList<>();
+        return study;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+        if (user != null && !user.getStudies().contains(this)) {
+            user.addStudy(this);
+        }
+    }
 }
