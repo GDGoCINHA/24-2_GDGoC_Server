@@ -24,7 +24,7 @@ public class StudyController {
 
     @GetMapping("/{studyId}")
     public ResponseEntity<ApiResponse<Object>> getStudy(@PathVariable("studyId") Long id) {
-        return ResponseEntity.ok(ApiResponse.of(studyService.getStudy()));
+        return ResponseEntity.ok(ApiResponse.of(studyService.getStudyById(id)));
     }
 
     @PostMapping("/")
