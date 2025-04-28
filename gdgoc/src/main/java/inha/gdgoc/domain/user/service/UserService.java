@@ -1,15 +1,14 @@
 package inha.gdgoc.domain.user.service;
 
+import static inha.gdgoc.util.EncryptUtil.encrypt;
+import static inha.gdgoc.util.EncryptUtil.generateSalt;
+
 import inha.gdgoc.domain.auth.dto.request.FindIdRequest;
 import inha.gdgoc.domain.user.dto.request.UserSignupRequest;
 import inha.gdgoc.domain.auth.dto.response.FindIdResponse;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
-import java.security.SecureRandom;
-import java.util.Base64;
 import java.util.Optional;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,7 +18,7 @@ import java.util.List;
 
 @Slf4j
 @Service
-@Transactional(readOnly = true)
+@Transactional
 @RequiredArgsConstructor
 public class UserService {
 
@@ -54,30 +53,6 @@ public class UserService {
 
         User user = userSignupRequest.toEntity(hashedPassword, salt);
         userRepository.save(user);
-    }
-
-    private String encrypt(String oldPassword, byte[] salt) {
-        return generateHashedValue(oldPassword, salt);
-    }
-
-    private byte[] generateSalt() {
-        SecureRandom random = new SecureRandom();
-        byte[] salt = new byte[16];
-        random.nextBytes(salt);
-        return salt;
-    }
-
-    private String generateHashedValue(String oldPassword, byte[] salt) {
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            SecretKeySpec secretKeySpec = new SecretKeySpec(salt, "HmacSHA256");
-            mac.init(secretKeySpec);
-
-            byte[] hashedBytes = mac.doFinal(oldPassword.getBytes());
-            return Base64.getEncoder().encodeToString(hashedBytes);
-        } catch (Exception e) {
-            throw new RuntimeException("Error while hashing password", e);
-        }
     }
 
     private String maskEmail(String email) {

@@ -1,6 +1,10 @@
 package inha.gdgoc.domain.auth.service;
 
+import static inha.gdgoc.util.EncryptUtil.encrypt;
+
 import inha.gdgoc.config.jwt.TokenProvider;
+import inha.gdgoc.domain.auth.dto.request.UserLoginRequest;
+import inha.gdgoc.domain.auth.dto.response.LoginResponse;
 import inha.gdgoc.domain.user.entity.User;
 import java.util.Optional;
 import java.time.Duration;
@@ -22,7 +26,7 @@ import org.springframework.web.client.RestTemplate;
 
 @Service
 @RequiredArgsConstructor
-public class GoogleOAuthService {
+public class AuthService {
 
     private final RefreshTokenService refreshTokenService;
     @Value("${google.client-id}")
@@ -72,7 +76,6 @@ public class GoogleOAuthService {
         );
 
         // 3. Google에서 가져온 이름, 이메일로 가입된 정보가 없으면 회원가입, 있으면 로그인
-
         Map userInfo = userInfoResponse.getBody();
         String email = (String) userInfo.get("email");
         String name = (String) userInfo.get("name");
@@ -108,5 +111,35 @@ public class GoogleOAuthService {
                 "exists", true, // 회원 존재 & 로그인
                 "access_token", jwtAccessToken
         );
+    }
+
+    public LoginResponse loginWithPassword(UserLoginRequest userLoginRequest, HttpServletResponse response) {
+        Optional<User> user = userRepository.findByEmail(userLoginRequest.email());
+        if (user.isEmpty()) {
+            return new LoginResponse(false, null);
+        }
+
+        User foundUser = user.get();
+        String hashedInputPassword = encrypt(userLoginRequest.password(), foundUser.getSalt());
+        if (!foundUser.getPassword().equals(hashedInputPassword)) {
+            return new LoginResponse(false, null);
+        }
+
+        String accessToken = tokenProvider.generateSelfSignupToken(foundUser, Duration.ofSeconds(5));
+        String refreshToken = refreshTokenService.getOrCreateRefreshToken(foundUser, Duration.ofSeconds(20));
+
+        // ResponseCookie 객체 생성
+        ResponseCookie responseCookie = ResponseCookie.from("refresh_token", refreshToken)
+                .httpOnly(true)
+                .secure(true)  // HTTPS 사용 시
+                .path("/")
+                .maxAge(Duration.ofSeconds(20))
+                .sameSite("None")  // 크로스 사이트 요청 허용 (secure=true 필요)
+                .build();
+
+        // Set-Cookie 헤더로 추가
+        response.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
+
+        return new LoginResponse(true, accessToken);
     }
 }

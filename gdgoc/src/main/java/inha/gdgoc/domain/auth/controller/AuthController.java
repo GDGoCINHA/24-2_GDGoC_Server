@@ -1,7 +1,9 @@
 package inha.gdgoc.domain.auth.controller;
 
+import inha.gdgoc.domain.auth.dto.request.UserLoginRequest;
 import inha.gdgoc.domain.auth.dto.response.AccessTokenResponse;
-import inha.gdgoc.domain.auth.service.GoogleOAuthService;
+import inha.gdgoc.domain.auth.dto.response.LoginResponse;
+import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.auth.service.RefreshTokenService;
 import inha.gdgoc.global.common.ApiResponse;
 import inha.gdgoc.global.common.ErrorResponse;
@@ -14,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final GoogleOAuthService googleOAuthService;
+    private final AuthService authService;
     private final RefreshTokenService refreshTokenService;
 
     @GetMapping("/oauth2/google/callback")
@@ -32,7 +35,7 @@ public class AuthController {
             @RequestParam String code,
             HttpServletResponse response
     ) {
-        Map<String, Object> data = googleOAuthService.processOAuthLogin(code, response);
+        Map<String, Object> data = authService.processOAuthLogin(code, response);
         return ResponseEntity.ok(ApiResponse.of(data, null));
     }
 
@@ -63,6 +66,12 @@ public class AuthController {
     }
 
     // TODO 자체 로그인
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody UserLoginRequest userLoginRequest,
+                                                            HttpServletResponse response) {
+        LoginResponse loginResponse = authService.loginWithPassword(userLoginRequest, response);
+        return ResponseEntity.ok(ApiResponse.of(loginResponse, null));
+    }
 
     // TODO 로그아웃
 
