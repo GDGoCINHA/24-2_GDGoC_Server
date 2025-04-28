@@ -1,10 +1,6 @@
 package inha.gdgoc.domain.auth.controller;
 
-import inha.gdgoc.domain.auth.dto.request.FindIdRequest;
-import inha.gdgoc.domain.auth.dto.request.UserSignupRequest;
 import inha.gdgoc.domain.auth.dto.response.AccessTokenResponse;
-import inha.gdgoc.domain.auth.dto.response.FindIdResponse;
-import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.auth.service.GoogleOAuthService;
 import inha.gdgoc.domain.auth.service.RefreshTokenService;
 import inha.gdgoc.global.common.ApiResponse;
@@ -18,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,7 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final GoogleOAuthService googleOAuthService;
-    private final AuthService authService;
     private final RefreshTokenService refreshTokenService;
 
     @GetMapping("/oauth2/google/callback")
@@ -40,17 +34,6 @@ public class AuthController {
     ) {
         Map<String, Object> data = googleOAuthService.processOAuthLogin(code, response);
         return ResponseEntity.ok(ApiResponse.of(data, null));
-    }
-
-    // TODO 학번 중복 조회
-
-    // TODO 이메일 중복 조회
-
-    @PostMapping("/signup")
-    public ResponseEntity<ApiResponse<String>> userSignup(
-            @RequestBody UserSignupRequest userSignupRequest) {
-        authService.saveUser(userSignupRequest);
-        return ResponseEntity.ok(ApiResponse.of(null, null));
     }
 
     @PostMapping("/refresh")
@@ -83,15 +66,4 @@ public class AuthController {
 
     // TODO 로그아웃
 
-    @PostMapping("/findId")
-    public ResponseEntity<?> findId(@RequestBody FindIdRequest findIdRequest) {
-        try {
-            FindIdResponse response = authService.findId(findIdRequest);
-            return ResponseEntity.ok(ApiResponse.of(response));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorResponse("해당 정보로 가입된 사용자가 없습니다."));
-        }
-    }
 }

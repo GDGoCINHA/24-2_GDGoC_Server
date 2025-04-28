@@ -1,8 +1,6 @@
 package inha.gdgoc.domain.auth.dto.request;
 
-import inha.gdgoc.global.common.BaseEntity;
-
-public class UserLoginRequest extends BaseEntity {
+public class UserLoginRequest  {
     private String id;
     private String password;
 }
