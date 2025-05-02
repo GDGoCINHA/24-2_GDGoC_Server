@@ -1,9 +1,12 @@
 package inha.gdgoc.domain.study.service;
 
 import inha.gdgoc.domain.study.dto.StudyDto;
+import inha.gdgoc.domain.study.dto.request.StudyCreateRequest;
 import inha.gdgoc.domain.study.entity.Study;
+import inha.gdgoc.domain.study.enums.StudyStatus;
 import inha.gdgoc.domain.study.repository.StudyRepository;
 import inha.gdgoc.domain.user.entity.User;
+import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class StudyService {
 
+    private final UserRepository userRepository;
     private final StudyRepository studyRepository;
 
     public Object getStudyList() {
@@ -27,10 +31,40 @@ public class StudyService {
                 .orElseThrow(() -> new NotFoundException("Study not found with id: " + studyId));
 
         User creator = study.getUser();
+        return studyEntityToDto(study);
+    }
+
+    public StudyDto createStudy(
+            Long userId,
+            StudyCreateRequest body
+    ) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new NotFoundException("Study not found user id: " + userId));
+        Study createdStudy = Study.create(
+                body.getTitle(),
+                body.getSimpleIntroduce(),
+                body.getActivityIntroduce(),
+                null,
+                body.getCreatorType(),
+                StudyStatus.RECRUITING,
+                body.getExpectedTime(),
+                body.getExpectedPlace(),
+                body.getRecruitStartDate(),
+                body.getRecruitEndDate(),
+                body.getActivityStartDate(),
+                body.getActivityEndDate(),
+                user
+        );
+
+        return studyEntityToDto(createdStudy);
+    }
+
+
+    private StudyDto studyEntityToDto(Study study) {
         return StudyDto.builder()
                 .id(study.getId())
                 .title(study.getTitle())
-                .creatorId(creator.getId())
+                .creatorId(study.getId())
                 .createrType(study.getCreaterType())
                 .simpleIntroduce(study.getSimpleIntroduce())
                 .activityIntroduce(study.getActivityIntroduce())
@@ -43,9 +77,5 @@ public class StudyService {
                 .expectedPlace(study.getExpectedPlace())
                 .imagePath(study.getImagePath())
                 .build();
-    }
-
-    public Object createStudy() {
-        return new Object();
     }
 }
