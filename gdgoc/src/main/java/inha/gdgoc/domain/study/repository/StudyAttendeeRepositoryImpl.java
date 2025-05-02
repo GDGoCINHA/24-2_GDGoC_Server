@@ -6,11 +6,11 @@ import inha.gdgoc.domain.study.entity.StudyAttendee;
 
 import java.util.List;
 
-public class StudyAttendeeRepositoryCustom implements StudyAttendeeCustom {
+public class StudyAttendeeRepositoryImpl implements StudyAttendeeCustom {
 
     private final JPAQueryFactory queryFactory;
 
-    public StudyAttendeeRepositoryCustom(JPAQueryFactory queryFactory) {
+    public StudyAttendeeRepositoryImpl(JPAQueryFactory queryFactory) {
         this.queryFactory = queryFactory;
     }
 
