@@ -1,6 +1,7 @@
 package inha.gdgoc.domain.study.controller;
 
 import inha.gdgoc.domain.auth.service.AuthService;
+import inha.gdgoc.domain.study.dto.StudyDto;
 import inha.gdgoc.domain.study.service.StudyService;
 import inha.gdgoc.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -26,13 +27,15 @@ public class StudyController {
     }
 
     @GetMapping("/{studyId}")
-    public ResponseEntity<ApiResponse<Object>> getStudy(Authentication authentication, @PathVariable("studyId") Long id) {
-        Long userId = authService.getAuthenticationUserId(authentication);
+    public ResponseEntity<ApiResponse<StudyDto>> getStudy(@PathVariable("studyId") Long id) {
         return ResponseEntity.ok(ApiResponse.of(studyService.getStudyById(id)));
     }
 
     @PostMapping("/")
-    public ResponseEntity<ApiResponse<Object>> createStudy() {
+    public ResponseEntity<ApiResponse<Object>> createStudy(
+            Authentication authentication
+    ) {
+        Long userId = authService.getAuthenticationUserId(authentication);
         return ResponseEntity.ok(ApiResponse.of(studyService.createStudy()));
     }
 
