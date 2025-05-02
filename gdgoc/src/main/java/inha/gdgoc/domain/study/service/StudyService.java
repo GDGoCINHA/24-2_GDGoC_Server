@@ -7,6 +7,7 @@ import inha.gdgoc.domain.study.enums.StudyStatus;
 import inha.gdgoc.domain.study.repository.StudyRepository;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
+import inha.gdgoc.domain.user.service.UserService;
 import inha.gdgoc.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class StudyService {
 
+    private final UserService userService;
     private final UserRepository userRepository;
     private final StudyRepository studyRepository;
 
@@ -29,8 +31,6 @@ public class StudyService {
     public StudyDto getStudyById(Long studyId) {
         Study study = studyRepository.findOneWithUserById(studyId)
                 .orElseThrow(() -> new NotFoundException("Study not found with id: " + studyId));
-
-        User creator = study.getUser();
         return studyEntityToDto(study);
     }
 
@@ -38,8 +38,7 @@ public class StudyService {
             Long userId,
             StudyCreateRequest body
     ) {
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("Study not found user id: " + userId));
+        User user = userService.findUserById(userId);
         Study createdStudy = Study.create(
                 body.getTitle(),
                 body.getSimpleIntroduce(),
