@@ -1,11 +1,9 @@
 package inha.gdgoc.domain.auth.controller;
 
-import inha.gdgoc.domain.auth.dto.request.FindIdRequest;
-import inha.gdgoc.domain.auth.dto.request.UserSignupRequest;
+import inha.gdgoc.domain.auth.dto.request.UserLoginRequest;
 import inha.gdgoc.domain.auth.dto.response.AccessTokenResponse;
-import inha.gdgoc.domain.auth.dto.response.FindIdResponse;
+import inha.gdgoc.domain.auth.dto.response.LoginResponse;
 import inha.gdgoc.domain.auth.service.AuthService;
-import inha.gdgoc.domain.auth.service.GoogleOAuthService;
 import inha.gdgoc.domain.auth.service.RefreshTokenService;
 import inha.gdgoc.global.common.ApiResponse;
 import inha.gdgoc.global.common.ErrorResponse;
@@ -29,7 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final GoogleOAuthService googleOAuthService;
     private final AuthService authService;
     private final RefreshTokenService refreshTokenService;
 
@@ -38,19 +35,8 @@ public class AuthController {
             @RequestParam String code,
             HttpServletResponse response
     ) {
-        Map<String, Object> data = googleOAuthService.processOAuthLogin(code, response);
+        Map<String, Object> data = authService.processOAuthLogin(code, response);
         return ResponseEntity.ok(ApiResponse.of(data, null));
-    }
-
-    // TODO 학번 중복 조회
-
-    // TODO 이메일 중복 조회
-
-    @PostMapping("/signup")
-    public ResponseEntity<ApiResponse<String>> userSignup(
-            @RequestBody UserSignupRequest userSignupRequest) {
-        authService.saveUser(userSignupRequest);
-        return ResponseEntity.ok(ApiResponse.of(null, null));
     }
 
     @PostMapping("/refresh")
@@ -80,18 +66,13 @@ public class AuthController {
     }
 
     // TODO 자체 로그인
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody UserLoginRequest userLoginRequest,
+                                                            HttpServletResponse response) {
+        LoginResponse loginResponse = authService.loginWithPassword(userLoginRequest, response);
+        return ResponseEntity.ok(ApiResponse.of(loginResponse, null));
+    }
 
     // TODO 로그아웃
 
-    @PostMapping("/findId")
-    public ResponseEntity<?> findId(@RequestBody FindIdRequest findIdRequest) {
-        try {
-            FindIdResponse response = authService.findId(findIdRequest);
-            return ResponseEntity.ok(ApiResponse.of(response));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorResponse("해당 정보로 가입된 사용자가 없습니다."));
-        }
-    }
 }

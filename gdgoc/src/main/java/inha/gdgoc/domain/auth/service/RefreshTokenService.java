@@ -39,7 +39,7 @@ public class RefreshTokenService {
     }
 
     // 로그인 시 refresh 토큰 저장
-    public void saveRefreshToken(String refreshToken, User user, Duration expiredAt) {
+    private void saveRefreshToken(String refreshToken, User user, Duration expiredAt) {
         LocalDateTime expiryDate = LocalDateTime.now().plus(expiredAt);
 
         Optional<RefreshToken> existingToken = refreshTokenRepository.findByUser(user);
