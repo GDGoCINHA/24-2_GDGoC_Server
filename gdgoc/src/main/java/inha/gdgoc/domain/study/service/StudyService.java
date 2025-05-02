@@ -1,18 +1,22 @@
 package inha.gdgoc.domain.study.service;
 
 import inha.gdgoc.domain.study.dto.StudyDto;
+import inha.gdgoc.domain.study.dto.StudyListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.StudyCreateRequest;
 import inha.gdgoc.domain.study.entity.Study;
+import inha.gdgoc.domain.study.enums.CreaterType;
 import inha.gdgoc.domain.study.enums.StudyStatus;
 import inha.gdgoc.domain.study.repository.StudyRepository;
 import inha.gdgoc.domain.user.entity.User;
-import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.domain.user.service.UserService;
 import inha.gdgoc.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -21,11 +25,38 @@ import org.springframework.transaction.annotation.Transactional;
 public class StudyService {
 
     private final UserService userService;
-    private final UserRepository userRepository;
     private final StudyRepository studyRepository;
+    private static final Long STUDY_PAGE_COUNT = 10L;
 
-    public Object getStudyList() {
-        return new Object();
+    public StudyListWithMetaDto getStudyList(
+            Optional<Long> _page,
+            Optional<StudyStatus> status,
+            Optional<CreaterType> creatorType
+    ) {
+        Long page = _page.orElse(1L);
+
+        if (page < 1) {
+            throw new RuntimeException("page가 1보다 작을 수 없습니다.");
+        }
+
+        Long limit = 10L;
+        Long offset = (page - 1) * limit;
+
+
+        Long count = studyRepository.findAllCountByStatusAndCreatorType(status, creatorType);
+        List<Study> studyList = studyRepository.findAllByStatusAndCreatorType(
+                status,
+                creatorType,
+                limit,
+                offset
+        );
+
+        List<StudyDto> studyDtoList = studyList.stream().map(this::studyEntityToDto).toList();
+        return StudyListWithMetaDto.builder()
+                .studyList(studyDtoList)
+                .page(page)
+                .pageCount(count)
+                .build();
     }
 
     public StudyDto getStudyById(Long studyId) {
