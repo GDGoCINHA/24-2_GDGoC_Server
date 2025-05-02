@@ -39,7 +39,7 @@ public class StudyService {
             throw new RuntimeException("page가 1보다 작을 수 없습니다.");
         }
 
-        Long limit = 10L;
+        Long limit = STUDY_PAGE_COUNT;
         Long offset = (page - 1) * limit;
 
 
