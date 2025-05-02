@@ -5,7 +5,6 @@ import inha.gdgoc.domain.study.dto.response.GetAttendeeListResponse;
 import inha.gdgoc.domain.study.service.StudyAttendeeService;
 import inha.gdgoc.domain.study.service.StudyService;
 import inha.gdgoc.global.common.ApiResponse;
-import java.awt.print.Pageable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,7 +12,10 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/study/{studyId}/attendee")
@@ -26,9 +28,9 @@ public class StudyAttendeeController {
     @GetMapping
     public ResponseEntity<ApiResponse<GetAttendeeListResponse>> getAttendeeList(
             @PathVariable("studyId") Long studyId,
-            Pageable pageable
+            @RequestParam("page") Optional<Long> page
     ) {
-        return ResponseEntity.ok(studyAttendeeService.getAttendeeList(studyId, pageable));
+        return ResponseEntity.ok(studyAttendeeService.getAttendeeList(studyId, page));
     }
 
     @GetMapping("/{attendeeId}")

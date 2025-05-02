@@ -7,13 +7,13 @@ import inha.gdgoc.domain.study.dto.response.PageResponse;
 import inha.gdgoc.domain.study.entity.StudyAttendee;
 import inha.gdgoc.domain.study.repository.StudyAttendeeRepository;
 import inha.gdgoc.global.common.ApiResponse;
-import java.awt.print.Pageable;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -22,17 +22,26 @@ import org.springframework.transaction.annotation.Transactional;
 public class StudyAttendeeService {
 
     private final StudyAttendeeRepository studyAttendeeRepository;
+    private static final Long STUDY_ATTENDEE_PAGE_COUNT = 10L;
 
-    public ApiResponse<GetAttendeeListResponse> getAttendeeList(Long studyId, Pageable pageable) {
-        Page<StudyAttendee> page = studyAttendeeRepository.findAllByStudyId(studyId, pageable);
+    public ApiResponse<GetAttendeeListResponse> getAttendeeList(Long studyId, Optional<Long> _page) {
+        Long page = _page.orElse(1L);
+        if (page < 1) {
+            throw new RuntimeException("page가 1보다 작을 수 없습니다.");
+        }
 
-        List<GetAttendeeResponse> attendees = page.getContent().stream()
+        Long limit = STUDY_ATTENDEE_PAGE_COUNT;
+        Long offset = (page - 1) * limit;
+
+        Long study_attendee_count = studyAttendeeRepository.findAllByStudyIdStudyAttendeeCount(studyId);
+        List<StudyAttendee> studyAttendee = studyAttendeeRepository.pageAllByStudyId(studyId, limit, offset);
+        List<GetAttendeeResponse> attendees = studyAttendee.stream()
                 .map(GetAttendeeResponse::from)
                 .toList();
 
         PageResponse meta = new PageResponse(
-                page.getNumber(),
-                page.getTotalPages()
+                page.intValue(),
+                study_attendee_count.intValue()
         );
 
         return ApiResponse.of(new GetAttendeeListResponse(attendees), meta);

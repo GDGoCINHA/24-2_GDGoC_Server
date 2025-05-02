@@ -1,4 +1,39 @@
 package inha.gdgoc.domain.study.repository;
 
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import inha.gdgoc.domain.study.entity.QStudyAttendee;
+import inha.gdgoc.domain.study.entity.StudyAttendee;
+
+import java.util.List;
+
 public class StudyAttendeeRepositoryCustom implements StudyAttendeeCustom {
+
+    private final JPAQueryFactory queryFactory;
+
+    public StudyAttendeeRepositoryCustom(JPAQueryFactory queryFactory) {
+        this.queryFactory = queryFactory;
+    }
+
+    @Override
+    public List<StudyAttendee> pageAllByStudyId(Long studyId, Long limit, Long offset) {
+        QStudyAttendee studyAttendee = QStudyAttendee.studyAttendee;
+        return queryFactory
+                .selectFrom(studyAttendee)
+                .where(studyAttendee.study.id.eq(studyId))
+                .offset(offset)
+                .limit(limit)
+                .orderBy(studyAttendee.id.desc())
+                .fetch();
+    }
+
+    @Override
+    public Long findAllByStudyIdStudyAttendeeCount(Long studyId) {
+        QStudyAttendee studyAttendee = QStudyAttendee.studyAttendee;
+        return queryFactory
+                .select(studyAttendee.count())
+                .where(studyAttendee.study.id.eq(studyId))
+                .from(studyAttendee)
+                .fetchOne();
+
+    }
 }
