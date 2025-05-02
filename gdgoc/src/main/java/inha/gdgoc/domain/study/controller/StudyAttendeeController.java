@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.study.controller;
 
+import inha.gdgoc.domain.study.dto.request.AttendeeCreateRequest;
 import inha.gdgoc.domain.study.dto.response.GetApplicationResponse;
 import inha.gdgoc.domain.study.dto.response.GetAttendeeListResponse;
 import inha.gdgoc.domain.study.service.StudyAttendeeService;
@@ -8,10 +9,12 @@ import inha.gdgoc.global.common.ApiResponse;
 import java.awt.print.Pageable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -40,9 +43,14 @@ public class StudyAttendeeController {
     }
 
 
-    @PostMapping("/")
-    public ResponseEntity<ApiResponse<Object>> createAttendee(@PathVariable("studyId") Long id) {
-        return ResponseEntity.ok(ApiResponse.of(studyAttendeeService.createAttendee()));
+    @PostMapping
+    public ResponseEntity<ApiResponse<Void>> createAttendee(
+            Authentication authentication,
+            @PathVariable Long studyId,
+            @RequestBody AttendeeCreateRequest attendeeCreateRequest
+            ) {
+        studyAttendeeService.createAttendee(authentication, studyId, attendeeCreateRequest);
+        return ResponseEntity.ok(ApiResponse.of(null, null));
     }
 
     @PatchMapping("/")
