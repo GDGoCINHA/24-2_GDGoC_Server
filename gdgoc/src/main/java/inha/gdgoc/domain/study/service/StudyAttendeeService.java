@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.study.service;
 
+import inha.gdgoc.domain.study.dto.response.GetApplicationResponse;
 import inha.gdgoc.domain.study.dto.response.GetAttendeeListResponse;
 import inha.gdgoc.domain.study.dto.response.GetAttendeeResponse;
 import inha.gdgoc.domain.study.dto.response.PageResponse;
@@ -35,6 +36,13 @@ public class StudyAttendeeService {
         );
 
         return ApiResponse.of(new GetAttendeeListResponse(attendees), meta);
+    }
+
+    public GetApplicationResponse getApplication(Long studyId, Long attendeeId) {
+        StudyAttendee studyAttendee = studyAttendeeRepository.findStudyAttendeeByStudyIdAndUserId(studyId, attendeeId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 스터디에 지원한 지원자 정보가 없습니다."));
+
+        return GetApplicationResponse.from(studyAttendee);
     }
 
 

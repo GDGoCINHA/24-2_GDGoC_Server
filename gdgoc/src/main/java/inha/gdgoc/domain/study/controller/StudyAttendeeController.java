@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.study.controller;
 
+import inha.gdgoc.domain.study.dto.response.GetApplicationResponse;
 import inha.gdgoc.domain.study.dto.response.GetAttendeeListResponse;
 import inha.gdgoc.domain.study.service.StudyAttendeeService;
 import inha.gdgoc.domain.study.service.StudyService;
@@ -28,6 +29,14 @@ public class StudyAttendeeController {
             Pageable pageable
     ) {
         return ResponseEntity.ok(studyAttendeeService.getAttendeeList(studyId, pageable));
+    }
+
+    @GetMapping("/{attendeeId}")
+    public ResponseEntity<ApiResponse<GetApplicationResponse>> getApplication(
+            @PathVariable Long studyId,
+            @PathVariable Long attendeeId
+    ) {
+        return ResponseEntity.ok(ApiResponse.of(studyAttendeeService.getApplication(studyId, attendeeId)));
     }
 
 
