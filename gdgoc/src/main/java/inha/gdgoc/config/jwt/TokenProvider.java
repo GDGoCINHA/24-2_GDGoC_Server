@@ -12,16 +12,19 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.SignatureException;
 import io.jsonwebtoken.UnsupportedJwtException;
-import java.time.Duration;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Set;
 
 @RequiredArgsConstructor
 @Service
@@ -67,17 +70,17 @@ public class TokenProvider {
     public Authentication getAuthentication(String token) {
         Claims claims = getClaims(token);
         UserRole userRole = UserRole.valueOf(claims.get("role", String.class));
+        Long userId = claims.get("id", Integer.class).longValue();
+        String username = claims.getSubject();
+
 
         Set<SimpleGrantedAuthority> authorities = Collections.singleton(
                 new SimpleGrantedAuthority(userRole.getRole())
         );
 
+        CustomUserDetails userDetails = new CustomUserDetails(userId, username, "", authorities);
         return new UsernamePasswordAuthenticationToken(
-                new org.springframework.security.core.userdetails.User(
-                        claims.getSubject(),
-                        "",
-                        authorities
-                ),
+                userDetails,
                 token,
                 authorities
         );
@@ -115,5 +118,18 @@ public class TokenProvider {
                 )
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    public class CustomUserDetails extends org.springframework.security.core.userdetails.User {
+        private final Long userId;
+
+        public CustomUserDetails(Long userId, String username, String password, Collection<? extends GrantedAuthority> authorities) {
+            super(username, password, authorities);
+            this.userId = userId;
+        }
+
+        public Long getUserId() {
+            return userId;
+        }
     }
 }

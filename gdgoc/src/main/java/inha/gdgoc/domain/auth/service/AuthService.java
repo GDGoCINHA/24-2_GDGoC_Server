@@ -1,17 +1,20 @@
 package inha.gdgoc.domain.auth.service;
 
+import inha.gdgoc.config.jwt.TokenProvider;
 import inha.gdgoc.domain.auth.dto.request.FindIdRequest;
 import inha.gdgoc.domain.auth.dto.request.UserSignupRequest;
 import inha.gdgoc.domain.auth.dto.response.FindIdResponse;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Optional;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -88,5 +91,14 @@ public class AuthService {
                 + "*".repeat(maskLen)
                 + localPart.substring(localPart.length() - endLen)
                 + domainPart;
+    }
+
+    public Long getAuthenticationUserId(Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof TokenProvider.CustomUserDetails user) {
+            return user.getUserId();
+        }
+        throw new IllegalArgumentException("user Id is null");
     }
 }
