@@ -4,11 +4,12 @@ import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.global.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -29,7 +30,7 @@ public class RefreshToken extends BaseEntity {
     @Column(nullable = false, unique = true, columnDefinition = "TEXT")
     private String token;
 
-    @OneToOne
+    @ManyToOne(fetch = FetchType.LAZY) // 1:N 관계
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 

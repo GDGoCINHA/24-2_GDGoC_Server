@@ -48,6 +48,15 @@ public class TokenProvider {
         );
     }
 
+    public String generateRefreshToken(User user, Duration expiredAt) {
+        Date now = new Date();
+        return makeToken(
+                new Date(now.getTime() + expiredAt.toMillis()),
+                user,
+                LoginType.REFRESH
+        );
+    }
+
     public Claims validToken(String token) {
         try {
             return getClaims(token);

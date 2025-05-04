@@ -91,21 +91,20 @@ public class AuthService {
 
         User user = foundUser.get();
 
-        // TODO 시간 바꾸기
-        String jwtAccessToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofSeconds(5));
-        String refreshToken = refreshTokenService.getOrCreateRefreshToken(user, Duration.ofSeconds(20));
+        String jwtAccessToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofHours(1));
+        String refreshToken = refreshTokenService.getOrCreateRefreshToken(user, Duration.ofDays(1));
 
-        // ResponseCookie 객체 생성
-        ResponseCookie responseCookie = ResponseCookie.from("refresh_token", refreshToken)
-                .httpOnly(true)
-                .secure(true)  // HTTPS 사용 시
+        ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
+                .httpOnly(false)
+                .secure(true)
+                .sameSite("None")
                 .path("/")
-                .maxAge(Duration.ofSeconds(20))
-                .sameSite("None")  // 크로스 사이트 요청 허용 (secure=true 필요)
+                .domain("localhost")
+                .maxAge(Duration.ofDays(1))
                 .build();
 
         // Set-Cookie 헤더로 추가
-        response.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         return Map.of(
                 "exists", true, // 회원 존재 & 로그인
@@ -125,20 +124,19 @@ public class AuthService {
             return new LoginResponse(false, null);
         }
 
-        String accessToken = tokenProvider.generateSelfSignupToken(foundUser, Duration.ofSeconds(5));
-        String refreshToken = refreshTokenService.getOrCreateRefreshToken(foundUser, Duration.ofSeconds(20));
+        String accessToken = tokenProvider.generateSelfSignupToken(foundUser, Duration.ofHours(1));
+        String refreshToken = refreshTokenService.getOrCreateRefreshToken(foundUser, Duration.ofDays(1));
 
-        // ResponseCookie 객체 생성
-        ResponseCookie responseCookie = ResponseCookie.from("refresh_token", refreshToken)
-                .httpOnly(true)
-                .secure(true)  // HTTPS 사용 시
+        ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
+                .httpOnly(false)
+                .secure(false)
+                .sameSite("None")
                 .path("/")
-                .maxAge(Duration.ofSeconds(20))
-                .sameSite("None")  // 크로스 사이트 요청 허용 (secure=true 필요)
+                .domain("localhost")
+                .maxAge(Duration.ofDays(1))
                 .build();
 
-        // Set-Cookie 헤더로 추가
-        response.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         return new LoginResponse(true, accessToken);
     }

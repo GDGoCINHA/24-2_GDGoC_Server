@@ -33,7 +33,7 @@ public class RefreshTokenService {
         }
 
         // 없거나 만료되었으면 새로 생성
-        String newToken = tokenProvider.generateGoogleLoginToken(user, duration);
+        String newToken = tokenProvider.generateRefreshToken(user, duration);
         saveRefreshToken(newToken, user, duration);
         return newToken;
     }
@@ -77,18 +77,19 @@ public class RefreshTokenService {
             if(refreshTokenEntity.isEmpty()) {
                 log.info("없어요");
             }
-            if (refreshTokenEntity.isEmpty() || !refreshTokenEntity.get().getToken().trim().equals(refreshToken.trim())) {
-                log.info("비어있나요 :{}",refreshTokenEntity.isEmpty());
-                log.info("parameter:{}", refreshToken.trim());
-                log.info("기존에 있던 값:{}", refreshTokenEntity.get().getToken().trim());
-                log.info("같은가요:{}",refreshTokenEntity.get().getToken().trim().equals(refreshToken));
-                throw new RuntimeException("Invalid Refresh Token");
+            if (!refreshTokenEntity.get().getToken().equals(refreshToken) ||
+                    refreshTokenEntity.get().getExpiryDate().isBefore(LocalDateTime.now())) {
+                throw new RuntimeException("Refresh Token is invalid or expired");
             }
-
-            return tokenProvider.generateGoogleLoginToken(user, Duration.ofSeconds(5));
+            return tokenProvider.generateGoogleLoginToken(user, Duration.ofDays(1));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
+    @Transactional
+    public void logout(Long userId, String refreshToken) {
+        refreshTokenRepository.deleteByUserIdAndToken(userId, refreshToken);
+        log.info("User {} logged out", userId);
+    }
 }
