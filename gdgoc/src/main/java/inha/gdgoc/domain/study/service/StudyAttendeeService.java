@@ -86,6 +86,7 @@ public class StudyAttendeeService {
                 .toList();
     }
 
+    @Transactional
     public GetStudyAttendeeResponse createAttendee(
             Long userId,
             Long studyId,
@@ -105,6 +106,7 @@ public class StudyAttendeeService {
         return getStudyAttendee(studyId, userId);
     }
 
+    @Transactional
     public void updateAttendee(
             Long studyId,
             AttendeeUpdateRequest request

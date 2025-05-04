@@ -93,6 +93,7 @@ public class StudyService {
         return studyEntityToDto(study);
     }
 
+    @Transactional
     public StudyDto createStudy(
             Long userId,
             StudyCreateRequest body
