@@ -4,7 +4,7 @@ import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.study.dto.StudyAttendeeDto;
 import inha.gdgoc.domain.study.dto.StudyAttendeeListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.AttendeeCreateRequest;
-import inha.gdgoc.domain.study.dto.response.GetApplicationResponse;
+import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeResponse;
 import inha.gdgoc.domain.study.entity.Study;
 import inha.gdgoc.domain.study.entity.StudyAttendee;
 import inha.gdgoc.domain.study.enums.AttendeeStatus;
@@ -58,11 +58,18 @@ public class StudyAttendeeService {
                 .build();
     }
 
-    public GetApplicationResponse getApplication(Long studyId, Long attendeeId) {
+    public GetStudyAttendeeResponse getStudyAttendee(Long studyId, Long attendeeId) {
         StudyAttendee studyAttendee = studyAttendeeRepository.findStudyAttendeeByStudyIdAndUserId(studyId, attendeeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 스터디에 지원한 지원자 정보가 없습니다."));
-
-        return GetApplicationResponse.from(studyAttendee);
+        User stuatAttendeeUser = studyAttendee.getUser();
+        return GetStudyAttendeeResponse.builder()
+                .name(stuatAttendeeUser.getName())
+                .phone(stuatAttendeeUser.getPhoneNumber())
+                .major(stuatAttendeeUser.getMajor())
+                .studentId(stuatAttendeeUser.getStudentId())
+                .introduce(studyAttendee.getIntroduce())
+                .activityTime(studyAttendee.getActivityTime())
+                .build();
     }
 
     public void createAttendee(

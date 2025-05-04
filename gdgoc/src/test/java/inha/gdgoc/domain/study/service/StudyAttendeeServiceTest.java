@@ -1,6 +1,7 @@
 package inha.gdgoc.domain.study.service;
 
 import inha.gdgoc.domain.study.dto.StudyAttendeeListWithMetaDto;
+import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeResponse;
 import inha.gdgoc.domain.study.entity.Study;
 import inha.gdgoc.domain.study.entity.StudyAttendee;
 import inha.gdgoc.domain.study.enums.AttendeeStatus;
@@ -93,6 +94,56 @@ class StudyAttendeeServiceTest {
         assertThat(pageTwoResult.getPage()).isEqualTo(2);
         assertThat(pageTwoResult.getPageCount()).isGreaterThanOrEqualTo(15);
     }
+
+    @DisplayName("스터디 지원자의 상세 정보를 조회한다.")
+    @Test
+    void getStudyAttendeeDetail() {
+        // given
+        Study study = createStudy("상세 정보 테스트 스터디", user);
+        studyRepository.save(study);
+
+        String findName = "테스트";
+        String findPhoneNumber = "010-1234-5678";
+        String findMajor = "컴퓨터공학과";
+        String findStudentId = "12212444";
+
+        String findIntroduce = "저는 사실 엄청 멋있는 사람입니다!";
+        String findActivityTime = "수요일만 아니면 다 5시 이후로 가능!";
+
+        User attendeeUser = User.builder()
+                .name(findName)
+                .phoneNumber(findPhoneNumber)
+                .major(findMajor)
+                .studentId(findStudentId)
+                .email("email@example.com")
+                .password("pass")
+                .salt(new byte[16])
+                .userRole(UserRole.GUEST)
+                .build();
+        userRepository.save(attendeeUser);
+
+        StudyAttendee attendee = StudyAttendee.builder()
+                .study(study)
+                .user(attendeeUser)
+                .status(AttendeeStatus.REQUESTED)
+                .introduce(findIntroduce)
+                .activityTime(findActivityTime)
+                .build();
+        studyAttendeeRepository.save(attendee);
+
+        // when
+        GetStudyAttendeeResponse response = studyAttendeeService.getStudyAttendee(study.getId(), attendeeUser.getId());
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getName()).isEqualTo(findName);
+        assertThat(response.getPhone()).isEqualTo(findPhoneNumber);
+        assertThat(response.getMajor()).isEqualTo(findMajor);
+        assertThat(response.getStudentId()).isEqualTo(findStudentId);
+        assertThat(response.getIntroduce()).isEqualTo(findIntroduce);
+        assertThat(response.getActivityTime()).isEqualTo(findActivityTime);
+    }
+
 
     private User createUser() {
         byte[] salt = new byte[16];

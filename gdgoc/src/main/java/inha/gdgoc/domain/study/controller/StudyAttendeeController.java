@@ -2,8 +2,8 @@ package inha.gdgoc.domain.study.controller;
 
 import inha.gdgoc.domain.study.dto.StudyAttendeeListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.AttendeeCreateRequest;
-import inha.gdgoc.domain.study.dto.response.GetApplicationResponse;
 import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeListResponse;
+import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeResponse;
 import inha.gdgoc.domain.study.dto.response.PageResponse;
 import inha.gdgoc.domain.study.service.StudyAttendeeService;
 import inha.gdgoc.global.common.ApiResponse;
@@ -41,11 +41,11 @@ public class StudyAttendeeController {
     }
 
     @GetMapping("/{attendeeId}")
-    public ResponseEntity<ApiResponse<GetApplicationResponse>> getApplication(
+    public ResponseEntity<ApiResponse<GetStudyAttendeeResponse>> getStudyAttendee(
             @PathVariable Long studyId,
             @PathVariable Long attendeeId
     ) {
-        return ResponseEntity.ok(ApiResponse.of(studyAttendeeService.getApplication(studyId, attendeeId)));
+        return ResponseEntity.ok(ApiResponse.of(studyAttendeeService.getStudyAttendee(studyId, attendeeId)));
     }
 
 
