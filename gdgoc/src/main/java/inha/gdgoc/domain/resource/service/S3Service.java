@@ -36,4 +36,8 @@ public class S3Service {
         amazonS3.putObject(bucketName, uploadFilePath, file.getInputStream(), metadata);
         return uploadFilePath;
     }
+
+    public String getS3FileUrl(String key) {
+        return amazonS3.getUrl(bucketName, key).toString();
+    }
 }

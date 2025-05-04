@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.study.service;
 
+import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.study.dto.MyStudyRecruitDto;
 import inha.gdgoc.domain.study.dto.StudyDto;
 import inha.gdgoc.domain.study.dto.StudyListWithMetaDto;
@@ -26,6 +27,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class StudyService {
 
+    private final S3Service s3Service;
     private final UserService userService;
     private final StudyRepository studyRepository;
     private static final Long STUDY_PAGE_COUNT = 10L;
@@ -134,7 +136,7 @@ public class StudyService {
                 .activityEndDate(study.getActivityEndDate())
                 .expectedTime(study.getExpectedTime())
                 .expectedPlace(study.getExpectedPlace())
-                .imagePath(study.getImagePath())
+                .imagePath(s3Service.getS3FileUrl(study.getImagePath()))
                 .build();
     }
 }
