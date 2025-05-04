@@ -1,10 +1,11 @@
 package inha.gdgoc.domain.study.controller;
 
+import inha.gdgoc.domain.study.dto.StudyAttendeeListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.AttendeeCreateRequest;
 import inha.gdgoc.domain.study.dto.response.GetApplicationResponse;
-import inha.gdgoc.domain.study.dto.response.GetAttendeeListResponse;
+import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeListResponse;
+import inha.gdgoc.domain.study.dto.response.PageResponse;
 import inha.gdgoc.domain.study.service.StudyAttendeeService;
-import inha.gdgoc.domain.study.service.StudyService;
 import inha.gdgoc.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,16 +25,19 @@ import java.util.Optional;
 @RequestMapping("/study/{studyId}/attendee")
 @RequiredArgsConstructor
 public class StudyAttendeeController {
-
-    private final StudyService studyService;
     private final StudyAttendeeService studyAttendeeService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<GetAttendeeListResponse>> getAttendeeList(
+    public ResponseEntity<ApiResponse<GetStudyAttendeeListResponse>> getAttendeeList(
             @PathVariable("studyId") Long studyId,
             @RequestParam("page") Optional<Long> page
     ) {
-        return ResponseEntity.ok(studyAttendeeService.getAttendeeList(studyId, page));
+        StudyAttendeeListWithMetaDto result = studyAttendeeService.getStudyAttendeeList(studyId, page);
+        PageResponse meta = new PageResponse(
+                result.getPage().intValue(),
+                result.getPageCount().intValue()
+        );
+        return ResponseEntity.ok(ApiResponse.of(new GetStudyAttendeeListResponse(result.getAttendees()), meta));
     }
 
     @GetMapping("/{attendeeId}")
@@ -50,7 +54,7 @@ public class StudyAttendeeController {
             Authentication authentication,
             @PathVariable Long studyId,
             @RequestBody AttendeeCreateRequest attendeeCreateRequest
-            ) {
+    ) {
         studyAttendeeService.createAttendee(authentication, studyId, attendeeCreateRequest);
         return ResponseEntity.ok(ApiResponse.of(null, null));
     }

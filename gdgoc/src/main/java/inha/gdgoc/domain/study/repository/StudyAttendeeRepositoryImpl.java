@@ -3,6 +3,7 @@ package inha.gdgoc.domain.study.repository;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import inha.gdgoc.domain.study.entity.QStudyAttendee;
 import inha.gdgoc.domain.study.entity.StudyAttendee;
+import inha.gdgoc.domain.user.entity.QUser;
 
 import java.util.List;
 
@@ -17,8 +18,10 @@ public class StudyAttendeeRepositoryImpl implements StudyAttendeeCustom {
     @Override
     public List<StudyAttendee> pageAllByStudyId(Long studyId, Long limit, Long offset) {
         QStudyAttendee studyAttendee = QStudyAttendee.studyAttendee;
+        QUser user = QUser.user;
         return queryFactory
                 .selectFrom(studyAttendee)
+                .innerJoin(studyAttendee.user, user).fetchJoin()
                 .where(studyAttendee.study.id.eq(studyId))
                 .offset(offset)
                 .limit(limit)

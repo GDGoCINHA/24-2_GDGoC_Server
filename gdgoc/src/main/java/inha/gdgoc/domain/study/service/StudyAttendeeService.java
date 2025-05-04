@@ -1,11 +1,10 @@
 package inha.gdgoc.domain.study.service;
 
 import inha.gdgoc.domain.auth.service.AuthService;
+import inha.gdgoc.domain.study.dto.StudyAttendeeDto;
+import inha.gdgoc.domain.study.dto.StudyAttendeeListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.AttendeeCreateRequest;
 import inha.gdgoc.domain.study.dto.response.GetApplicationResponse;
-import inha.gdgoc.domain.study.dto.response.GetAttendeeListResponse;
-import inha.gdgoc.domain.study.dto.response.GetAttendeeResponse;
-import inha.gdgoc.domain.study.dto.response.PageResponse;
 import inha.gdgoc.domain.study.entity.Study;
 import inha.gdgoc.domain.study.entity.StudyAttendee;
 import inha.gdgoc.domain.study.enums.AttendeeStatus;
@@ -14,7 +13,6 @@ import inha.gdgoc.domain.study.repository.StudyRepository;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
-import inha.gdgoc.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
@@ -39,7 +37,7 @@ public class StudyAttendeeService {
 
     private static final Long STUDY_ATTENDEE_PAGE_COUNT = 10L;
 
-    public ApiResponse<GetAttendeeListResponse> getAttendeeList(Long studyId, Optional<Long> _page) {
+    public StudyAttendeeListWithMetaDto getStudyAttendeeList(Long studyId, Optional<Long> _page) {
         Long page = _page.orElse(1L);
         if (page < 1) {
             throw new RuntimeException("page가 1보다 작을 수 없습니다.");
@@ -48,18 +46,16 @@ public class StudyAttendeeService {
         Long limit = STUDY_ATTENDEE_PAGE_COUNT;
         Long offset = (page - 1) * limit;
 
-        Long study_attendee_count = studyAttendeeRepository.findAllByStudyIdStudyAttendeeCount(studyId);
-        List<StudyAttendee> studyAttendee = studyAttendeeRepository.pageAllByStudyId(studyId, limit, offset);
-        List<GetAttendeeResponse> attendees = studyAttendee.stream()
-                .map(GetAttendeeResponse::from)
+        Long StudyAttendeeCount = studyAttendeeRepository.findAllByStudyIdStudyAttendeeCount(studyId);
+        List<StudyAttendeeDto> attendees = studyAttendeeRepository.pageAllByStudyId(studyId, limit, offset).stream()
+                .map(this::studyAttendeeEntityToDto)
                 .toList();
 
-        PageResponse meta = new PageResponse(
-                page.intValue(),
-                study_attendee_count.intValue()
-        );
-
-        return ApiResponse.of(new GetAttendeeListResponse(attendees), meta);
+        return StudyAttendeeListWithMetaDto.builder()
+                .attendees(attendees)
+                .pageCount(StudyAttendeeCount)
+                .page(page)
+                .build();
     }
 
     public GetApplicationResponse getApplication(Long studyId, Long attendeeId) {
@@ -99,5 +95,15 @@ public class StudyAttendeeService {
 
     public Object updateAttendee() {
         return new Object();
+    }
+
+    private StudyAttendeeDto studyAttendeeEntityToDto(StudyAttendee studyAttendee) {
+        return StudyAttendeeDto.builder()
+                .id(studyAttendee.getId())
+                .name(studyAttendee.getUser().getName())
+                .major(studyAttendee.getUser().getMajor())
+                .studentId(studyAttendee.getUser().getStudentId())
+                .status(studyAttendee.getStatus())
+                .build();
     }
 }
