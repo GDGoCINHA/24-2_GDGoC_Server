@@ -28,6 +28,6 @@ public class S3Service {
         metadata.setContentType(file.getContentType());
 
         amazonS3.putObject(bucketName, uploadFilePath, file.getInputStream(), metadata);
-        return amazonS3.getUrl(bucketName, uploadFilePath).toString();
+        return uploadFilePath;
     }
 }

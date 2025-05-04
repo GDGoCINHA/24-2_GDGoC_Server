@@ -1,8 +1,9 @@
 package inha.gdgoc.domain.resource.controller;
 
+import inha.gdgoc.domain.resource.dto.response.S3ResultResponse;
 import inha.gdgoc.domain.resource.service.S3Service;
+import inha.gdgoc.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,15 +21,15 @@ public class ResourceController {
     private final S3Service s3Service;
 
     @PostMapping("/image")
-    public ResponseEntity<String> uploadImage(
+    public ResponseEntity<ApiResponse<S3ResultResponse>> uploadImage(
             @RequestParam("file") MultipartFile file,
             @RequestParam("s3key") String s3key
     ) {
         try {
-            String imageUrl = s3Service.upload(s3key, file);
-            return ResponseEntity.ok(imageUrl);
+            String result_s3Key = s3Service.upload(s3key, file);
+            return ResponseEntity.ok(ApiResponse.of(new S3ResultResponse(result_s3Key)));
         } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("s3 upload fail");
+            throw new RuntimeException("s3 upload fail" + e);
         }
     }
 }
