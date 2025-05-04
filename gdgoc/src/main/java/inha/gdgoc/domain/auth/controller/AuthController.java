@@ -1,8 +1,10 @@
 package inha.gdgoc.domain.auth.controller;
 
+import inha.gdgoc.domain.auth.dto.request.CodeVerificationRequest;
 import inha.gdgoc.domain.auth.dto.request.PasswordResetRequest;
 import inha.gdgoc.domain.auth.dto.request.UserLoginRequest;
 import inha.gdgoc.domain.auth.dto.response.AccessTokenResponse;
+import inha.gdgoc.domain.auth.dto.response.CodeVerificationResponse;
 import inha.gdgoc.domain.auth.dto.response.LoginResponse;
 import inha.gdgoc.domain.auth.service.AuthCodeService;
 import inha.gdgoc.domain.auth.service.AuthService;
@@ -121,8 +123,18 @@ public class AuthController {
                 .body(ApiResponse.of(null, null));
     }
 
+    @PostMapping("/password-reset/verify")
+    public ResponseEntity<ApiResponse<CodeVerificationResponse>> verifyCode(
+            @RequestBody CodeVerificationRequest codeVerificationRequest
+    ) {
+        return ResponseEntity.ok(ApiResponse.of(new CodeVerificationResponse(authCodeService.verify(
+                codeVerificationRequest.email(), codeVerificationRequest.code()))));
+    }
+
     private String extractRefreshTokenFromCookie(HttpServletRequest request) {
-        if (request.getCookies() == null) return null;
+        if (request.getCookies() == null) {
+            return null;
+        }
         for (Cookie cookie : request.getCookies()) {
             if ("refresh_token".equals(cookie.getName())) {
                 return cookie.getValue();
