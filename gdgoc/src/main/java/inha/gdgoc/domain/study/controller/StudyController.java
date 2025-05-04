@@ -1,13 +1,16 @@
 package inha.gdgoc.domain.study.controller;
 
 import inha.gdgoc.domain.auth.service.AuthService;
+import inha.gdgoc.domain.study.dto.StudyAttendeeResultDto;
 import inha.gdgoc.domain.study.dto.StudyDto;
 import inha.gdgoc.domain.study.dto.StudyListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.StudyCreateRequest;
+import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeResultResponse;
 import inha.gdgoc.domain.study.dto.response.PageResponse;
 import inha.gdgoc.domain.study.dto.response.StudyListRequest;
 import inha.gdgoc.domain.study.enums.CreaterType;
 import inha.gdgoc.domain.study.enums.StudyStatus;
+import inha.gdgoc.domain.study.service.StudyAttendeeService;
 import inha.gdgoc.domain.study.service.StudyService;
 import inha.gdgoc.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -29,6 +33,7 @@ import java.util.Optional;
 public class StudyController {
 
     private final StudyService studyService;
+    private final StudyAttendeeService studyAttendeeService;
     private final AuthService authService;
 
     @GetMapping
@@ -44,6 +49,16 @@ public class StudyController {
         );
         return ResponseEntity.ok(ApiResponse.of(new StudyListRequest(result.getStudyList()), meta));
     }
+
+    @GetMapping("/attendee/result")
+    public ResponseEntity<ApiResponse<GetStudyAttendeeResultResponse>> getStudyAttendeeResultList(
+            Authentication authentication
+    ) {
+        Long userId = authService.getAuthenticationUserId(authentication);
+        List<StudyAttendeeResultDto> attendeeDtoList = studyAttendeeService.getStudyAttendeeResultListByUserId(userId);
+        return ResponseEntity.ok(ApiResponse.of(new GetStudyAttendeeResultResponse(attendeeDtoList)));
+    }
+
 
     @GetMapping("/{studyId}")
     public ResponseEntity<ApiResponse<StudyDto>> getStudy(@PathVariable("studyId") Long id) {

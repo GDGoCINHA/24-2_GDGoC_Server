@@ -1,6 +1,7 @@
 package inha.gdgoc.domain.study.repository;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import inha.gdgoc.domain.study.entity.QStudy;
 import inha.gdgoc.domain.study.entity.QStudyAttendee;
 import inha.gdgoc.domain.study.entity.StudyAttendee;
 import inha.gdgoc.domain.user.entity.QUser;
@@ -35,6 +36,19 @@ public class StudyAttendeeRepositoryImpl implements StudyAttendeeCustom {
         return queryFactory
                 .selectFrom(studyAttendee)
                 .where(studyAttendee.id.in(ids).and(studyAttendee.study.id.eq(studyId)))
+                .fetch();
+    }
+
+    @Override
+    public List<StudyAttendee> findAllByUserId(Long userId) {
+        QUser user = QUser.user;
+        QStudy study = QStudy.study;
+        QStudyAttendee studyAttendee = QStudyAttendee.studyAttendee;
+        return queryFactory.selectFrom(studyAttendee)
+                .innerJoin(studyAttendee.study, study).fetchJoin()
+                .innerJoin(studyAttendee.user, user).fetchJoin()
+                .where(user.id.eq(userId))
+                .orderBy(studyAttendee.id.desc())
                 .fetch();
     }
 

@@ -1,11 +1,15 @@
 package inha.gdgoc.domain.study.service;
 
+import inha.gdgoc.domain.study.dto.StudyAttendeeResultDto;
 import inha.gdgoc.domain.study.dto.StudyDto;
 import inha.gdgoc.domain.study.dto.StudyListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.StudyCreateRequest;
 import inha.gdgoc.domain.study.entity.Study;
+import inha.gdgoc.domain.study.entity.StudyAttendee;
+import inha.gdgoc.domain.study.enums.AttendeeStatus;
 import inha.gdgoc.domain.study.enums.CreaterType;
 import inha.gdgoc.domain.study.enums.StudyStatus;
+import inha.gdgoc.domain.study.repository.StudyAttendeeRepository;
 import inha.gdgoc.domain.study.repository.StudyRepository;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.UserRole;
@@ -21,6 +25,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,7 +40,13 @@ class StudyServiceTest {
     private StudyService studyService;
 
     @Autowired
+    private StudyAttendeeService studyAttendeeService;
+
+    @Autowired
     private StudyRepository studyRepository;
+
+    @Autowired
+    private StudyAttendeeRepository studyAttendeeRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -152,6 +163,60 @@ class StudyServiceTest {
         Study saved = studyRepository.findById(result.getId()).orElseThrow();
         assertThat(saved.getUser().getId()).isEqualTo(user.getId());
         assertThat(saved.getTitle()).isEqualTo(findTitle);
+    }
+
+    @DisplayName("특정 지원자의 스터디 결과 리스트를 조회한다.")
+    @Test
+    void getStudyAttendeeResultListByUserId() {
+        // given
+        String resultTitle_1 = "AI 스터디";
+        String resultIntroduce_1 = "AI에 관심 많습니다.";
+        String resultActivityTime_1 = "저녁";
+        AttendeeStatus resultStatus_1 = AttendeeStatus.APPROVED;
+
+        String resultTitle_2 = "블록체인 스터디";
+        String resultIntroduce_2 = "블록체인도 배우고 싶어요.";
+        String resultActivityTime_2 = "주말";
+        AttendeeStatus resultStatus_2 = AttendeeStatus.REQUESTED;
+
+        Study study1 = createStudy(resultTitle_1, user);
+        Study study2 = createStudy(resultTitle_2, user);
+        studyRepository.saveAll(List.of(study1, study2));
+
+
+        StudyAttendee attendee1 = StudyAttendee.builder()
+                .study(study1)
+                .user(user)
+                .status(resultStatus_1)
+                .introduce(resultIntroduce_1)
+                .activityTime(resultActivityTime_1)
+                .build();
+
+        StudyAttendee attendee2 = StudyAttendee.builder()
+                .study(study2)
+                .user(user)
+                .status(resultStatus_2)
+                .introduce(resultIntroduce_2)
+                .activityTime(resultActivityTime_2)
+                .build();
+
+        studyAttendeeRepository.saveAll(List.of(attendee1, attendee2));
+
+        // when
+        List<StudyAttendeeResultDto> result = studyAttendeeService.getStudyAttendeeResultListByUserId(user.getId());
+
+        // then
+        StudyAttendeeResultDto dto1 = result.get(1);
+        StudyAttendeeResultDto dto2 = result.get(0);
+
+        assertThat(result).hasSize(2);
+        assertThat(dto1.getStudyId()).isEqualTo(study1.getId());
+        assertThat(dto1.getTitle()).isEqualTo(resultTitle_1);
+        assertThat(dto1.getStatus()).isEqualTo(resultStatus_1);
+
+        assertThat(dto2.getStudyId()).isEqualTo(study2.getId());
+        assertThat(dto2.getTitle()).isEqualTo(resultTitle_2);
+        assertThat(dto2.getStatus()).isEqualTo(resultStatus_2);
     }
 
 

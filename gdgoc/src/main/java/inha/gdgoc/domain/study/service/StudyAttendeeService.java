@@ -3,6 +3,7 @@ package inha.gdgoc.domain.study.service;
 import inha.gdgoc.domain.study.dto.AttendeeUpdateDto;
 import inha.gdgoc.domain.study.dto.StudyAttendeeDto;
 import inha.gdgoc.domain.study.dto.StudyAttendeeListWithMetaDto;
+import inha.gdgoc.domain.study.dto.StudyAttendeeResultDto;
 import inha.gdgoc.domain.study.dto.request.AttendeeCreateRequest;
 import inha.gdgoc.domain.study.dto.request.AttendeeUpdateRequest;
 import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeResponse;
@@ -70,6 +71,19 @@ public class StudyAttendeeService {
                 .introduce(studyAttendee.getIntroduce())
                 .activityTime(studyAttendee.getActivityTime())
                 .build();
+    }
+
+    public List<StudyAttendeeResultDto> getStudyAttendeeResultListByUserId(
+            Long userId
+    ) {
+        List<StudyAttendee> studyAttendeeList = studyAttendeeRepository.findAllByUserId(userId);
+        return studyAttendeeList.stream().map(attendee -> StudyAttendeeResultDto.builder()
+                        .studyId(attendee.getStudy().getId())
+                        .title(attendee.getStudy().getTitle())
+                        .recruitEndDate(attendee.getStudy().getRecruitEndDate())
+                        .status(attendee.getStatus())
+                        .build())
+                .toList();
     }
 
     public GetStudyAttendeeResponse createAttendee(

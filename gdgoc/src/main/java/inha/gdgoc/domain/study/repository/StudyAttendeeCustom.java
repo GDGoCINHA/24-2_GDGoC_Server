@@ -10,6 +10,8 @@ public interface StudyAttendeeCustom {
 
     List<StudyAttendee> findAllByIdsAndStudyId(List<Long> ids, Long studyId);
 
+    List<StudyAttendee> findAllByUserId(Long userId);
+
     Long findAllByStudyIdStudyAttendeeCount(Long studyId);
 
 }
