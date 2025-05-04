@@ -2,6 +2,7 @@ package inha.gdgoc.domain.auth.controller;
 
 import inha.gdgoc.domain.auth.dto.request.CodeVerificationRequest;
 import inha.gdgoc.domain.auth.dto.request.PasswordResetRequest;
+import inha.gdgoc.domain.auth.dto.request.SendingCodeRequest;
 import inha.gdgoc.domain.auth.dto.request.UserLoginRequest;
 import inha.gdgoc.domain.auth.dto.response.AccessTokenResponse;
 import inha.gdgoc.domain.auth.dto.response.CodeVerificationResponse;
@@ -10,6 +11,7 @@ import inha.gdgoc.domain.auth.service.AuthCodeService;
 import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.auth.service.MailService;
 import inha.gdgoc.domain.auth.service.RefreshTokenService;
+import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.common.ApiResponse;
 import inha.gdgoc.global.common.ErrorResponse;
@@ -17,6 +19,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -111,11 +114,11 @@ public class AuthController {
 
     @PostMapping("/password-reset/request")
     public ResponseEntity<ApiResponse<Void>> responseResponseEntity(
-            @RequestBody PasswordResetRequest passwordResetRequest
+            @RequestBody SendingCodeRequest sendingCodeRequest
     ) {
-        if (userRepository.existsByNameAndEmail(passwordResetRequest.name(), passwordResetRequest.email())) {
-            String code = mailService.sendAuthCode(passwordResetRequest.email());
-            authCodeService.saveAuthCode(passwordResetRequest.email(), code);
+        if (userRepository.existsByNameAndEmail(sendingCodeRequest.name(), sendingCodeRequest.email())) {
+            String code = mailService.sendAuthCode(sendingCodeRequest.email());
+            authCodeService.saveAuthCode(sendingCodeRequest.email(), code);
             return ResponseEntity.ok(ApiResponse.of(null));
         }
         return ResponseEntity
@@ -129,6 +132,21 @@ public class AuthController {
     ) {
         return ResponseEntity.ok(ApiResponse.of(new CodeVerificationResponse(authCodeService.verify(
                 codeVerificationRequest.email(), codeVerificationRequest.code()))));
+    }
+
+    @PostMapping("/password-reset/confirm")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody PasswordResetRequest passwordResetRequest) {
+        Optional<User> user = userRepository.findByEmail(passwordResetRequest.email());
+        if(user.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.of(null, null));
+        }
+
+        User foundUser = user.get();
+        foundUser.updatePassword(passwordResetRequest.password());
+        userRepository.save(foundUser);
+
+        return ResponseEntity.ok(ApiResponse.of(null, null));
     }
 
     private String extractRefreshTokenFromCookie(HttpServletRequest request) {
