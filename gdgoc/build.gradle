@@ -54,6 +54,9 @@ dependencies {
 
     // jwt
     implementation 'io.jsonwebtoken:jjwt:0.9.1'
+
+    // mail sender
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
 }
 
 tasks.withType(JavaCompile).configureEach {

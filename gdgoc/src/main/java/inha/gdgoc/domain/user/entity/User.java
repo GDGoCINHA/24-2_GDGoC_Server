@@ -2,6 +2,7 @@ package inha.gdgoc.domain.user.entity;
 
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.global.common.BaseEntity;
+import inha.gdgoc.util.EncryptUtil;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -82,4 +83,7 @@ public class User extends BaseEntity {
         this.careers = careers != null ? careers : new Careers();
     }
 
+    public void updatePassword(String password) {
+        this.password = EncryptUtil.encrypt(password, this.salt);
+    }
 }

@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
     Optional<RefreshToken> findByUser(User user);
+
+    void deleteByUserIdAndToken(Long userId, String token); // 로그아웃할 때 이 토큰만 삭제
 }
