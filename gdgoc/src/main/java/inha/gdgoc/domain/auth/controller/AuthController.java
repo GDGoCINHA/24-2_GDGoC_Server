@@ -116,9 +116,9 @@ public class AuthController {
         Cookie cookie = new Cookie("refresh_token", null);
         cookie.setMaxAge(0);
         cookie.setPath("/");
-        cookie.setHttpOnly(true);
+        cookie.setHttpOnly(false);
         cookie.setSecure(true);
-        cookie.setDomain(".gdgocinha.com");
+        cookie.setDomain("localhost");
         response.addCookie(cookie);
     }
 }

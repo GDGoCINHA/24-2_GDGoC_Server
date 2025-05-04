@@ -95,11 +95,11 @@ public class AuthService {
         String refreshToken = refreshTokenService.getOrCreateRefreshToken(user, Duration.ofDays(1));
 
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
-                .httpOnly(true)
+                .httpOnly(false)
                 .secure(true)
                 .sameSite("None")
                 .path("/")
-                .domain(".gdgocinha.com")
+                .domain("localhost")
                 .maxAge(Duration.ofDays(1))
                 .build();
 
@@ -128,11 +128,11 @@ public class AuthService {
         String refreshToken = refreshTokenService.getOrCreateRefreshToken(foundUser, Duration.ofDays(1));
 
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
-                .httpOnly(true)
-                .secure(true)
+                .httpOnly(false)
+                .secure(false)
                 .sameSite("None")
                 .path("/")
-                .domain(".gdgocinha.com")
+                .domain("localhost")
                 .maxAge(Duration.ofDays(1))
                 .build();
 
