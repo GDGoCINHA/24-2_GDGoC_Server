@@ -85,7 +85,7 @@ public class StudyService {
                 body.getActivityEndDate(),
                 user
         );
-
+        studyRepository.save(createdStudy);
         return studyEntityToDto(createdStudy);
     }
 
@@ -94,7 +94,7 @@ public class StudyService {
         return StudyDto.builder()
                 .id(study.getId())
                 .title(study.getTitle())
-                .creatorId(study.getId())
+                .creatorId(study.getUser().getId())
                 .createrType(study.getCreaterType())
                 .simpleIntroduce(study.getSimpleIntroduce())
                 .activityIntroduce(study.getActivityIntroduce())
