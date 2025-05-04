@@ -45,7 +45,7 @@ jobs:
           echo "SELF_ISSUER=${{secrets.SELF_ISSUER}}" >> .env
           echo "SECRET_KEY=${{secrets.SECRET_KEY}}" >> .env
           echo "GMAIL=${{secrets.GMAIL}}" >> .env
-          ehco "GMAIL_PASSWORD=${{secrets.GMAIL_PASSWORD}}" >> .env
+          echo "GMAIL_PASSWORD=${{secrets.GMAIL_PASSWORD}}" >> .env
           
           zip -r deploy.zip .env docker-compose.yml deploy.sh appspec.yml
 
