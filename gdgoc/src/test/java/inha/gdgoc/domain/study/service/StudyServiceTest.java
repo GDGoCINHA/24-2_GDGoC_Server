@@ -4,6 +4,7 @@ import inha.gdgoc.domain.study.dto.StudyAttendeeResultDto;
 import inha.gdgoc.domain.study.dto.StudyDto;
 import inha.gdgoc.domain.study.dto.StudyListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.StudyCreateRequest;
+import inha.gdgoc.domain.study.dto.response.MyStudyRecruitResponse;
 import inha.gdgoc.domain.study.entity.Study;
 import inha.gdgoc.domain.study.entity.StudyAttendee;
 import inha.gdgoc.domain.study.enums.AttendeeStatus;
@@ -219,6 +220,46 @@ class StudyServiceTest {
         assertThat(dto2.getStatus()).isEqualTo(resultStatus_2);
     }
 
+    @DisplayName("내가 만든 스터디 목록을 모집 상태별로 조회한다.")
+    @Test
+    void getMyStudyList() {
+        // given
+        User creator = createUser();
+        userRepository.save(creator);
+
+        String find_recruiting_title = "AI 스터디";
+        String find_recruited_title = "블록체인 스터디";
+
+        Study recruitingStudy1 = createRecruitStudy(
+                find_recruiting_title,
+                LocalDateTime.of(2025, 4, 10, 0, 0),
+                LocalDateTime.of(2025, 6, 10, 0, 0),
+                StudyStatus.RECRUITING,
+                creator
+        );
+
+        Study recruitedStudy1 = createRecruitStudy(
+                find_recruited_title,
+                LocalDateTime.of(2025, 3, 1, 0, 0),
+                LocalDateTime.of(2025, 4, 30, 0, 0),
+                StudyStatus.RECRUITED,
+                creator
+        );
+
+        studyRepository.saveAll(List.of(recruitingStudy1, recruitedStudy1));
+
+        // when
+        MyStudyRecruitResponse response = studyService.getMyStudyList(creator.getId());
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getRecruiting()).hasSize(1);
+        assertThat(response.getRecruiting().get(0).getTitle()).isEqualTo(find_recruiting_title);
+
+        assertThat(response.getRecruited()).hasSize(1);
+        assertThat(response.getRecruited().get(0).getTitle()).isEqualTo(find_recruited_title);
+    }
+
 
     private User createUser() {
         byte[] salt = new byte[16];
@@ -243,19 +284,29 @@ class StudyServiceTest {
             String title,
             User user
     ) {
+        return this.createRecruitStudy(title, LocalDateTime.now(), LocalDateTime.now(), StudyStatus.RECRUITED, user);
+    }
+
+    private Study createRecruitStudy(
+            String title,
+            LocalDateTime activityStartDate,
+            LocalDateTime activityEndDate,
+            StudyStatus status,
+            User user
+    ) {
         return Study.builder()
                 .title(title)
                 .simpleIntroduce("간단한 소개")
                 .activityIntroduce("활동 소개")
                 .imagePath("test url")
                 .createrType(CreaterType.PERSONAL)
-                .status(StudyStatus.RECRUITED)
+                .status(status)
                 .expectedTime("매일매일")
                 .expectedPlace("인하대정문")
                 .recruitStartDate(LocalDateTime.now())
                 .recruitEndDate(LocalDateTime.now())
-                .activityStartDate(LocalDateTime.now())
-                .activityEndDate(LocalDateTime.now())
+                .activityStartDate(activityStartDate)
+                .activityEndDate(activityEndDate)
                 .user(user)
                 .build();
     }

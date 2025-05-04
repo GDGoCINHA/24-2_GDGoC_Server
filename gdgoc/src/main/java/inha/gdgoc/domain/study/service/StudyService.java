@@ -1,8 +1,10 @@
 package inha.gdgoc.domain.study.service;
 
+import inha.gdgoc.domain.study.dto.MyStudyRecruitDto;
 import inha.gdgoc.domain.study.dto.StudyDto;
 import inha.gdgoc.domain.study.dto.StudyListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.StudyCreateRequest;
+import inha.gdgoc.domain.study.dto.response.MyStudyRecruitResponse;
 import inha.gdgoc.domain.study.entity.Study;
 import inha.gdgoc.domain.study.enums.CreaterType;
 import inha.gdgoc.domain.study.enums.StudyStatus;
@@ -57,6 +59,32 @@ public class StudyService {
                 .page(page)
                 .pageCount(count)
                 .build();
+    }
+
+    public MyStudyRecruitResponse getMyStudyList(Long userId) {
+        List<Study> studyList = studyRepository.findAllByUserId(userId);
+
+        List<MyStudyRecruitDto> recruitingStudy = studyList.stream()
+                .filter((dto) -> dto.getStatus().isRecruiting())
+                .map((dto) -> MyStudyRecruitDto.builder()
+                        .id(dto.getId())
+                        .title(dto.getTitle())
+                        .activityStartDate(dto.getActivityStartDate())
+                        .activityEndDate(dto.getActivityEndDate())
+                        .build())
+                .toList();
+
+        List<MyStudyRecruitDto> recruitedStudy = studyList.stream()
+                .filter((dto) -> dto.getStatus().isRecruited())
+                .map((dto) -> MyStudyRecruitDto.builder()
+                        .id(dto.getId())
+                        .title(dto.getTitle())
+                        .activityStartDate(dto.getActivityStartDate())
+                        .activityEndDate(dto.getActivityEndDate())
+                        .build())
+                .toList();
+
+        return new MyStudyRecruitResponse(recruitingStudy, recruitedStudy);
     }
 
     public StudyDto getStudyById(Long studyId) {

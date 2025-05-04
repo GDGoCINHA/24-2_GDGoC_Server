@@ -11,6 +11,8 @@ public interface StudyRepositoryCustom {
 
     Optional<Study> findOneWithUserById(Long id);
 
+    List<Study> findAllByUserId(Long userId);
+
     List<Study> findAllByStatusAndCreatorType(
             Optional<StudyStatus> status,
             Optional<CreaterType> creatorType,

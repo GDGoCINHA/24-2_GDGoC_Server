@@ -14,4 +14,12 @@ public enum StudyStatus {
     StudyStatus(String value) {
         this.value = value;
     }
+
+    public boolean isRecruiting() {
+        return this == RECRUITING;
+    }
+
+    public boolean isRecruited() {
+        return this == RECRUITED;
+    }
 }

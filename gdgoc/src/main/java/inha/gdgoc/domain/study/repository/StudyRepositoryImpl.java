@@ -32,6 +32,16 @@ public class StudyRepositoryImpl implements StudyRepositoryCustom {
     }
 
     @Override
+    public List<Study> findAllByUserId(Long userId) {
+        QStudy study = QStudy.study;
+        return queryFactory
+                .selectFrom(study)
+                .where(study.user.id.eq(userId))
+                .orderBy(study.user.id.desc())
+                .fetch();
+    }
+
+    @Override
     public List<Study> findAllByStatusAndCreatorType(
             Optional<StudyStatus> status, Optional<CreaterType> creatorType,
             Long limit, Long offset) {

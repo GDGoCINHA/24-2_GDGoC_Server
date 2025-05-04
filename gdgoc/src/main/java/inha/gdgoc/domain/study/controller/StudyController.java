@@ -6,6 +6,7 @@ import inha.gdgoc.domain.study.dto.StudyDto;
 import inha.gdgoc.domain.study.dto.StudyListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.StudyCreateRequest;
 import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeResultResponse;
+import inha.gdgoc.domain.study.dto.response.MyStudyRecruitResponse;
 import inha.gdgoc.domain.study.dto.response.PageResponse;
 import inha.gdgoc.domain.study.dto.response.StudyListRequest;
 import inha.gdgoc.domain.study.enums.CreaterType;
@@ -59,6 +60,14 @@ public class StudyController {
         return ResponseEntity.ok(ApiResponse.of(new GetStudyAttendeeResultResponse(attendeeDtoList)));
     }
 
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<MyStudyRecruitResponse>> getMyStudyList(
+            Authentication authentication
+    ) {
+        Long userId = authService.getAuthenticationUserId(authentication);
+        return ResponseEntity.ok(ApiResponse.of(studyService.getMyStudyList(userId)));
+    }
 
     @GetMapping("/{studyId}")
     public ResponseEntity<ApiResponse<StudyDto>> getStudy(@PathVariable("studyId") Long id) {
