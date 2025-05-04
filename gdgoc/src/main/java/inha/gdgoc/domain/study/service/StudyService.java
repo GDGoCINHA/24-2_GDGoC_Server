@@ -103,7 +103,7 @@ public class StudyService {
                 body.getTitle(),
                 body.getSimpleIntroduce(),
                 body.getActivityIntroduce(),
-                null,
+                body.getImagePath(),
                 body.getCreatorType(),
                 StudyStatus.RECRUITING,
                 body.getExpectedTime(),

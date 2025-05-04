@@ -33,4 +33,6 @@ public class StudyCreateRequest {
     private String expectedTime;
 
     private String expectedPlace;
+
+    private String imagePath;
 }
