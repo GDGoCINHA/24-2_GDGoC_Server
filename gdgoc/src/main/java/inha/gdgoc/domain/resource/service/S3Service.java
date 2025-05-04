@@ -13,15 +13,21 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class S3Service {
+
     private final AmazonS3 amazonS3;
 
     //TODO S3처리
     @Value("${cloud.aws.s3.bucket}")
     private String bucketName;
 
-    public String upload(String s3key, MultipartFile file) throws IOException {
+    public String upload(
+            Long userId,
+            String s3key,
+            MultipartFile file
+    ) throws IOException {
         String fileName = UUID.randomUUID() + "-" + file.getOriginalFilename();
-        String uploadFilePath = s3key + "/" + fileName;
+        String prefix = "user/" + userId + "/";
+        String uploadFilePath = prefix + s3key + "/" + fileName;
 
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(file.getSize());
