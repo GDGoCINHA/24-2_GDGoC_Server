@@ -31,7 +31,7 @@ public class StudyController {
     private final StudyService studyService;
     private final AuthService authService;
 
-    @GetMapping("")
+    @GetMapping
     public ResponseEntity<ApiResponse<StudyListRequest>> getStudyList(
             @RequestParam("page") Optional<Long> page,
             @RequestParam("status") Optional<StudyStatus> status,
@@ -50,7 +50,7 @@ public class StudyController {
         return ResponseEntity.ok(ApiResponse.of(studyService.getStudyById(id)));
     }
 
-    @PostMapping("/")
+    @PostMapping
     public ResponseEntity<ApiResponse<StudyDto>> createStudy(
             Authentication authentication,
             @RequestBody StudyCreateRequest body

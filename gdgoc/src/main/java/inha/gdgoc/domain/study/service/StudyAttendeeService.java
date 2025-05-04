@@ -1,9 +1,10 @@
 package inha.gdgoc.domain.study.service;
 
-import inha.gdgoc.domain.auth.service.AuthService;
+import inha.gdgoc.domain.study.dto.AttendeeUpdateDto;
 import inha.gdgoc.domain.study.dto.StudyAttendeeDto;
 import inha.gdgoc.domain.study.dto.StudyAttendeeListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.AttendeeCreateRequest;
+import inha.gdgoc.domain.study.dto.request.AttendeeUpdateRequest;
 import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeResponse;
 import inha.gdgoc.domain.study.entity.Study;
 import inha.gdgoc.domain.study.entity.StudyAttendee;
@@ -12,16 +13,17 @@ import inha.gdgoc.domain.study.repository.StudyAttendeeRepository;
 import inha.gdgoc.domain.study.repository.StudyRepository;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.UserRole;
-import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -29,12 +31,9 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class StudyAttendeeService {
 
-    private final StudyAttendeeRepository studyAttendeeRepository;
-    private final DefaultAuthenticationEventPublisher authenticationEventPublisher;
-    private final AuthService authService;
     private final UserService userService;
-    private final UserRepository userRepository;
     private final StudyRepository studyRepository;
+    private final StudyAttendeeRepository studyAttendeeRepository;
 
     private static final Long STUDY_ATTENDEE_PAGE_COUNT = 10L;
 
@@ -92,8 +91,21 @@ public class StudyAttendeeService {
         return getStudyAttendee(studyId, userId);
     }
 
-    public Object updateAttendee() {
-        return new Object();
+    public void updateAttendee(
+            Long studyId,
+            AttendeeUpdateRequest request
+    ) {
+        List<AttendeeUpdateDto> attendees = request.getAttendees();
+        List<Long> attendeeIds = attendees.stream().map(AttendeeUpdateDto::getAttendeeId).toList();
+        List<StudyAttendee> studyAttendeeList = studyAttendeeRepository.findAllByIdsAndStudyId(attendeeIds, studyId);
+
+        Map<Long, StudyAttendee> studyAttendeeMap = studyAttendeeList.stream()
+                .collect(Collectors.toMap(StudyAttendee::getId, Function.identity()));
+        attendees.forEach(attendee -> {
+            StudyAttendee studyAttendee = studyAttendeeMap.get(attendee.getAttendeeId());
+            studyAttendee.setStatus(attendee.getStatus());
+        });
+        studyAttendeeRepository.saveAll(studyAttendeeList);
     }
 
     private StudyAttendeeDto studyAttendeeEntityToDto(StudyAttendee studyAttendee) {

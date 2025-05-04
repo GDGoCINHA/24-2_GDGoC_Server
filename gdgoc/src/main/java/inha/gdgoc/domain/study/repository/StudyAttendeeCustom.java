@@ -8,5 +8,8 @@ public interface StudyAttendeeCustom {
 
     List<StudyAttendee> pageAllByStudyId(Long studyId, Long limit, Long offset);
 
+    List<StudyAttendee> findAllByIdsAndStudyId(List<Long> ids, Long studyId);
+
     Long findAllByStudyIdStudyAttendeeCount(Long studyId);
+
 }

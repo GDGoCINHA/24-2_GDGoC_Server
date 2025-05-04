@@ -30,6 +30,15 @@ public class StudyAttendeeRepositoryImpl implements StudyAttendeeCustom {
     }
 
     @Override
+    public List<StudyAttendee> findAllByIdsAndStudyId(List<Long> ids, Long studyId) {
+        QStudyAttendee studyAttendee = QStudyAttendee.studyAttendee;
+        return queryFactory
+                .selectFrom(studyAttendee)
+                .where(studyAttendee.id.in(ids).and(studyAttendee.study.id.eq(studyId)))
+                .fetch();
+    }
+
+    @Override
     public Long findAllByStudyIdStudyAttendeeCount(Long studyId) {
         QStudyAttendee studyAttendee = QStudyAttendee.studyAttendee;
         return queryFactory

@@ -64,6 +64,10 @@ public class StudyAttendee extends BaseEntity {
         return studyAttendee;
     }
 
+    public void setStatus(AttendeeStatus status) {
+        this.status = status;
+    }
+
     public void setUser(User user) {
         this.user = user;
         if (user != null && !user.getStudies().contains(this)) {

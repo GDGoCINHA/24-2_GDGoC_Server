@@ -3,6 +3,7 @@ package inha.gdgoc.domain.study.controller;
 import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.study.dto.StudyAttendeeListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.AttendeeCreateRequest;
+import inha.gdgoc.domain.study.dto.request.AttendeeUpdateRequest;
 import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeListResponse;
 import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeResponse;
 import inha.gdgoc.domain.study.dto.response.PageResponse;
@@ -61,9 +62,13 @@ public class StudyAttendeeController {
         return ResponseEntity.ok(ApiResponse.of(studyAttendeeService.createAttendee(userId, studyId, attendeeCreateRequest)));
     }
 
-    @PatchMapping("/")
-    public ResponseEntity<ApiResponse<Object>> updateAttendee(@PathVariable("studyId") Long id) {
-        return ResponseEntity.ok(ApiResponse.of(studyAttendeeService.updateAttendee()));
+    @PatchMapping
+    public ResponseEntity<ApiResponse<Boolean>> updateAttendee(
+            @PathVariable("studyId") Long studyId,
+            @RequestBody AttendeeUpdateRequest request
+    ) {
+        studyAttendeeService.updateAttendee(studyId, request);
+        return ResponseEntity.ok(ApiResponse.of(true));
     }
 
 }

@@ -1,7 +1,9 @@
 package inha.gdgoc.domain.study.service;
 
+import inha.gdgoc.domain.study.dto.AttendeeUpdateDto;
 import inha.gdgoc.domain.study.dto.StudyAttendeeListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.AttendeeCreateRequest;
+import inha.gdgoc.domain.study.dto.request.AttendeeUpdateRequest;
 import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeResponse;
 import inha.gdgoc.domain.study.entity.Study;
 import inha.gdgoc.domain.study.entity.StudyAttendee;
@@ -23,6 +25,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -195,6 +198,62 @@ class StudyAttendeeServiceTest {
         assertThatThrownBy(() -> studyAttendeeService.createAttendee(guestUser.getId(), study.getId(), request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("사용 권한이 없는 유저입니다.");
+    }
+
+    @DisplayName("스터디 참석자들의 상태를 일괄 수정한다.")
+    @Test
+    void updateAttendeeStatusBulk() {
+        // given
+        Study study = createStudy("상태 수정 테스트용 스터디", user);
+        studyRepository.save(study);
+
+        User user1 = createUser(UserRole.GUEST);
+        User user2 = createUser(UserRole.GUEST);
+        userRepository.saveAll(List.of(user1, user2));
+
+        StudyAttendee attendee1 = StudyAttendee.builder()
+                .study(study)
+                .user(user1)
+                .status(AttendeeStatus.REQUESTED)
+                .introduce("참석자1")
+                .activityTime("월요일")
+                .build();
+
+        StudyAttendee attendee2 = StudyAttendee.builder()
+                .study(study)
+                .user(user2)
+                .status(AttendeeStatus.REQUESTED)
+                .introduce("참석자2")
+                .activityTime("화요일")
+                .build();
+
+        studyAttendeeRepository.saveAll(List.of(attendee1, attendee2));
+
+        // when
+        AttendeeStatus findStatus_1 = AttendeeStatus.APPROVED;
+        AttendeeStatus findStatus_2 = AttendeeStatus.REJECTED;
+
+        AttendeeUpdateRequest updateRequest = AttendeeUpdateRequest.builder()
+                .attendees(List.of(
+                        AttendeeUpdateDto.builder()
+                                .attendeeId(attendee1.getId())
+                                .status(findStatus_1)
+                                .build(),
+                        AttendeeUpdateDto.builder()
+                                .attendeeId(attendee2.getId())
+                                .status(findStatus_2)
+                                .build()
+                ))
+                .build();
+
+        studyAttendeeService.updateAttendee(study.getId(), updateRequest);
+
+        // then
+        StudyAttendee updated1 = studyAttendeeRepository.findById(attendee1.getId()).orElseThrow();
+        StudyAttendee updated2 = studyAttendeeRepository.findById(attendee2.getId()).orElseThrow();
+
+        assertThat(updated1.getStatus()).isEqualTo(findStatus_1);
+        assertThat(updated2.getStatus()).isEqualTo(findStatus_2);
     }
 
 
