@@ -1,9 +1,12 @@
 package inha.gdgoc.domain.auth.controller;
 
+import inha.gdgoc.domain.auth.dto.request.PasswordResetRequest;
 import inha.gdgoc.domain.auth.dto.request.UserLoginRequest;
 import inha.gdgoc.domain.auth.dto.response.AccessTokenResponse;
 import inha.gdgoc.domain.auth.dto.response.LoginResponse;
+import inha.gdgoc.domain.auth.service.AuthCodeService;
 import inha.gdgoc.domain.auth.service.AuthService;
+import inha.gdgoc.domain.auth.service.MailService;
 import inha.gdgoc.domain.auth.service.RefreshTokenService;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.common.ApiResponse;
@@ -35,6 +38,8 @@ public class AuthController {
     private final UserRepository userRepository;
     private final AuthService authService;
     private final RefreshTokenService refreshTokenService;
+    private final MailService mailService;
+    private final AuthCodeService authCodeService;
 
     @GetMapping("/oauth2/google/callback")
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleGoogleCallback(
@@ -100,6 +105,20 @@ public class AuthController {
         expireCookie(response);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/password-reset/request")
+    public ResponseEntity<ApiResponse<Void>> responseResponseEntity(
+            @RequestBody PasswordResetRequest passwordResetRequest
+    ) {
+        if (userRepository.existsByNameAndEmail(passwordResetRequest.name(), passwordResetRequest.email())) {
+            String code = mailService.sendAuthCode(passwordResetRequest.email());
+            authCodeService.saveAuthCode(passwordResetRequest.email(), code);
+            return ResponseEntity.ok(ApiResponse.of(null));
+        }
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.of(null, null));
     }
 
     private String extractRefreshTokenFromCookie(HttpServletRequest request) {

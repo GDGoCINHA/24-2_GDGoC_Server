@@ -29,7 +29,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             @NotNull FilterChain filterChain) throws ServletException, IOException {
         String uri = request.getRequestURI();
         List<String> skipPaths = List.of("/auth/refresh", "/auth/login", "/auth/oauth2/google/callback",
-                "/auth/signup", "/auth/findId");
+                "/auth/signup", "/auth/findId", "/auth/password-reset/request");
         if (skipPaths.contains(uri)) {
             filterChain.doFilter(request, response);
             return;
