@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.study.controller;
 
+import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.study.dto.StudyAttendeeListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.AttendeeCreateRequest;
 import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeListResponse;
@@ -26,6 +27,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class StudyAttendeeController {
     private final StudyAttendeeService studyAttendeeService;
+    private final AuthService authService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<GetStudyAttendeeListResponse>> getAttendeeList(
@@ -50,13 +52,13 @@ public class StudyAttendeeController {
 
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Void>> createAttendee(
+    public ResponseEntity<ApiResponse<GetStudyAttendeeResponse>> createAttendee(
             Authentication authentication,
             @PathVariable Long studyId,
             @RequestBody AttendeeCreateRequest attendeeCreateRequest
     ) {
-        studyAttendeeService.createAttendee(authentication, studyId, attendeeCreateRequest);
-        return ResponseEntity.ok(ApiResponse.of(null, null));
+        Long userId = authService.getAuthenticationUserId(authentication);
+        return ResponseEntity.ok(ApiResponse.of(studyAttendeeService.createAttendee(userId, studyId, attendeeCreateRequest)));
     }
 
     @PatchMapping("/")

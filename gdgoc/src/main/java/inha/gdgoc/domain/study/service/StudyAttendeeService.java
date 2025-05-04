@@ -13,10 +13,10 @@ import inha.gdgoc.domain.study.repository.StudyRepository;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
+import inha.gdgoc.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +32,7 @@ public class StudyAttendeeService {
     private final StudyAttendeeRepository studyAttendeeRepository;
     private final DefaultAuthenticationEventPublisher authenticationEventPublisher;
     private final AuthService authService;
+    private final UserService userService;
     private final UserRepository userRepository;
     private final StudyRepository studyRepository;
 
@@ -72,32 +73,23 @@ public class StudyAttendeeService {
                 .build();
     }
 
-    public void createAttendee(
-            Authentication authentication,
+    public GetStudyAttendeeResponse createAttendee(
+            Long userId,
             Long studyId,
             AttendeeCreateRequest attendeeCreateRequest
     ) {
-        Long userId = authService.getAuthenticationUserId(authentication);
-        Optional<User> user = userRepository.findById(userId);
-        if (user.isEmpty()) {
-            throw new IllegalArgumentException("로그인이 필요합니다.");
-        }
+        User user = userService.findUserById(userId);
 
-        User foundUser = user.get();
-        if (foundUser.getUserRole().equals(UserRole.GUEST)) {
+        if (user.getUserRole().equals(UserRole.GUEST)) {
             throw new IllegalArgumentException("사용 권한이 없는 유저입니다.");
         }
 
         Study study = studyRepository.findById(studyId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 스터디가 존재하지 않습니다."));
 
-        studyAttendeeRepository.save(
-                StudyAttendee.create(
-                        AttendeeStatus.REQUESTED,
-                        attendeeCreateRequest.introduce(),
-                        attendeeCreateRequest.activityTime(),
-                        study,
-                        foundUser));
+        StudyAttendee studyAttendee = StudyAttendee.create(AttendeeStatus.REQUESTED, attendeeCreateRequest.getIntroduce(), attendeeCreateRequest.getActivityTime(), study, user);
+        studyAttendeeRepository.save(studyAttendee);
+        return getStudyAttendee(studyId, userId);
     }
 
     public Object updateAttendee() {

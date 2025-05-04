@@ -1,6 +1,7 @@
 package inha.gdgoc.domain.study.service;
 
 import inha.gdgoc.domain.study.dto.StudyAttendeeListWithMetaDto;
+import inha.gdgoc.domain.study.dto.request.AttendeeCreateRequest;
 import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeResponse;
 import inha.gdgoc.domain.study.entity.Study;
 import inha.gdgoc.domain.study.entity.StudyAttendee;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional
@@ -46,7 +48,7 @@ class StudyAttendeeServiceTest {
 
     @BeforeEach
     void setUp() {
-        user = createUser();
+        user = createUser(UserRole.GUEST);
         userRepository.save(user);
     }
 
@@ -58,7 +60,7 @@ class StudyAttendeeServiceTest {
         studyRepository.save(study);
 
         for (int i = 0; i < 15; i++) {
-            User attendeeUser = createUser();
+            User attendeeUser = createUser(UserRole.GUEST);
             userRepository.save(attendeeUser);
 
             StudyAttendee attendee = StudyAttendee.builder()
@@ -145,7 +147,60 @@ class StudyAttendeeServiceTest {
     }
 
 
-    private User createUser() {
+    @DisplayName("스터디에 정상적으로 지원자를 등록한다.")
+    @Test
+    void createAttendee() {
+        // given
+        Study study = createStudy("정상 지원 스터디", user);
+        studyRepository.save(study);
+
+        User attendeeUser = createUser(UserRole.MEMBER);
+        userRepository.save(attendeeUser);
+
+        String findIntroduce = "저는 열정 가득한 사람입니다.";
+        String findActivityTime = "주말 오후";
+
+        AttendeeCreateRequest request = AttendeeCreateRequest.builder()
+                .introduce(findIntroduce)
+                .activityTime(findActivityTime)
+                .build();
+
+        // when
+        GetStudyAttendeeResponse response = studyAttendeeService.createAttendee(attendeeUser.getId(), study.getId(), request);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getName()).isEqualTo(attendeeUser.getName());
+        assertThat(response.getIntroduce()).isEqualTo(findIntroduce);
+        assertThat(response.getActivityTime()).isEqualTo(findActivityTime);
+    }
+
+
+    @DisplayName("GUEST 유저는 스터디에 지원할 수 없다.")
+    @Test
+    void createAttendee_guestUserForbidden() {
+        // given
+        Study study = createStudy("게스트 예외 스터디", user);
+        studyRepository.save(study);
+
+        User guestUser = createUser(UserRole.GUEST);
+        userRepository.save(guestUser);
+
+        AttendeeCreateRequest request = AttendeeCreateRequest.builder()
+                .introduce("참여하고 싶어요.")
+                .activityTime("평일 오후")
+                .build();
+
+        // when & then
+        assertThatThrownBy(() -> studyAttendeeService.createAttendee(guestUser.getId(), study.getId(), request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("사용 권한이 없는 유저입니다.");
+    }
+
+
+    private User createUser(
+            UserRole userRole
+    ) {
         byte[] salt = new byte[16];
         SecureRandom random = new SecureRandom();
         random.nextBytes(salt);
@@ -158,7 +213,7 @@ class StudyAttendeeServiceTest {
                 .email("email")
                 .password("hashedPassword")
                 .salt(salt)
-                .userRole(UserRole.GUEST)
+                .userRole(userRole)
                 .studies(new ArrayList<>())
                 .studyAttendees(new ArrayList<>())
                 .build();
