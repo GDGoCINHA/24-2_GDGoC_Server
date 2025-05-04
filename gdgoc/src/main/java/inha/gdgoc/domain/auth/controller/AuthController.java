@@ -5,14 +5,19 @@ import inha.gdgoc.domain.auth.dto.response.AccessTokenResponse;
 import inha.gdgoc.domain.auth.dto.response.LoginResponse;
 import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.auth.service.RefreshTokenService;
+import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.common.ApiResponse;
 import inha.gdgoc.global.common.ErrorResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
+    private final UserRepository userRepository;
     private final AuthService authService;
     private final RefreshTokenService refreshTokenService;
 
@@ -65,7 +71,6 @@ public class AuthController {
         }
     }
 
-    // TODO 자체 로그인
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody UserLoginRequest userLoginRequest,
                                                             HttpServletResponse response) {
@@ -73,6 +78,47 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.of(loginResponse, null));
     }
 
-    // TODO 로그아웃
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String email = authentication.getName();
+        Long userId = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"))
+                .getId();
+
+        String refreshToken = extractRefreshTokenFromCookie(request);
+
+        if (refreshToken != null) {
+            refreshTokenService.logout(userId, refreshToken);
+        }
+
+        expireCookie(response);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    private String extractRefreshTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+        for (Cookie cookie : request.getCookies()) {
+            if ("refresh_token".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
+    }
+
+    private void expireCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie("refresh_token", null);
+        cookie.setMaxAge(0);
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setDomain(".gdgocinha.com");
+        response.addCookie(cookie);
+    }
 }

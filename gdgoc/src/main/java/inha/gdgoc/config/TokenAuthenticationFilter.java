@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -27,8 +28,9 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             @NotNull HttpServletResponse response,
             @NotNull FilterChain filterChain) throws ServletException, IOException {
         String uri = request.getRequestURI();
-        if (uri.equals("/auth/refresh")) {
-            // 리프레시 토큰은 여기서 검사하지 않음
+        List<String> skipPaths = List.of("/auth/refresh", "/auth/login", "/auth/oauth2/google/callback",
+                "/auth/signup", "/auth/findId");
+        if (skipPaths.contains(uri)) {
             filterChain.doFilter(request, response);
             return;
         }
