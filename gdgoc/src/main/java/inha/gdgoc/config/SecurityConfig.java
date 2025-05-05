@@ -46,6 +46,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
                 "http://localhost:3000",
+                "http://gdgocinha.com",
                 "https://gdgocinha.com",
                 "https://www.gdgocinha.com",
                 "https://typing-game-alpha-umber.vercel.app"
