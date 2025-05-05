@@ -1,9 +1,9 @@
 package inha.gdgoc.domain.auth.service;
 
+import inha.gdgoc.domain.auth.entity.AuthCode;
+import inha.gdgoc.domain.auth.repository.AuthCodeRepository;
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -11,41 +11,27 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthCodeService {
 
-    private static class AuthCodeInfo {
-        private final String code;
-        private final LocalDateTime issuedAt;
-
-        AuthCodeInfo(String code, LocalDateTime issuedAt) {
-            this.code = code;
-            this.issuedAt = issuedAt;
-        }
-
-        boolean isExpired(Duration expiration) {
-            return issuedAt.plus(expiration).isBefore(LocalDateTime.now());
-        }
-
-        boolean matches(String inputCode) {
-            return code.equals(inputCode);
-        }
-    }
-
-    private final Map<String, AuthCodeInfo> codeStorage = new ConcurrentHashMap<>();
+    private final AuthCodeRepository authCodeRepository;
     private final Duration EXPIRATION = Duration.ofMinutes(5);
 
     public void saveAuthCode(String email, String code) {
-        codeStorage.put(email, new AuthCodeInfo(code, LocalDateTime.now()));
+        authCodeRepository.deleteByEmail(email);
+        authCodeRepository.save(new AuthCode(email, code));
     }
 
     public boolean verify(String email, String code) {
-        AuthCodeInfo info = codeStorage.get(email);
-        if (info == null) return false;
-        if (info.isExpired(EXPIRATION)) {
-            codeStorage.remove(email); // 만료된 건 제거
+        Optional<AuthCode> optional = authCodeRepository.findByEmail(email);
+
+        if (optional.isEmpty()) return false;
+
+        AuthCode authCode = optional.get();
+        if (authCode.isExpired(EXPIRATION)) {
+            authCodeRepository.deleteByEmail(email);
             return false;
         }
-        boolean response = info.matches(code);
-        codeStorage.remove(email);
-        return response;
+
+        boolean result = authCode.matches(code);
+        authCodeRepository.deleteByEmail(email);
+        return result;
     }
 }
-
