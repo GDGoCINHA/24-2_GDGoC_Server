@@ -90,27 +90,39 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request, HttpServletResponse response) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.of(null, "인증되지 않은 사용자"));
         }
 
         String email = authentication.getName();
-        Long userId = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"))
-                .getId();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
+        Long userId = user.getId();
 
         String refreshToken = extractRefreshTokenFromCookie(request);
+        log.info("로그아웃 시도: 사용자 ID: {}, 이메일: {}", userId, email);
+        log.debug("쿠키에서 추출한 리프레시 토큰: {}", refreshToken);
 
         if (refreshToken != null) {
-            refreshTokenService.logout(userId, refreshToken);
+            boolean deleted = refreshTokenService.logout(userId, refreshToken);
+
+            if (!deleted) {
+                log.warn("사용자 ID: {}의 리프레시 토큰 삭제에 실패했습니다.", userId);
+            } else {
+                log.info("사용자 ID: {}의 리프레시 토큰이 성공적으로 삭제되었습니다.", userId);
+            }
+        } else {
+            log.warn("사용자 ID: {}의 쿠키에서 리프레시 토큰을 찾을 수 없습니다", userId);
         }
 
+        // 항상 쿠키 만료 처리
         expireCookie(response);
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.of(null, null));
     }
 
     @PostMapping("/password-reset/request")
@@ -170,5 +182,8 @@ public class AuthController {
                 .secure(false)
                 .sameSite("Lax")
                 .build();
+
+        response.addHeader("Set-Cookie", expiredCookie.toString());
+        log.info("쿠키가 성공적으로 만료되었습니다");
     }
 }
