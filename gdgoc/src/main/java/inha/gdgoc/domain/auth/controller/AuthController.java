@@ -15,7 +15,7 @@ import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.common.ApiResponse;
 import inha.gdgoc.global.common.ErrorResponse;
-import jakarta.servlet.http.Cookie;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
@@ -170,8 +170,9 @@ public class AuthController {
                 .maxAge(0)
                 .path("/")
                 .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
+                .secure(true)
+                .sameSite("None")
+                .domain("gdgocinha.com")
                 .build();
 
         response.addHeader("Set-Cookie", expiredCookie.toString());

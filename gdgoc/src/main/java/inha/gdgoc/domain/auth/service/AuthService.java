@@ -26,7 +26,6 @@ import java.util.Optional;
 
 import static inha.gdgoc.util.EncryptUtil.encrypt;
 
-
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -86,7 +85,7 @@ public class AuthService {
         Optional<User> foundUser = userRepository.findByEmail(email);
         if (foundUser.isEmpty()) {
             return Map.of(
-                    "exists", false, // 회원 없음 => 회원가입 필요
+                    "exists", false,
                     "email", email,
                     "name", name
             );
@@ -99,9 +98,10 @@ public class AuthService {
 
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
                 .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
+                .secure(true)
+                .sameSite("None")
                 .path("/")
+                .domain("gdgocinha.com")
                 .maxAge(Duration.ofDays(1))
                 .build();
 
@@ -109,7 +109,7 @@ public class AuthService {
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         return Map.of(
-                "exists", true, // 회원 존재 & 로그인
+                "exists", true,
                 "access_token", jwtAccessToken
         );
     }
@@ -131,9 +131,10 @@ public class AuthService {
 
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
                 .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
+                .secure(true)
+                .sameSite("None")
                 .path("/")
+                .domain("gdgocinha.com")
                 .maxAge(Duration.ofDays(1))
                 .build();
 
