@@ -3,10 +3,10 @@ package inha.gdgoc.domain.user.repository;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import inha.gdgoc.domain.user.entity.QUser;
 import inha.gdgoc.domain.user.entity.User;
-import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class UserRepositoryImpl implements UserRepositoryCustom {
@@ -24,6 +24,16 @@ public class UserRepositoryImpl implements UserRepositoryCustom {
                 .selectFrom(user)
                 .fetch();
     }
+
+    @Override
+    public Optional<User> findByUserId(Long userId) {
+        QUser user = QUser.user;
+        return Optional.ofNullable(queryFactory
+                .selectFrom(user)
+                .where(user.id.eq(userId))
+                .fetchOne());
+    }
+
 
     @Override
     public Optional<User> findByEmail(String email) {

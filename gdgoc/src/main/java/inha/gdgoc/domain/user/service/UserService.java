@@ -8,6 +8,8 @@ import inha.gdgoc.domain.user.dto.request.UserSignupRequest;
 import inha.gdgoc.domain.auth.dto.response.FindIdResponse;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
+import inha.gdgoc.exception.NotFoundException;
+
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,11 @@ public class UserService {
                 .toList();
     }
 
+    public User findUserById(Long userId) {
+        return userRepository.findByUserId(userId)
+                .orElseThrow(() -> new NotFoundException("User not found user id: " + userId));
+    }
+  
     public FindIdResponse findId(FindIdRequest findIdRequest) {
         Optional<User> user = userRepository.findByNameAndMajorAndPhoneNumber(
                 findIdRequest.getName(),

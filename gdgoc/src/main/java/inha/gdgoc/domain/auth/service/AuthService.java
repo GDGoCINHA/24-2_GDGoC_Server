@@ -3,26 +3,36 @@ package inha.gdgoc.domain.auth.service;
 import static inha.gdgoc.util.EncryptUtil.encrypt;
 
 import inha.gdgoc.config.jwt.TokenProvider;
+import inha.gdgoc.domain.auth.dto.request.FindIdRequest;
 import inha.gdgoc.domain.auth.dto.request.UserLoginRequest;
+import inha.gdgoc.domain.auth.dto.request.UserSignupRequest;
+import inha.gdgoc.domain.auth.dto.response.FindIdResponse;
 import inha.gdgoc.domain.auth.dto.response.LoginResponse;
 import inha.gdgoc.domain.user.entity.User;
-import java.util.Optional;
-import java.time.Duration;
-import org.springframework.beans.factory.annotation.Value;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+
+import java.time.Duration;
+import java.util.Base64;
+import java.util.Map;
+import java.util.Optional;
+import java.security.SecureRandom;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
 
 @Service
 @RequiredArgsConstructor
@@ -139,5 +149,14 @@ public class AuthService {
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         return new LoginResponse(true, accessToken);
+    }
+
+    public Long getAuthenticationUserId(Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof TokenProvider.CustomUserDetails user) {
+            return user.getUserId();
+        }
+        throw new IllegalArgumentException("user Id is null");
     }
 }
