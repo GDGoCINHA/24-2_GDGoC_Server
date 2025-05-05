@@ -43,7 +43,9 @@ public class AuthCodeService {
             codeStorage.remove(email); // 만료된 건 제거
             return false;
         }
-        return info.matches(code);
+        boolean response = info.matches(code);
+        codeStorage.remove(email);
+        return response;
     }
 }
 
