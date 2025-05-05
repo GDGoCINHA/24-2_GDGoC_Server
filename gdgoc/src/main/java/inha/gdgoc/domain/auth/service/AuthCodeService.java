@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +20,7 @@ public class AuthCodeService {
         authCodeRepository.save(new AuthCode(email, code));
     }
 
+    @Transactional
     public boolean verify(String email, String code) {
         Optional<AuthCode> optional = authCodeRepository.findByEmail(email);
 

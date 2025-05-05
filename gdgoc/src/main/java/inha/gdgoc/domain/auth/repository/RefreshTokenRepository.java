@@ -8,11 +8,14 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+
 @Repository
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
     Optional<RefreshToken> findByUser(User user);
 
+    Optional<RefreshToken> findByUserIdAndToken(Long userId, String token);
+
     @Modifying
-    @Query("DELETE FROM RefreshToken r WHERE r.user.id = :userId AND r.token = :token")
-    void deleteByUserIdAndToken(Long user_id, String token); // 로그아웃할 때 이 토큰만 삭제
+    @Query("DELETE FROM RefreshToken r WHERE r.user.id = :user_id AND r.token = :token")
+    int deleteByUserIdAndToken(Long user_id, String token);
 }
