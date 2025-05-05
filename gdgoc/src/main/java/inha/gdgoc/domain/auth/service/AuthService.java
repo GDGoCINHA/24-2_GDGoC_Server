@@ -101,7 +101,7 @@ public class AuthService {
                 .secure(true)
                 .sameSite("None")
                 .path("/")
-                .domain(".gdgocinha.site")
+                .domain("https://gdgocinha.com")
                 .maxAge(Duration.ofDays(1))
                 .build();
 
@@ -134,7 +134,7 @@ public class AuthService {
                 .secure(true)
                 .sameSite("None")
                 .path("/")
-                .domain(".gdgocinha.site")
+                .domain("https://gdgocinha.com")
                 .maxAge(Duration.ofDays(1))
                 .build();
 
