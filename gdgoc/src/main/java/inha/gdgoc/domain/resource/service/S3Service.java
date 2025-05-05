@@ -2,6 +2,7 @@ package inha.gdgoc.domain.resource.service;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import inha.gdgoc.domain.resource.enums.S3KeyType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -21,12 +22,12 @@ public class S3Service {
 
     public String upload(
             Long userId,
-            String s3key,
+            S3KeyType s3key,
             MultipartFile file
     ) throws IOException {
         String fileName = UUID.randomUUID() + "-" + file.getOriginalFilename();
         String prefix = "user/" + userId + "/";
-        String uploadFilePath = prefix + s3key + "/" + fileName;
+        String uploadFilePath = prefix + s3key.getValue() + "/" + fileName;
 
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(file.getSize());

@@ -2,6 +2,7 @@ package inha.gdgoc.domain.resource.controller;
 
 import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.resource.dto.response.S3ResultResponse;
+import inha.gdgoc.domain.resource.enums.S3KeyType;
 import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,7 @@ public class ResourceController {
     public ResponseEntity<ApiResponse<S3ResultResponse>> uploadImage(
             Authentication authentication,
             @RequestParam("file") MultipartFile file,
-            @RequestParam("s3key") String s3key
+            @RequestParam("s3key") S3KeyType s3key
     ) {
         Long userId = authService.getAuthenticationUserId(authentication);
         try {
