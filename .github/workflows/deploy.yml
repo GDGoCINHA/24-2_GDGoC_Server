@@ -44,6 +44,11 @@ jobs:
           echo "GOOGLE_ISSUER=${{secrets.GOOGLE_ISSUER}}" >> .env
           echo "SELF_ISSUER=${{secrets.SELF_ISSUER}}" >> .env
           echo "SECRET_KEY=${{secrets.SECRET_KEY}}" >> .env
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
+          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env
+          echo "AWS_RESOURCE_BUCKET=${{secrets.AWS_RESOURCE_BUCKET}}" >> .env
+          echo "AWS_TEST_RESOURCE_BUCKET=${{secrets.AWS_TEST_RESOURCE_BUCKET}}" >> .env
           
           zip -r deploy.zip .env docker-compose.yml deploy.sh appspec.yml
 
