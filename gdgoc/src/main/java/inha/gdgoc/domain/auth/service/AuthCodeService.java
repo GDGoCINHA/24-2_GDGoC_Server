@@ -19,7 +19,9 @@ public class AuthCodeService {
 
     @Transactional
     public void saveAuthCode(String email, String code) {
-        authCodeRepository.deleteByEmail(email);
+        if(authCodeRepository.existsByEmail(email)) {
+            authCodeRepository.deleteByEmail(email);
+        }
         authCodeRepository.save(new AuthCode(email, code));
     }
 
