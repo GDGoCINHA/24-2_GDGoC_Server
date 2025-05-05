@@ -1,96 +1,154 @@
 package inha.gdgoc.domain.auth.service;
 
+import static inha.gdgoc.util.EncryptUtil.encrypt;
+
 import inha.gdgoc.config.jwt.TokenProvider;
 import inha.gdgoc.domain.auth.dto.request.FindIdRequest;
+import inha.gdgoc.domain.auth.dto.request.UserLoginRequest;
 import inha.gdgoc.domain.auth.dto.request.UserSignupRequest;
 import inha.gdgoc.domain.auth.dto.response.FindIdResponse;
+import inha.gdgoc.domain.auth.dto.response.LoginResponse;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
+import java.util.Base64;
+import java.util.Map;
+import java.util.Optional;
+import java.security.SecureRandom;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.security.SecureRandom;
-import java.util.Base64;
-import java.util.Optional;
+
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
+    private final RefreshTokenService refreshTokenService;
+    @Value("${google.client-id}")
+    private String clientId;
+
+    @Value("${google.client-secret}")
+    private String clientSecret;
+
+    @Value("${google.redirect-uri}")
+    private String redirectUri;
+
     private final UserRepository userRepository;
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final TokenProvider tokenProvider;
 
-    // TODO email 중복 조회
+    public Map<String, Object> processOAuthLogin(String code, HttpServletResponse response) {
+        // 1. code → access token 요청
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-    public void saveUser(UserSignupRequest userSignupRequest) {
-        byte[] salt = generateSalt();
-        String hashedPassword = encrypt(userSignupRequest.getPassword(), salt);
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("code", code);
+        params.add("client_id", clientId);
+        params.add("client_secret", clientSecret);
+        params.add("redirect_uri", redirectUri);
+        params.add("grant_type", "authorization_code");
 
-        User user = userSignupRequest.toEntity(hashedPassword, salt);
-        userRepository.save(user);
-    }
-
-    public FindIdResponse findId(FindIdRequest findIdRequest) {
-        Optional<User> user = userRepository.findByNameAndMajorAndPhoneNumber(
-                findIdRequest.getName(),
-                findIdRequest.getMajor(),
-                findIdRequest.getPhoneNumber()
+        HttpEntity<MultiValueMap<String, String>> tokenRequest = new HttpEntity<>(params, headers);
+        ResponseEntity<Map> tokenResponse = restTemplate.postForEntity(
+                "https://oauth2.googleapis.com/token",
+                tokenRequest,
+                Map.class
         );
 
+        String googleAccessToken = (String) tokenResponse.getBody().get("access_token");
+
+        // 2. access token → 사용자 정보 요청
+        HttpHeaders userInfoHeaders = new HttpHeaders();
+        userInfoHeaders.setBearerAuth(googleAccessToken);
+        HttpEntity<Void> userInfoRequest = new HttpEntity<>(userInfoHeaders);
+
+        ResponseEntity<Map> userInfoResponse = restTemplate.exchange(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                HttpMethod.GET,
+                userInfoRequest,
+                Map.class
+        );
+
+        // 3. Google에서 가져온 이름, 이메일로 가입된 정보가 없으면 회원가입, 있으면 로그인
+        Map userInfo = userInfoResponse.getBody();
+        String email = (String) userInfo.get("email");
+        String name = (String) userInfo.get("name");
+
+        Optional<User> foundUser = userRepository.findByEmail(email);
+        if (foundUser.isEmpty()) {
+            return Map.of(
+                    "exists", false, // 회원 없음 => 회원가입 필요
+                    "email", email,
+                    "name", name
+            );
+        }
+
+        User user = foundUser.get();
+
+        String jwtAccessToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofHours(1));
+        String refreshToken = refreshTokenService.getOrCreateRefreshToken(user, Duration.ofDays(1));
+
+        ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
+                .httpOnly(false)
+                .secure(true)
+                .sameSite("None")
+                .path("/")
+                .domain("localhost")
+                .maxAge(Duration.ofDays(1))
+                .build();
+
+        // Set-Cookie 헤더로 추가
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
+        return Map.of(
+                "exists", true, // 회원 존재 & 로그인
+                "access_token", jwtAccessToken
+        );
+    }
+
+    public LoginResponse loginWithPassword(UserLoginRequest userLoginRequest, HttpServletResponse response) {
+        Optional<User> user = userRepository.findByEmail(userLoginRequest.email());
         if (user.isEmpty()) {
-            throw new IllegalArgumentException("해당 정보를 가진 사용자를 찾을 수 없습니다.");
+            return new LoginResponse(false, null);
         }
 
-        String email = user.get().getEmail();
-        String maskedEmail = maskEmail(email);
-
-        return new FindIdResponse(maskedEmail);
-    }
-
-    private String encrypt(String oldPassword, byte[] salt) {
-        return generateHashedValue(oldPassword, salt);
-    }
-
-    private byte[] generateSalt() {
-        SecureRandom random = new SecureRandom();
-        byte[] salt = new byte[16];
-        random.nextBytes(salt);
-        return salt;
-    }
-
-    private String generateHashedValue(String oldPassword, byte[] salt) {
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            SecretKeySpec secretKeySpec = new SecretKeySpec(salt, "HmacSHA256");
-            mac.init(secretKeySpec);
-
-            byte[] hashedBytes = mac.doFinal(oldPassword.getBytes());
-            return Base64.getEncoder().encodeToString(hashedBytes);
-        } catch (Exception e) {
-            throw new RuntimeException("Error while hashing password", e);
-        }
-    }
-
-    private String maskEmail(String email) {
-        int atIndex = email.indexOf("@");
-        if (atIndex <= 5) {
-            // 너무 짧은 이메일은 앞 글자 1개만 보이게 처리
-            return email.charAt(0) + "*****" + email.substring(atIndex);
+        User foundUser = user.get();
+        String hashedInputPassword = encrypt(userLoginRequest.password(), foundUser.getSalt());
+        if (!foundUser.getPassword().equals(hashedInputPassword)) {
+            return new LoginResponse(false, null);
         }
 
-        String localPart = email.substring(0, atIndex);
-        String domainPart = email.substring(atIndex);
+        String accessToken = tokenProvider.generateSelfSignupToken(foundUser, Duration.ofHours(1));
+        String refreshToken = refreshTokenService.getOrCreateRefreshToken(foundUser, Duration.ofDays(1));
 
-        int startLen = 2;
-        int endLen = 2;
-        int maskLen = Math.max(1, localPart.length() - startLen - endLen); // 최소 1개는 마스킹
+        ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
+                .httpOnly(false)
+                .secure(false)
+                .sameSite("None")
+                .path("/")
+                .domain("localhost")
+                .maxAge(Duration.ofDays(1))
+                .build();
 
-        return localPart.substring(0, startLen)
-                + "*".repeat(maskLen)
-                + localPart.substring(localPart.length() - endLen)
-                + domainPart;
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
+        return new LoginResponse(true, accessToken);
     }
 
     public Long getAuthenticationUserId(Authentication authentication) {

@@ -4,6 +4,8 @@ import inha.gdgoc.domain.study.entity.Study;
 import inha.gdgoc.domain.study.entity.StudyAttendee;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.global.common.BaseEntity;
+import inha.gdgoc.util.EncryptUtil;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -107,5 +109,8 @@ public class User extends BaseEntity {
         if (studyAttendee != null && studyAttendee.getUser() != this) {
             studyAttendee.setUser(this);
         }
+
+    public void updatePassword(String password) {
+        this.password = EncryptUtil.encrypt(password, this.salt);
     }
 }

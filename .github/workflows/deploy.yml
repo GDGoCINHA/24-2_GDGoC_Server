@@ -49,6 +49,8 @@ jobs:
           echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env
           echo "AWS_RESOURCE_BUCKET=${{secrets.AWS_RESOURCE_BUCKET}}" >> .env
           echo "AWS_TEST_RESOURCE_BUCKET=${{secrets.AWS_TEST_RESOURCE_BUCKET}}" >> .env
+          echo "GMAIL=${{secrets.GMAIL}}" >> .env
+          echo "GMAIL_PASSWORD=${{secrets.GMAIL_PASSWORD}}" >> .env
           
           zip -r deploy.zip .env docker-compose.yml deploy.sh appspec.yml
 
