@@ -15,6 +15,7 @@ public class AuthCodeService {
     private final AuthCodeRepository authCodeRepository;
     private final Duration EXPIRATION = Duration.ofMinutes(5);
 
+    @Transactional
     public void saveAuthCode(String email, String code) {
         authCodeRepository.deleteByEmail(email);
         authCodeRepository.save(new AuthCode(email, code));
