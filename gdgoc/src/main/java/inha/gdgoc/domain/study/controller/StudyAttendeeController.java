@@ -64,10 +64,12 @@ public class StudyAttendeeController {
 
     @PatchMapping
     public ResponseEntity<ApiResponse<Boolean>> updateAttendee(
+            Authentication authentication,
             @PathVariable("studyId") Long studyId,
             @RequestBody AttendeeUpdateRequest request
     ) {
-        studyAttendeeService.updateAttendee(studyId, request);
+        Long userId = authService.getAuthenticationUserId(authentication);
+        studyAttendeeService.updateAttendee(userId, studyId, request);
         return ResponseEntity.ok(ApiResponse.of(true));
     }
 

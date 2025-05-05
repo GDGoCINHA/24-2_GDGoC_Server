@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -108,12 +109,19 @@ public class StudyAttendeeService {
 
     @Transactional
     public void updateAttendee(
+            Long userId,
             Long studyId,
             AttendeeUpdateRequest request
     ) {
         List<AttendeeUpdateDto> attendees = request.getAttendees();
         List<Long> attendeeIds = attendees.stream().map(AttendeeUpdateDto::getAttendeeId).toList();
+        Study study = studyRepository.findOneWithUserById(studyId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 스터디가 존재하지 않습니다."));
         List<StudyAttendee> studyAttendeeList = studyAttendeeRepository.findAllByIdsAndStudyId(attendeeIds, studyId);
+
+        if (!Objects.equals(userId, study.getUser().getId())) {
+            throw new IllegalArgumentException("해당 study creator 가 아닙니다. userId: " + userId + " studyId: " + studyId);
+        }
 
         Map<Long, StudyAttendee> studyAttendeeMap = studyAttendeeList.stream()
                 .collect(Collectors.toMap(StudyAttendee::getId, Function.identity()));
