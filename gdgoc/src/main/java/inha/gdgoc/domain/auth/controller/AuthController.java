@@ -90,7 +90,11 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @CookieValue(value = "refresh_token", required = false) String refreshToken,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -103,7 +107,6 @@ public class AuthController {
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
         Long userId = user.getId();
 
-        String refreshToken = extractRefreshTokenFromCookie(request);
         log.info("로그아웃 시도: 사용자 ID: {}, 이메일: {}", userId, email);
         log.debug("쿠키에서 추출한 리프레시 토큰: {}", refreshToken);
 
@@ -160,18 +163,6 @@ public class AuthController {
         userRepository.save(foundUser);
 
         return ResponseEntity.ok(ApiResponse.of(null, null));
-    }
-
-    private String extractRefreshTokenFromCookie(HttpServletRequest request) {
-        if (request.getCookies() == null) {
-            return null;
-        }
-        for (Cookie cookie : request.getCookies()) {
-            if ("refresh_token".equals(cookie.getName())) {
-                return cookie.getValue();
-            }
-        }
-        return null;
     }
 
     private void expireCookie(HttpServletResponse response) {
