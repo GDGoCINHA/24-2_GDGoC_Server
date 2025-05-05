@@ -172,7 +172,7 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("None")
-                .domain("gdgocinha.com")
+                .domain(".gdgocinha.site")
                 .build();
 
         response.addHeader("Set-Cookie", expiredCookie.toString());
