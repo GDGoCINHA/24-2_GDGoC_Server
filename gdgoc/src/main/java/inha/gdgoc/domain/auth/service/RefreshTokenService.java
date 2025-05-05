@@ -88,21 +88,20 @@ public class RefreshTokenService {
     }
 
     @Transactional
-    public boolean logout(Long userId, String refreshToken) {
+    public boolean logout(Long userId) {
         try {
-            // 먼저 해당 토큰이 존재하는지 확인 (디버깅용)
-            Optional<RefreshToken> tokenEntity = refreshTokenRepository.findByUserIdAndToken(userId, refreshToken);
+            Optional<RefreshToken> tokenEntity = refreshTokenRepository.findByUserId(userId);
             if (tokenEntity.isPresent()) {
                 log.info("사용자 ID: {}에 대한 토큰을 DB에서 찾았습니다. 토큰 ID: {}", userId, tokenEntity.get().getId());
             } else {
-                log.warn("사용자 ID: {}에 대한 토큰이 DB에 존재하지 않습니다. 토큰값: {}", userId, refreshToken);
+                log.warn("사용자 ID: {}에 대한 토큰이 DB에 존재하지 않습니다.", userId);
                 return false;
             }
 
             // 토큰 삭제 실행 및 삭제된 행 수 확인
-            int deletedCount = refreshTokenRepository.deleteByUserIdAndToken(userId, refreshToken);
-            log.info("사용자 ID: {} 로그아웃 처리. 삭제된 토큰 수: {}", userId, deletedCount);
-            return deletedCount > 0;
+            refreshTokenRepository.deleteByUserId(userId);
+            log.info("사용자 ID: {} 로그아웃 처리. 삭제된 토큰 수: {}", userId);
+            return true;
         } catch (Exception e) {
             log.error("사용자 ID: {} 로그아웃 중 오류 발생: {}", userId, e.getMessage(), e);
             return false;

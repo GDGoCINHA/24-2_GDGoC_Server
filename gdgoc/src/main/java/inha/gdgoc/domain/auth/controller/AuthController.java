@@ -91,7 +91,6 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
-            @CookieValue(value = "refresh_token", required = false) String refreshToken,
             HttpServletRequest request,
             HttpServletResponse response
     ) {
@@ -108,10 +107,9 @@ public class AuthController {
         Long userId = user.getId();
 
         log.info("로그아웃 시도: 사용자 ID: {}, 이메일: {}", userId, email);
-        log.debug("쿠키에서 추출한 리프레시 토큰: {}", refreshToken);
 
-        if (refreshToken != null) {
-            boolean deleted = refreshTokenService.logout(userId, refreshToken);
+        if (userId != null) {
+            boolean deleted = refreshTokenService.logout(userId);
 
             if (!deleted) {
                 log.warn("사용자 ID: {}의 리프레시 토큰 삭제에 실패했습니다.", userId);
@@ -121,9 +119,6 @@ public class AuthController {
         } else {
             log.warn("사용자 ID: {}의 쿠키에서 리프레시 토큰을 찾을 수 없습니다", userId);
         }
-
-        // 항상 쿠키 만료 처리
-        expireCookie(response);
 
         return ResponseEntity.ok(ApiResponse.of(null, null));
     }
