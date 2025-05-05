@@ -4,8 +4,10 @@ import static inha.gdgoc.util.EncryptUtil.encrypt;
 import static inha.gdgoc.util.EncryptUtil.generateSalt;
 
 import inha.gdgoc.domain.auth.dto.request.FindIdRequest;
+import inha.gdgoc.domain.user.dto.request.CheckDuplicatedEmailRequest;
 import inha.gdgoc.domain.user.dto.request.UserSignupRequest;
 import inha.gdgoc.domain.auth.dto.response.FindIdResponse;
+import inha.gdgoc.domain.user.dto.response.CheckDuplicatedEmailResponse;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.exception.NotFoundException;
@@ -30,6 +32,10 @@ public class UserService {
         return userRepository.findAllUsers().stream()
                 .map((User::getId))
                 .toList();
+    }
+
+    public CheckDuplicatedEmailResponse isExistsByEmail(CheckDuplicatedEmailRequest request) {
+        return new CheckDuplicatedEmailResponse(userRepository.existsByEmail(request.email()));
     }
 
     public User findUserById(Long userId) {
