@@ -109,6 +109,7 @@ public class User extends BaseEntity {
         if (studyAttendee != null && studyAttendee.getUser() != this) {
             studyAttendee.setUser(this);
         }
+    }
 
     public void updatePassword(String password) {
         this.password = EncryptUtil.encrypt(password, this.salt);
