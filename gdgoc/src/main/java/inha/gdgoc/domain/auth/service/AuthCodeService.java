@@ -25,8 +25,8 @@ public class AuthCodeService {
 
     @Transactional
     public boolean verify(String email, String code) {
-        log.info("email: ", email);
-        log.info("code: ", code);
+        log.info("email: {}", email);
+        log.info("code: {}", code);
         Optional<AuthCode> optional = authCodeRepository.findByEmail(email);
 
         if (optional.isEmpty()) return false;
@@ -38,6 +38,9 @@ public class AuthCodeService {
         }
 
         boolean result = authCode.matches(code);
+        if (!result) {
+            return result;
+        }
         authCodeRepository.deleteByEmail(email);
         return result;
     }
