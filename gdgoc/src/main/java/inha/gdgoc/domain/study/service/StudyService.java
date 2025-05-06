@@ -5,12 +5,14 @@ import inha.gdgoc.domain.study.dto.MyStudyRecruitDto;
 import inha.gdgoc.domain.study.dto.StudyDto;
 import inha.gdgoc.domain.study.dto.StudyListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.StudyCreateRequest;
+import inha.gdgoc.domain.study.dto.response.GetDetailedStudyResponse;
 import inha.gdgoc.domain.study.dto.response.MyStudyRecruitResponse;
 import inha.gdgoc.domain.study.entity.Study;
 import inha.gdgoc.domain.study.enums.CreatorType;
 import inha.gdgoc.domain.study.enums.StudyStatus;
 import inha.gdgoc.domain.study.repository.StudyRepository;
 import inha.gdgoc.domain.user.entity.User;
+import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.domain.user.service.UserService;
 import inha.gdgoc.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ public class StudyService {
     private final UserService userService;
     private final StudyRepository studyRepository;
     private static final Long STUDY_PAGE_COUNT = 10L;
+    private final UserRepository userRepository;
 
     public StudyListWithMetaDto getStudyList(
             Optional<Long> _page,
@@ -89,10 +92,10 @@ public class StudyService {
         return new MyStudyRecruitResponse(recruitingStudy, recruitedStudy);
     }
 
-    public StudyDto getStudyById(Long studyId) {
+    public GetDetailedStudyResponse getStudyById(Long studyId) {
         Study study = studyRepository.findOneWithUserById(studyId)
                 .orElseThrow(() -> new NotFoundException("Study not found with id: " + studyId));
-        return studyEntityToDto(study);
+        return GetDetailedStudyResponse.from(study, study.getUser());
     }
 
     @Transactional
