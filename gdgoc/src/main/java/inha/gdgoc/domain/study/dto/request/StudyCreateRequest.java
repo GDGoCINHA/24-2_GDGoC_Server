@@ -1,6 +1,6 @@
 package inha.gdgoc.domain.study.dto.request;
 
-import inha.gdgoc.domain.study.enums.CreaterType;
+import inha.gdgoc.domain.study.enums.CreatorType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,7 +20,7 @@ public class StudyCreateRequest {
 
     private String activityIntroduce;
 
-    private CreaterType creatorType;
+    private CreatorType creatorType;
 
     private LocalDateTime recruitStartDate;
 

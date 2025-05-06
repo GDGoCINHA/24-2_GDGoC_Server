@@ -1,6 +1,6 @@
 package inha.gdgoc.domain.study.dto;
 
-import inha.gdgoc.domain.study.enums.CreaterType;
+import inha.gdgoc.domain.study.enums.CreatorType;
 import inha.gdgoc.domain.study.enums.StudyStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,7 +19,7 @@ public class StudyDto {
     private String title;
 
     private Long creatorId;
-    private CreaterType createrType;
+    private CreatorType creatorType;
 
     private String simpleIntroduce;
     private String activityIntroduce;

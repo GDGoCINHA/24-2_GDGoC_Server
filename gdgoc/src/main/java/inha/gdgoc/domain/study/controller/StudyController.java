@@ -9,7 +9,7 @@ import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeResultResponse;
 import inha.gdgoc.domain.study.dto.response.MyStudyRecruitResponse;
 import inha.gdgoc.domain.study.dto.response.PageResponse;
 import inha.gdgoc.domain.study.dto.response.StudyListRequest;
-import inha.gdgoc.domain.study.enums.CreaterType;
+import inha.gdgoc.domain.study.enums.CreatorType;
 import inha.gdgoc.domain.study.enums.StudyStatus;
 import inha.gdgoc.domain.study.service.StudyAttendeeService;
 import inha.gdgoc.domain.study.service.StudyService;
@@ -41,7 +41,7 @@ public class StudyController {
     public ResponseEntity<ApiResponse<StudyListRequest>> getStudyList(
             @RequestParam("page") Optional<Long> page,
             @RequestParam("status") Optional<StudyStatus> status,
-            @RequestParam("creatorType") Optional<CreaterType> creatorType
+            @RequestParam("creatorType") Optional<CreatorType> creatorType
     ) {
         StudyListWithMetaDto result = studyService.getStudyList(page, status, creatorType);
         PageResponse meta = new PageResponse(

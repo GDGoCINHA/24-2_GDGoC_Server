@@ -1,7 +1,7 @@
 package inha.gdgoc.domain.study.repository;
 
 import inha.gdgoc.domain.study.entity.Study;
-import inha.gdgoc.domain.study.enums.CreaterType;
+import inha.gdgoc.domain.study.enums.CreatorType;
 import inha.gdgoc.domain.study.enums.StudyStatus;
 
 import java.util.List;
@@ -15,13 +15,13 @@ public interface StudyRepositoryCustom {
 
     List<Study> findAllByStatusAndCreatorType(
             Optional<StudyStatus> status,
-            Optional<CreaterType> creatorType,
+            Optional<CreatorType> creatorType,
             Long limit,
             Long offset
     );
 
     Long findAllCountByStatusAndCreatorType(
             Optional<StudyStatus> status,
-            Optional<CreaterType> creatorType
+            Optional<CreatorType> creatorType
     );
 }

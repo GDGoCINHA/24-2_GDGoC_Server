@@ -1,6 +1,6 @@
 package inha.gdgoc.domain.study.entity;
 
-import inha.gdgoc.domain.study.enums.CreaterType;
+import inha.gdgoc.domain.study.enums.CreatorType;
 import inha.gdgoc.domain.study.enums.StudyStatus;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.global.common.BaseEntity;
@@ -51,7 +51,7 @@ public class Study extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 10, nullable = false)
-    private CreaterType createrType;
+    private CreatorType creatorType;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
@@ -88,7 +88,7 @@ public class Study extends BaseEntity {
             String simpleIntroduce,
             String activityIntroduce,
             String imagePath,
-            CreaterType createrType,
+            CreatorType creatorType,
             StudyStatus status,
             String expectedTime,
             String expectedPlace,
@@ -103,7 +103,7 @@ public class Study extends BaseEntity {
         study.simpleIntroduce = simpleIntroduce;
         study.activityIntroduce = activityIntroduce;
         study.imagePath = imagePath;
-        study.createrType = createrType;
+        study.creatorType = creatorType;
         study.status = status;
         study.expectedTime = expectedTime;
         study.expectedPlace = expectedPlace;

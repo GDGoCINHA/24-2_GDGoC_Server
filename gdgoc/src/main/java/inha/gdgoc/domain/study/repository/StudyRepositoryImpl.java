@@ -4,7 +4,7 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import inha.gdgoc.domain.study.entity.QStudy;
 import inha.gdgoc.domain.study.entity.Study;
-import inha.gdgoc.domain.study.enums.CreaterType;
+import inha.gdgoc.domain.study.enums.CreatorType;
 import inha.gdgoc.domain.study.enums.StudyStatus;
 import inha.gdgoc.domain.user.entity.QUser;
 
@@ -43,7 +43,7 @@ public class StudyRepositoryImpl implements StudyRepositoryCustom {
 
     @Override
     public List<Study> findAllByStatusAndCreatorType(
-            Optional<StudyStatus> status, Optional<CreaterType> creatorType,
+            Optional<StudyStatus> status, Optional<CreatorType> creatorType,
             Long limit, Long offset) {
 
         QStudy study = QStudy.study;
@@ -63,7 +63,7 @@ public class StudyRepositoryImpl implements StudyRepositoryCustom {
     }
 
     @Override
-    public Long findAllCountByStatusAndCreatorType(Optional<StudyStatus> status, Optional<CreaterType> creatorType) {
+    public Long findAllCountByStatusAndCreatorType(Optional<StudyStatus> status, Optional<CreatorType> creatorType) {
         QStudy study = QStudy.study;
 
         BooleanBuilder builder = new BooleanBuilder();
