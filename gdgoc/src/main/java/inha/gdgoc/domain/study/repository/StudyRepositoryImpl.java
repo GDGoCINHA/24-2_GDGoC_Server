@@ -51,7 +51,7 @@ public class StudyRepositoryImpl implements StudyRepositoryCustom {
         BooleanBuilder builder = new BooleanBuilder();
 
         status.ifPresent(s -> builder.and(study.status.eq(s)));
-        creatorType.ifPresent(c -> builder.and(study.createrType.eq(c)));
+        creatorType.ifPresent(c -> builder.and(study.creatorType.eq(c)));
 
         return queryFactory
                 .selectFrom(study)
@@ -69,7 +69,7 @@ public class StudyRepositoryImpl implements StudyRepositoryCustom {
         BooleanBuilder builder = new BooleanBuilder();
 
         status.ifPresent(s -> builder.and(study.status.eq(s)));
-        creatorType.ifPresent(c -> builder.and(study.createrType.eq(c)));
+        creatorType.ifPresent(c -> builder.and(study.creatorType.eq(c)));
 
         return queryFactory
                 .select(study.count())
