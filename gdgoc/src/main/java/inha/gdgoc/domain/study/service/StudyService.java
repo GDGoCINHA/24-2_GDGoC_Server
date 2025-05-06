@@ -7,7 +7,7 @@ import inha.gdgoc.domain.study.dto.StudyListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.StudyCreateRequest;
 import inha.gdgoc.domain.study.dto.response.MyStudyRecruitResponse;
 import inha.gdgoc.domain.study.entity.Study;
-import inha.gdgoc.domain.study.enums.CreaterType;
+import inha.gdgoc.domain.study.enums.CreatorType;
 import inha.gdgoc.domain.study.enums.StudyStatus;
 import inha.gdgoc.domain.study.repository.StudyRepository;
 import inha.gdgoc.domain.user.entity.User;
@@ -35,7 +35,7 @@ public class StudyService {
     public StudyListWithMetaDto getStudyList(
             Optional<Long> _page,
             Optional<StudyStatus> status,
-            Optional<CreaterType> creatorType
+            Optional<CreatorType> creatorType
     ) {
         Long page = _page.orElse(1L);
 
@@ -126,7 +126,7 @@ public class StudyService {
                 .id(study.getId())
                 .title(study.getTitle())
                 .creatorId(study.getUser().getId())
-                .createrType(study.getCreaterType())
+                .creatorType(study.getCreatorType())
                 .simpleIntroduce(study.getSimpleIntroduce())
                 .activityIntroduce(study.getActivityIntroduce())
                 .status(study.getStatus())

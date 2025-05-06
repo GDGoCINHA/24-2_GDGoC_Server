@@ -8,7 +8,7 @@ import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeResponse;
 import inha.gdgoc.domain.study.entity.Study;
 import inha.gdgoc.domain.study.entity.StudyAttendee;
 import inha.gdgoc.domain.study.enums.AttendeeStatus;
-import inha.gdgoc.domain.study.enums.CreaterType;
+import inha.gdgoc.domain.study.enums.CreatorType;
 import inha.gdgoc.domain.study.enums.StudyStatus;
 import inha.gdgoc.domain.study.repository.StudyAttendeeRepository;
 import inha.gdgoc.domain.study.repository.StudyRepository;
@@ -336,7 +336,7 @@ class StudyAttendeeServiceTest {
                 .simpleIntroduce("간단한 소개")
                 .activityIntroduce("활동 소개")
                 .imagePath("test url")
-                .createrType(CreaterType.PERSONAL)
+                .creatorType(CreatorType.PERSONAL)
                 .status(StudyStatus.RECRUITED)
                 .expectedTime("매일매일")
                 .expectedPlace("인하대정문")

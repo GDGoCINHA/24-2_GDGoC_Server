@@ -23,7 +23,6 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -148,7 +147,7 @@ public class AuthController {
     @PostMapping("/password-reset/confirm")
     public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody PasswordResetRequest passwordResetRequest) {
         Optional<User> user = userRepository.findByEmail(passwordResetRequest.email());
-        if(user.isEmpty()) {
+        if (user.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.of(null, null));
         }
@@ -158,18 +157,5 @@ public class AuthController {
         userRepository.save(foundUser);
 
         return ResponseEntity.ok(ApiResponse.of(null, null));
-    }
-
-    private void expireCookie(HttpServletResponse response) {
-        ResponseCookie expiredCookie = ResponseCookie.from("refresh_token", null)
-                .maxAge(0)
-                .path("/")
-                .httpOnly(true)
-                .secure(true)
-                .sameSite("None")
-                .build();
-
-        response.addHeader("Set-Cookie", expiredCookie.toString());
-        log.info("쿠키가 성공적으로 만료되었습니다");
     }
 }
