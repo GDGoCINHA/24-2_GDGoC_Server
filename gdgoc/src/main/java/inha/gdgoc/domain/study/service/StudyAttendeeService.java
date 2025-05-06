@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.study.service;
 
+import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.study.dto.AttendeeUpdateDto;
 import inha.gdgoc.domain.study.dto.StudyAttendeeDto;
 import inha.gdgoc.domain.study.dto.StudyAttendeeListWithMetaDto;
@@ -38,6 +39,7 @@ public class StudyAttendeeService {
     private final StudyAttendeeRepository studyAttendeeRepository;
 
     private static final Long STUDY_ATTENDEE_PAGE_COUNT = 10L;
+    private final AuthService authService;
 
     public StudyAttendeeListWithMetaDto getStudyAttendeeList(Long studyId, Optional<Long> _page) {
         Long page = _page.orElse(1L);
@@ -101,6 +103,10 @@ public class StudyAttendeeService {
 
         Study study = studyRepository.findById(studyId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 스터디가 존재하지 않습니다."));
+
+        if (userId.equals(study.getUser().getId())) {
+            throw new RuntimeException("자신이 만든 스터디에는 가입할 수 없습니다.");
+        }
 
         StudyAttendee studyAttendee = StudyAttendee.create(AttendeeStatus.REQUESTED, attendeeCreateRequest.getIntroduce(), attendeeCreateRequest.getActivityTime(), study, user);
         studyAttendeeRepository.save(studyAttendee);
