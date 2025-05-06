@@ -40,6 +40,7 @@ public class StudyAttendeeService {
 
     private static final Long STUDY_ATTENDEE_PAGE_COUNT = 10L;
     private final AuthService authService;
+    private final StudyService studyService;
 
     public StudyAttendeeListWithMetaDto getStudyAttendeeList(Long studyId, Optional<Long> _page) {
         Long page = _page.orElse(1L);
@@ -106,6 +107,10 @@ public class StudyAttendeeService {
 
         if (userId.equals(study.getUser().getId())) {
             throw new RuntimeException("자신이 만든 스터디에는 가입할 수 없습니다.");
+        }
+
+        if (studyAttendeeRepository.existsByUserId(userId)) {
+            throw new RuntimeException("이미 가입한 스터디입니다.");
         }
 
         StudyAttendee studyAttendee = StudyAttendee.create(AttendeeStatus.REQUESTED, attendeeCreateRequest.getIntroduce(), attendeeCreateRequest.getActivityTime(), study, user);
