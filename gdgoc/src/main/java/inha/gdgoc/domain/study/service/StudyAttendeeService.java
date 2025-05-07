@@ -61,7 +61,16 @@ public class StudyAttendeeService {
                 .build();
     }
 
-    public GetStudyAttendeeResponse getStudyAttendee(Long studyId, Long attendeeId) {
+    public GetStudyAttendeeResponse getStudyAttendee(Long authenticatedUser, Long studyId, Long attendeeId) {
+        Study study = studyRepository.findById(studyId)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 스터디입니다."));
+        if (!userRepository.existsById(attendeeId)) {
+            throw new RuntimeException("존재하지 않는 유저입니다.");
+        }
+        if (!study.isCreatedBy(authenticatedUser)) {
+            throw new RuntimeException("본인이 만든 스터디의 지원자 정보만 확인할 수 있습니다.");
+        }
+
         StudyAttendee studyAttendee = studyAttendeeRepository.findStudyAttendeeByStudyIdAndUserId(studyId, attendeeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 스터디에 지원한 지원자 정보가 없습니다."));
         User stuatAttendeeUser = studyAttendee.getUser();
@@ -110,7 +119,14 @@ public class StudyAttendeeService {
         );
         studyAttendeeRepository.save(studyAttendee);
 
-        return getStudyAttendee(studyId, userId);
+        return GetStudyAttendeeResponse.builder()
+                .name(user.getName())
+                .phone(user.getPhoneNumber())
+                .major(user.getMajor())
+                .studentId(user.getStudentId())
+                .introduce(studyAttendee.getIntroduce())
+                .activityTime(studyAttendee.getActivityTime())
+                .build();
     }
 
     @Transactional
