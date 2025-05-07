@@ -45,10 +45,13 @@ public class StudyAttendeeController {
 
     @GetMapping("/{attendeeId}")
     public ResponseEntity<ApiResponse<GetStudyAttendeeResponse>> getStudyAttendee(
+            Authentication authentication,
             @PathVariable Long studyId,
             @PathVariable Long attendeeId
     ) {
-        return ResponseEntity.ok(ApiResponse.of(studyAttendeeService.getStudyAttendee(studyId, attendeeId)));
+        return ResponseEntity.ok(ApiResponse.of(studyAttendeeService.getStudyAttendee(
+                authService.getAuthenticationUserId(authentication), studyId, attendeeId))
+        );
     }
 
 
@@ -59,7 +62,9 @@ public class StudyAttendeeController {
             @RequestBody AttendeeCreateRequest attendeeCreateRequest
     ) {
         Long userId = authService.getAuthenticationUserId(authentication);
-        return ResponseEntity.ok(ApiResponse.of(studyAttendeeService.createAttendee(userId, studyId, attendeeCreateRequest)));
+        return ResponseEntity.ok(
+                ApiResponse.of(studyAttendeeService.createAttendee(userId, studyId, attendeeCreateRequest))
+        );
     }
 
     @PatchMapping

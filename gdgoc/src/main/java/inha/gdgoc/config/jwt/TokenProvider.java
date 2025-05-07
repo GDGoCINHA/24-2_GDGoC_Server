@@ -60,20 +60,9 @@ public class TokenProvider {
         );
     }
 
-    public Claims validToken(String token) {
-        try {
-            return getClaims(token);
-        } catch (ExpiredJwtException e) {
-            throw new JwtException("Token has expired", e);
-        } catch (UnsupportedJwtException e) {
-            throw new JwtException("Unsupported JWT token", e);
-        } catch (MalformedJwtException e) {
-            throw new JwtException("Malformed JWT token", e);
-        } catch (SignatureException e) {
-            throw new JwtException("Invalid JWT signature", e);
-        } catch (IllegalArgumentException e) {
-            throw new JwtException("JWT claims string is empty", e);
-        }
+    public Claims validToken(String token) throws ExpiredJwtException, UnsupportedJwtException,
+            MalformedJwtException, SignatureException, IllegalArgumentException {
+        return getClaims(token);
     }
 
     public Authentication getAuthentication(String token) {

@@ -14,7 +14,6 @@ import inha.gdgoc.domain.study.repository.StudyRepository;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.domain.user.service.UserService;
-import inha.gdgoc.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -93,9 +92,11 @@ public class StudyService {
     }
 
     public GetDetailedStudyResponse getStudyById(Long studyId) {
-        Study study = studyRepository.findOneWithUserById(studyId)
-                .orElseThrow(() -> new NotFoundException("Study not found with id: " + studyId));
-        return GetDetailedStudyResponse.from(study, study.getUser());
+        Optional<Study> study = studyRepository.findById(studyId);
+        if(study.isEmpty()) {
+            throw new RuntimeException("해당 스터디가 존재하지 않습니다.");
+        }
+        return GetDetailedStudyResponse.from(study.orElse(null), study.get().getUser());
     }
 
     @Transactional

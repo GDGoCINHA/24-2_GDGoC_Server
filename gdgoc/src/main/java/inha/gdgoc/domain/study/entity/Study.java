@@ -116,6 +116,10 @@ public class Study extends BaseEntity {
         return study;
     }
 
+    public boolean isCreatedBy(Long userId) {
+        return this.user.getId().equals(userId);
+    }
+
     public void setUser(User user) {
         this.user = user;
         if (user != null && !user.getStudies().contains(this)) {

@@ -14,6 +14,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -111,7 +113,11 @@ public class User extends BaseEntity {
         }
     }
 
-    public void updatePassword(String password) {
+    public void updatePassword(String password) throws NoSuchAlgorithmException, InvalidKeyException {
         this.password = EncryptUtil.encrypt(password, this.salt);
+    }
+
+    public boolean isGuest() {
+        return this.userRole == UserRole.GUEST;
     }
 }
