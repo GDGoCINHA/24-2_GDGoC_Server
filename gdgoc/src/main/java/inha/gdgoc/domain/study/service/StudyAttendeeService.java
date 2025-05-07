@@ -12,9 +12,9 @@ import inha.gdgoc.domain.study.entity.StudyAttendee;
 import inha.gdgoc.domain.study.enums.AttendeeStatus;
 import inha.gdgoc.domain.study.repository.StudyAttendeeRepository;
 import inha.gdgoc.domain.study.repository.StudyRepository;
+import inha.gdgoc.domain.study.validator.CreateStudyAttendeeValidator;
 import inha.gdgoc.domain.user.entity.User;
-import inha.gdgoc.domain.user.enums.UserRole;
-import inha.gdgoc.domain.user.service.UserService;
+import inha.gdgoc.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,11 +33,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class StudyAttendeeService {
 
-    private final UserService userService;
     private final StudyRepository studyRepository;
     private final StudyAttendeeRepository studyAttendeeRepository;
+    private final CreateStudyAttendeeValidator createStudyAttendeeValidator;
 
     private static final Long STUDY_ATTENDEE_PAGE_COUNT = 10L;
+    private final UserRepository userRepository;
 
     public StudyAttendeeListWithMetaDto getStudyAttendeeList(Long studyId, Optional<Long> _page) {
         Long page = _page.orElse(1L);
@@ -60,7 +61,16 @@ public class StudyAttendeeService {
                 .build();
     }
 
-    public GetStudyAttendeeResponse getStudyAttendee(Long studyId, Long attendeeId) {
+    public GetStudyAttendeeResponse getStudyAttendee(Long authenticatedUser, Long studyId, Long attendeeId) {
+        Study study = studyRepository.findById(studyId)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 스터디입니다."));
+        if (!userRepository.existsById(attendeeId)) {
+            throw new RuntimeException("존재하지 않는 유저입니다.");
+        }
+        if (!study.isCreatedBy(authenticatedUser)) {
+            throw new RuntimeException("본인이 만든 스터디의 지원자 정보만 확인할 수 있습니다.");
+        }
+
         StudyAttendee studyAttendee = studyAttendeeRepository.findStudyAttendeeByStudyIdAndUserId(studyId, attendeeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 스터디에 지원한 지원자 정보가 없습니다."));
         User stuatAttendeeUser = studyAttendee.getUser();
@@ -93,18 +103,30 @@ public class StudyAttendeeService {
             Long studyId,
             AttendeeCreateRequest attendeeCreateRequest
     ) {
-        User user = userService.findUserById(userId);
-
-        if (user.getUserRole().equals(UserRole.GUEST)) {
-            throw new IllegalArgumentException("사용 권한이 없는 유저입니다.");
-        }
-
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
         Study study = studyRepository.findById(studyId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 스터디가 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디입니다."));
+        validateIsApplied(studyId, userId);
+        createStudyAttendeeValidator.validateAll(user, study);
 
-        StudyAttendee studyAttendee = StudyAttendee.create(AttendeeStatus.REQUESTED, attendeeCreateRequest.getIntroduce(), attendeeCreateRequest.getActivityTime(), study, user);
+        StudyAttendee studyAttendee = StudyAttendee.create(
+                AttendeeStatus.REQUESTED,
+                attendeeCreateRequest.getIntroduce(),
+                attendeeCreateRequest.getActivityTime(),
+                study,
+                user
+        );
         studyAttendeeRepository.save(studyAttendee);
-        return getStudyAttendee(studyId, userId);
+
+        return GetStudyAttendeeResponse.builder()
+                .name(user.getName())
+                .phone(user.getPhoneNumber())
+                .major(user.getMajor())
+                .studentId(user.getStudentId())
+                .introduce(studyAttendee.getIntroduce())
+                .activityTime(studyAttendee.getActivityTime())
+                .build();
     }
 
     @Transactional
@@ -140,5 +162,11 @@ public class StudyAttendeeService {
                 .studentId(studyAttendee.getUser().getStudentId())
                 .status(studyAttendee.getStatus())
                 .build();
+    }
+
+    private void validateIsApplied(Long studyId, Long userId) {
+        if (studyAttendeeRepository.existsByStudyIdAndUserId(studyId, userId)) {
+            throw new IllegalArgumentException("이미 가입한 스터디입니다.");
+        }
     }
 }

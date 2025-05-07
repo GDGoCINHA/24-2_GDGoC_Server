@@ -6,6 +6,8 @@ import inha.gdgoc.domain.auth.dto.response.LoginResponse;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -113,7 +115,8 @@ public class AuthService {
         );
     }
 
-    public LoginResponse loginWithPassword(UserLoginRequest userLoginRequest, HttpServletResponse response) {
+    public LoginResponse loginWithPassword(UserLoginRequest userLoginRequest, HttpServletResponse response)
+            throws NoSuchAlgorithmException, InvalidKeyException {
         Optional<User> user = userRepository.findByEmail(userLoginRequest.email());
         if (user.isEmpty()) {
             return new LoginResponse(false, null);
