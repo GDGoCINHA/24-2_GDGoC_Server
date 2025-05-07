@@ -3,6 +3,7 @@ package inha.gdgoc.global.common;
 import inha.gdgoc.global.error.ErrorCode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.springframework.http.HttpStatus;
 
 public class ErrorResponse {
 
@@ -12,6 +13,11 @@ public class ErrorResponse {
     public ErrorResponse(ErrorCode errorCode) {
         this.status = errorCode.getStatus().value();
         this.message = errorCode.getMessage();
+    }
+
+    public ErrorResponse(HttpStatus status, String message) {
+        this.status = status.value();
+        this.message = message;
     }
 
     public int getStatus() {
