@@ -1,5 +1,7 @@
 package inha.gdgoc.util;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
 import javax.crypto.Mac;
@@ -7,7 +9,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class EncryptUtil {
 
-    public static String encrypt(String oldPassword, byte[] salt) {
+    public static String encrypt(String oldPassword, byte[] salt) throws NoSuchAlgorithmException, InvalidKeyException {
         return generateHashedValue(oldPassword, salt);
     }
 
@@ -18,16 +20,14 @@ public class EncryptUtil {
         return salt;
     }
 
-    public static String generateHashedValue(String oldPassword, byte[] salt) {
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            SecretKeySpec secretKeySpec = new SecretKeySpec(salt, "HmacSHA256");
-            mac.init(secretKeySpec);
+    public static String generateHashedValue(String oldPassword, byte[] salt)
+            throws NoSuchAlgorithmException, InvalidKeyException {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        SecretKeySpec secretKeySpec = new SecretKeySpec(salt, "HmacSHA256");
+        mac.init(secretKeySpec);
 
-            byte[] hashedBytes = mac.doFinal(oldPassword.getBytes());
-            return Base64.getEncoder().encodeToString(hashedBytes);
-        } catch (Exception e) {
-            throw new RuntimeException("Error while hashing password", e);
-        }
+        byte[] hashedBytes = mac.doFinal(oldPassword.getBytes());
+        return Base64.getEncoder().encodeToString(hashedBytes);
+
     }
 }

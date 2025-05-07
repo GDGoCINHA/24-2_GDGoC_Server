@@ -8,6 +8,8 @@ import inha.gdgoc.domain.user.dto.response.CheckDuplicatedEmailResponse;
 import inha.gdgoc.domain.user.service.UserService;
 import inha.gdgoc.global.common.ApiResponse;
 import inha.gdgoc.global.common.ErrorResponse;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,20 +32,16 @@ public class UserController {
 
     @PostMapping("/auth/signup")
     public ResponseEntity<ApiResponse<String>> userSignup(
-            @RequestBody UserSignupRequest userSignupRequest) {
+            @RequestBody UserSignupRequest userSignupRequest) throws NoSuchAlgorithmException, InvalidKeyException {
         userService.saveUser(userSignupRequest);
         return ResponseEntity.ok(ApiResponse.of(null, null));
     }
 
     @PostMapping("/auth/findId")
     public ResponseEntity<?> findId(@RequestBody FindIdRequest findIdRequest) {
-        try {
-            FindIdResponse response = userService.findId(findIdRequest);
-            return ResponseEntity.ok(ApiResponse.of(response));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorResponse(e.getMessage()));
-        }
+        FindIdResponse response = userService.findId(findIdRequest);
+
+        return ResponseEntity.ok(ApiResponse.of(response));
+
     }
 }

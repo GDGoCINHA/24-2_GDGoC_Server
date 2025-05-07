@@ -12,6 +12,8 @@ import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.exception.NotFoundException;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +62,7 @@ public class UserService {
         return new FindIdResponse(maskedEmail);
     }
 
-    public void saveUser(UserSignupRequest userSignupRequest) {
+    public void saveUser(UserSignupRequest userSignupRequest) throws NoSuchAlgorithmException, InvalidKeyException {
         byte[] salt = generateSalt();
         String hashedPassword = encrypt(userSignupRequest.getPassword(), salt);
 

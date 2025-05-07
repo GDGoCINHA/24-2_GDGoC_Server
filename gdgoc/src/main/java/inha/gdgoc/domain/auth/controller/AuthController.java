@@ -7,6 +7,7 @@ import inha.gdgoc.domain.auth.dto.request.UserLoginRequest;
 import inha.gdgoc.domain.auth.dto.response.AccessTokenResponse;
 import inha.gdgoc.domain.auth.dto.response.CodeVerificationResponse;
 import inha.gdgoc.domain.auth.dto.response.LoginResponse;
+import inha.gdgoc.domain.auth.exception.AuthErrorCode;
 import inha.gdgoc.domain.auth.service.AuthCodeService;
 import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.auth.service.MailService;
@@ -16,8 +17,11 @@ import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.common.ApiResponse;
 import inha.gdgoc.global.common.ErrorResponse;
 
+import inha.gdgoc.global.error.BusinessException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -62,9 +66,7 @@ public class AuthController {
         log.info("리프레시 토큰 요청 받음. 토큰 존재 여부: {}", refreshToken != null);
 
         if (refreshToken == null) {
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body(new ErrorResponse("Refresh token is missing."));
+            throw new BusinessException(AuthErrorCode.INVALID_COOKIE);
         }
 
         log.info("리프레시 토큰 값: {}", refreshToken);
@@ -75,15 +77,14 @@ public class AuthController {
             return ResponseEntity.ok(ApiResponse.of(accessTokenResponse, null));
         } catch (Exception e) {
             log.error("리프레시 토큰 처리 중 오류: {}", e.getMessage(), e);
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body(new ErrorResponse("Invalid refresh token: " + e.getMessage()));
+            throw new BusinessException(AuthErrorCode.INVALID_REFRESH_TOKEN);
         }
     }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody UserLoginRequest userLoginRequest,
-                                                            HttpServletResponse response) {
+                                                            HttpServletResponse response)
+            throws NoSuchAlgorithmException, InvalidKeyException {
         LoginResponse loginResponse = authService.loginWithPassword(userLoginRequest, response);
         return ResponseEntity.ok(ApiResponse.of(loginResponse, null));
     }
@@ -145,7 +146,8 @@ public class AuthController {
     }
 
     @PostMapping("/password-reset/confirm")
-    public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody PasswordResetRequest passwordResetRequest) {
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody PasswordResetRequest passwordResetRequest)
+            throws NoSuchAlgorithmException, InvalidKeyException {
         Optional<User> user = userRepository.findByEmail(passwordResetRequest.email());
         if (user.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
