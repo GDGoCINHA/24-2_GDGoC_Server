@@ -114,4 +114,8 @@ public class User extends BaseEntity {
     public void updatePassword(String password) {
         this.password = EncryptUtil.encrypt(password, this.salt);
     }
+
+    public boolean isGuest() {
+        return this.userRole == UserRole.GUEST;
+    }
 }
