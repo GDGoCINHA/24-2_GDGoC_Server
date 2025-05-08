@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.study.service;
 
+import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.study.dto.StudyAttendeeResultDto;
 import inha.gdgoc.domain.study.dto.StudyDto;
 import inha.gdgoc.domain.study.dto.StudyListWithMetaDto;
@@ -17,13 +18,13 @@ import inha.gdgoc.domain.study.repository.StudyRepository;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
-import inha.gdgoc.exception.NotFoundException;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -33,11 +34,16 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 
 @SpringBootTest
 @Transactional
 class StudyServiceTest {
+
+    @MockitoBean
+    private S3Service s3Service;
 
     @Autowired
     private StudyService studyService;
@@ -60,6 +66,7 @@ class StudyServiceTest {
     void setUp() {
         user = createUser();
         userRepository.save(user);
+        when(s3Service.getS3FileUrl(anyString())).thenReturn("http://test.image");
     }
 
 
@@ -89,38 +96,38 @@ class StudyServiceTest {
         }).isInstanceOf(RuntimeException.class);
     }
 
-//    @DisplayName("스터디 목록을 페이징하여 조회한다.")
-//    @Test
-//    void getStudyList() {
-//        // given
-//        for (int i = 0; i < 15; i++) {
-//            studyRepository.save(createStudy("스터디" + i, user));
-//        }
-//
-//        // when
-//        StudyListWithMetaDto page_ONE_Result = studyService.getStudyList(
-//                Optional.of(1L),
-//                Optional.empty(),
-//                Optional.empty()
-//        );
-//
-//        StudyListWithMetaDto page_TWO_Result = studyService.getStudyList(
-//                Optional.of(2L),
-//                Optional.empty(),
-//                Optional.empty()
-//        );
-//
-//        // then
-//        assertThat(page_ONE_Result).isNotNull();
-//        assertThat(page_ONE_Result.getStudyList()).hasSize(10);
-//        assertThat(page_ONE_Result.getPage()).isEqualTo(1L);
-//        assertThat(page_ONE_Result.getPageCount()).isGreaterThanOrEqualTo(15);
-//
-//        assertThat(page_TWO_Result).isNotNull();
-//        assertThat(page_TWO_Result.getStudyList()).hasSize(5);
-//        assertThat(page_TWO_Result.getPage()).isEqualTo(2L);
-//        assertThat(page_TWO_Result.getPageCount()).isGreaterThanOrEqualTo(15);
-//    }
+    @DisplayName("스터디 목록을 페이징하여 조회한다.")
+    @Test
+    void getStudyList() {
+        // given
+        for (int i = 0; i < 15; i++) {
+            studyRepository.save(createStudy("스터디" + i, user));
+        }
+
+        // when
+        StudyListWithMetaDto page_ONE_Result = studyService.getStudyList(
+                Optional.of(1L),
+                Optional.empty(),
+                Optional.empty()
+        );
+
+        StudyListWithMetaDto page_TWO_Result = studyService.getStudyList(
+                Optional.of(2L),
+                Optional.empty(),
+                Optional.empty()
+        );
+
+        // then
+        assertThat(page_ONE_Result).isNotNull();
+        assertThat(page_ONE_Result.getStudyList()).hasSize(10);
+        assertThat(page_ONE_Result.getPage()).isEqualTo(1L);
+        assertThat(page_ONE_Result.getPageCount()).isGreaterThanOrEqualTo(15);
+
+        assertThat(page_TWO_Result).isNotNull();
+        assertThat(page_TWO_Result.getStudyList()).hasSize(5);
+        assertThat(page_TWO_Result.getPage()).isEqualTo(2L);
+        assertThat(page_TWO_Result.getPageCount()).isGreaterThanOrEqualTo(15);
+    }
 
     @DisplayName("page가 1보다 작으면 예외가 발생한다.")
     @Test
