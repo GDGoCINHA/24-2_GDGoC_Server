@@ -42,7 +42,7 @@ public class SecurityConfig {
                 .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
-                            response.setStatus(HttpStatus.BAD_REQUEST.value());
+                            response.setStatus(HttpStatus.FORBIDDEN.value());
                             response.setContentType("application/json; charset=UTF-8");
 
                             // ErrorResponse 생성
