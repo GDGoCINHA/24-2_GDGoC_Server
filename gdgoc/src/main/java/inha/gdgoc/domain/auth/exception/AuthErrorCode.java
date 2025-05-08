@@ -5,9 +5,9 @@ import org.springframework.http.HttpStatus;
 
 public enum AuthErrorCode implements ErrorCode {
 
-    // 400 Bad Request
-    INVALID_COOKIE(HttpStatus.BAD_REQUEST, "Refresh Token 이 비어있습니다."),
-    INVALID_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "잘못된 Refresh Token 값입니다.");
+    // 403 Forbidden
+    INVALID_COOKIE(HttpStatus.FORBIDDEN, "Refresh Token 이 비어있습니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.FORBIDDEN, "잘못된 Refresh Token 값입니다.");
 
     private final HttpStatus status;
     private final String message;
