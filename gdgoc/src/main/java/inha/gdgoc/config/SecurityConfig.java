@@ -69,7 +69,7 @@ public class SecurityConfig {
                 "https://typing-game-alpha-umber.vercel.app"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")); // ✅ OPTIONS 포함
-        config.setAllowedHeaders(List.of("*"));
+        config.setAllowedHeaders(List.of("Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"));
         config.setAllowCredentials(true); // ✅ 쿠키 전송 허용
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
