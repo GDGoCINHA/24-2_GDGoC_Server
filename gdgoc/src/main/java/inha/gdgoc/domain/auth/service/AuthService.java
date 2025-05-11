@@ -3,12 +3,14 @@ package inha.gdgoc.domain.auth.service;
 import inha.gdgoc.config.jwt.TokenProvider;
 import inha.gdgoc.domain.auth.dto.request.UserLoginRequest;
 import inha.gdgoc.domain.auth.dto.response.LoginResponse;
+import inha.gdgoc.domain.auth.enums.LoginType;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -28,6 +30,7 @@ import java.util.Optional;
 
 import static inha.gdgoc.util.EncryptUtil.encrypt;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -96,7 +99,8 @@ public class AuthService {
         User user = foundUser.get();
 
         String jwtAccessToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofHours(1));
-        String refreshToken = refreshTokenService.getOrCreateRefreshToken(user, Duration.ofDays(1));
+        String refreshToken = refreshTokenService.getOrCreateRefreshToken(user, Duration.ofDays(1),
+                LoginType.GOOGLE_LOGIN);
 
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
                 .httpOnly(true)
@@ -107,6 +111,7 @@ public class AuthService {
                 .build();
 
         // Set-Cookie 헤더로 추가
+        log.info("Response Cookie에 저장된 Refresh Token: {}", refreshCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         return Map.of(
@@ -129,7 +134,8 @@ public class AuthService {
         }
 
         String accessToken = tokenProvider.generateSelfSignupToken(foundUser, Duration.ofHours(1));
-        String refreshToken = refreshTokenService.getOrCreateRefreshToken(foundUser, Duration.ofDays(1));
+        String refreshToken = refreshTokenService.getOrCreateRefreshToken(foundUser, Duration.ofDays(1),
+                LoginType.SELF_SIGNUP);
 
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
                 .httpOnly(true)
@@ -139,6 +145,7 @@ public class AuthService {
                 .maxAge(Duration.ofDays(1))
                 .build();
 
+        log.info("Response Cookie에 저장된 Refresh Token: {}", refreshCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         return new LoginResponse(true, accessToken);
