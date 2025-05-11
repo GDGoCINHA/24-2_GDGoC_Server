@@ -70,13 +70,8 @@ public class RefreshTokenService {
         User user = optionalUser.get();
 
         // 2. DB에서 RefreshToken 조회
-        Optional<RefreshToken> refreshTokenEntity = refreshTokenRepository.findByUser(user);
-
-        if (refreshTokenEntity.isEmpty()) {
-            throw new RuntimeException("DB에 저장된 리프레시 토큰이 없습니다.");
-        }
-
-        RefreshToken storedToken = refreshTokenEntity.get();
+        RefreshToken storedToken = refreshTokenRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("DB에 저장된 리프레시 토큰이 없습니다."));
 
         // 만료 시간 체크 (로컬 시간 기준)
         if (storedToken.getExpiryDate().isBefore(LocalDateTime.now())) {
@@ -89,18 +84,11 @@ public class RefreshTokenService {
         }
 
         // 3. AccessToken 새로 발급
-        // 리프레시 토큰에서 로그인 타입 확인
         LoginType loginType = claims.get("loginType", LoginType.class);
 
-        // 로그인 타입에 따라 적절한 액세스 토큰 생성
-        String newAccessToken;
-        if (loginType == LoginType.SELF_SIGNUP) {
-            newAccessToken = tokenProvider.generateSelfSignupToken(user, Duration.ofHours(1));
-        } else {
-            newAccessToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofHours(1));
-        }
-
-        return newAccessToken;
+        return (loginType == LoginType.SELF_SIGNUP)
+                ? tokenProvider.generateSelfSignupToken(user, Duration.ofHours(1))
+                : tokenProvider.generateGoogleLoginToken(user, Duration.ofHours(1));
     }
 
     @Transactional

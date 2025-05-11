@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -29,6 +30,7 @@ import java.util.Optional;
 
 import static inha.gdgoc.util.EncryptUtil.encrypt;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -109,6 +111,7 @@ public class AuthService {
                 .build();
 
         // Set-Cookie 헤더로 추가
+        log.info("Response Cookie에 저장된 Refresh Token: {}", refreshCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         return Map.of(
@@ -142,6 +145,7 @@ public class AuthService {
                 .maxAge(Duration.ofDays(1))
                 .build();
 
+        log.info("Response Cookie에 저장된 Refresh Token: {}", refreshCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         return new LoginResponse(true, accessToken);
