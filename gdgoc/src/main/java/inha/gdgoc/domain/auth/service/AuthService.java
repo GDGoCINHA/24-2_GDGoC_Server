@@ -3,7 +3,6 @@ package inha.gdgoc.domain.auth.service;
 import inha.gdgoc.config.jwt.TokenProvider;
 import inha.gdgoc.domain.auth.dto.request.UserLoginRequest;
 import inha.gdgoc.domain.auth.dto.response.LoginResponse;
-import inha.gdgoc.domain.auth.enums.LoginType;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
@@ -97,8 +96,7 @@ public class AuthService {
         User user = foundUser.get();
 
         String jwtAccessToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofHours(1));
-        String refreshToken = refreshTokenService.getOrCreateRefreshToken(user, Duration.ofDays(1),
-                LoginType.GOOGLE_LOGIN);
+        String refreshToken = refreshTokenService.getOrCreateRefreshToken(user, Duration.ofDays(1));
 
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
                 .httpOnly(true)
@@ -131,8 +129,7 @@ public class AuthService {
         }
 
         String accessToken = tokenProvider.generateSelfSignupToken(foundUser, Duration.ofHours(1));
-        String refreshToken = refreshTokenService.getOrCreateRefreshToken(foundUser, Duration.ofDays(1),
-                LoginType.SELF_SIGNUP);
+        String refreshToken = refreshTokenService.getOrCreateRefreshToken(foundUser, Duration.ofDays(1));
 
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
                 .httpOnly(true)

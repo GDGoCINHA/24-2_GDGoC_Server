@@ -2,7 +2,6 @@ package inha.gdgoc.domain.auth.service;
 
 import inha.gdgoc.config.jwt.TokenProvider;
 import inha.gdgoc.domain.auth.entity.RefreshToken;
-import inha.gdgoc.domain.auth.enums.LoginType;
 import inha.gdgoc.domain.auth.repository.RefreshTokenRepository;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
@@ -26,7 +25,7 @@ public class RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;
 
     @Transactional
-    public String getOrCreateRefreshToken(User user, Duration duration, LoginType loginType) {
+    public String getOrCreateRefreshToken(User user, Duration duration) {
         Optional<RefreshToken> existingToken = refreshTokenRepository.findByUser(user);
 
         // 1. 유효한 토큰이 있으면 재사용
@@ -41,7 +40,7 @@ public class RefreshTokenService {
         }
 
         // 2. 없거나 만료되었으면 새로 생성
-        String newToken = tokenProvider.generateRefreshToken(user, duration, loginType);
+        String newToken = tokenProvider.generateRefreshToken(user, duration);
         log.info("새로운 Refresh Token 생성됨: {}", newToken);
 
         // 3. 토큰 저장 (Private 메서드 활용)
@@ -88,16 +87,8 @@ public class RefreshTokenService {
         }
 
         // 3. AccessToken 새로 발급
-        // 리프레시 토큰에서 로그인 타입 확인
-        LoginType loginType = claims.get("loginType", LoginType.class);
-
-        // 로그인 타입에 따라 적절한 액세스 토큰 생성
-        String newAccessToken;
-        if (loginType == LoginType.SELF_SIGNUP) {
-            newAccessToken = tokenProvider.generateSelfSignupToken(user, Duration.ofHours(1));
-        } else {
-            newAccessToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofHours(1));
-        }
+        String newAccessToken = tokenProvider.generateGoogleLoginToken(user, Duration.ofHours(1));
+        log.info("새로운 AccessToken 생성됨: {}", newAccessToken);
 
         return newAccessToken;
     }
