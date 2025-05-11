@@ -83,6 +83,7 @@ public class RefreshTokenService {
         }
 
         if (!storedToken.getToken().equals(refreshToken)) {
+            log.info("DB에 저장된 토큰: {}", storedToken.getToken());
             throw new RuntimeException("리프레시 토큰이 일치하지 않습니다.");
         }
 
