@@ -6,12 +6,12 @@ import inha.gdgoc.domain.user.enums.UserRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Header;
-import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.SignatureException;
 import io.jsonwebtoken.UnsupportedJwtException;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -51,12 +51,12 @@ public class TokenProvider {
         );
     }
 
-    public String generateRefreshToken(User user, Duration expiredAt) {
+    public String generateRefreshToken(User user, Duration expiredAt, LoginType loginType) {
         Date now = new Date();
         return makeToken(
                 new Date(now.getTime() + expiredAt.toMillis()),
                 user,
-                LoginType.REFRESH
+                loginType
         );
     }
 
@@ -118,7 +118,8 @@ public class TokenProvider {
                 .getBody();
     }
 
-    public class CustomUserDetails extends org.springframework.security.core.userdetails.User {
+    @Getter
+    public static class CustomUserDetails extends org.springframework.security.core.userdetails.User {
         private final Long userId;
 
         public CustomUserDetails(Long userId, String username, String password, Collection<? extends GrantedAuthority> authorities) {
@@ -126,8 +127,5 @@ public class TokenProvider {
             this.userId = userId;
         }
 
-        public Long getUserId() {
-            return userId;
-        }
     }
 }
