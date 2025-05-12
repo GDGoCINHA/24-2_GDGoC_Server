@@ -84,7 +84,8 @@ public class RefreshTokenService {
         }
 
         // 3. AccessToken 새로 발급
-        LoginType loginType = claims.get("loginType", LoginType.class);
+        String loginTypeStr = claims.get("loginType", String.class);
+        LoginType loginType = LoginType.valueOf(loginTypeStr);
 
         return (loginType == LoginType.SELF_SIGNUP)
                 ? tokenProvider.generateSelfSignupToken(user, Duration.ofHours(1))
