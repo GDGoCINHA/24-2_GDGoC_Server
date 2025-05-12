@@ -106,6 +106,7 @@ public class AuthService {
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("None")
+                .domain(".gdgocinha.com")
                 .path("/")
                 .maxAge(Duration.ofDays(1))
                 .build();
