@@ -5,6 +5,7 @@ import inha.gdgoc.domain.study.dto.MyStudyRecruitDto;
 import inha.gdgoc.domain.study.dto.StudyDto;
 import inha.gdgoc.domain.study.dto.StudyListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.StudyCreateRequest;
+import inha.gdgoc.domain.study.dto.response.GetCreatorResponse;
 import inha.gdgoc.domain.study.dto.response.GetDetailedStudyResponse;
 import inha.gdgoc.domain.study.dto.response.MyStudyRecruitResponse;
 import inha.gdgoc.domain.study.entity.Study;
@@ -12,7 +13,6 @@ import inha.gdgoc.domain.study.enums.CreatorType;
 import inha.gdgoc.domain.study.enums.StudyStatus;
 import inha.gdgoc.domain.study.repository.StudyRepository;
 import inha.gdgoc.domain.user.entity.User;
-import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +32,6 @@ public class StudyService {
     private final UserService userService;
     private final StudyRepository studyRepository;
     private static final Long STUDY_PAGE_COUNT = 10L;
-    private final UserRepository userRepository;
 
     public StudyListWithMetaDto getStudyList(
             Optional<Long> _page,
@@ -47,7 +46,6 @@ public class StudyService {
 
         Long limit = STUDY_PAGE_COUNT;
         Long offset = (page - 1) * limit;
-
 
         Long count = studyRepository.findAllCountByStatusAndCreatorType(status, creatorType);
         List<Study> studyList = studyRepository.findAllByStatusAndCreatorType(
@@ -93,10 +91,10 @@ public class StudyService {
 
     public GetDetailedStudyResponse getStudyById(Long studyId) {
         Optional<Study> study = studyRepository.findById(studyId);
-        if(study.isEmpty()) {
+        if (study.isEmpty()) {
             throw new RuntimeException("해당 스터디가 존재하지 않습니다.");
         }
-        return GetDetailedStudyResponse.from(study.orElse(null), study.get().getUser());
+        return detailedStudyResponse(study.orElse(null), study.get().getUser());
     }
 
     @Transactional
@@ -142,5 +140,13 @@ public class StudyService {
                 .expectedPlace(study.getExpectedPlace())
                 .imagePath(s3Service.getS3FileUrl(study.getImagePath()))
                 .build();
+    }
+
+    private GetDetailedStudyResponse detailedStudyResponse(Study study, User user) {
+        return new GetDetailedStudyResponse(study.getId(), GetCreatorResponse.from(user), study.getTitle(),
+                study.getSimpleIntroduce(), study.getActivityIntroduce(), study.getStatus(),
+                study.getRecruitStartDate(), study.getRecruitEndDate(), study.getActivityStartDate(),
+                study.getActivityEndDate(), study.getExpectedTime(), study.getExpectedPlace(),
+                s3Service.getS3FileUrl(study.getImagePath()));
     }
 }
