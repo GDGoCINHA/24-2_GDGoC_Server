@@ -28,7 +28,7 @@ jobs:
         run: |
           cp gdgoc/docker-compose-prod.yml ./docker-compose-prod.yml
           cp gdgoc/deploy.prod.sh ./deploy.prod.sh
-          cp gdgoc/appspec.prod.yml ./appspec.prod.yml
+          cp gdgoc/appspec.prod.yml ./appspec.yml
 
       - name: Create Deployment Package
         run: |
@@ -54,7 +54,7 @@ jobs:
           echo "DOZZLE_USERNAME=${{ secrets.DOZZLE_USERNAME }}" >> .env
           echo "DOZZLE_PASSWORD=${{ secrets.DOZZLE_PASSWORD }}" >> .env
           
-          zip -r deploy.zip .env docker-compose-prod.yml deploy.prod.sh appspec.prod.yml
+          zip -r deploy.zip .env docker-compose-prod.yml deploy.prod.sh appspec.yml
 
       - name: Configure AWS credentials
         run: |
