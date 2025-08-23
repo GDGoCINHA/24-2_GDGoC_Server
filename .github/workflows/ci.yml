@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ "develop", "main" ]
+    types: [ opened, synchronize, reopened, ready_for_review ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: pr-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: gradle/actions/setup-gradle@v3
+        if: ${{ !env.ACT }}
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+          gradle-home-cache-cleanup: true
+
+      - name: Create dummy .env for CI
+        working-directory: gdgoc
+        run: echo "# ci dummy" > .env
+
+      - name: Gradle build (skip tests)
+        id: assemble
+        working-directory: gdgoc
+        env: { GRADLE_OPTS: "-Dorg.gradle.vfs.watch=false" }
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build -x test --no-daemon --stacktrace --info --no-watch-fs | tee ../build.log
+
+      - name: Gradle test (H2 in-memory)
+        id: test
+        working-directory: gdgoc
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.vfs.watch=false"
+          SPRING_PROFILES_ACTIVE: test
+          SPRING_DATASOURCE_URL: jdbc:h2:mem:ci;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+          SPRING_DATASOURCE_USERNAME: sa
+          SPRING_DATASOURCE_PASSWORD: ""
+          SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.h2.Driver
+          SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.H2Dialect
+          SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+          SPRING_FLYWAY_ENABLED: "false"
+        run: ./gradlew test --no-daemon --stacktrace --info --no-watch-fs | tee ../test.log
+
+      - name: Publish unit-test results (check UI)
+        id: publish
+        if: ${{ always() && !env.ACT && hashFiles('**/build/test-results/test/**/*.xml') != '' }}
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          files: "**/build/test-results/test/**/*.xml"
+          comment_mode: off
+          check_run: ${{ !github.event.pull_request.head.repo.fork }}
+          job_summary: true
+
+      - name: Compose message
+        id: status
+        if: ${{ always() }}
+        run: |
+          if [ "${{ steps.assemble.outcome }}" = "success" ]; then
+            MSG="✅ Assemble 성공"
+          else
+            MSG="❌ Assemble 실패"
+          fi
+
+          if [ "${{ steps.test.outcome }}" = "success" ]; then
+            MSG="$MSG"$'\n'"✅ Test 성공"
+          else
+            MSG="$MSG"$'\n'"❌ Test 실패"
+          fi
+
+          if [ "${{ steps.publish.outcome }}" = "failure" ]; then
+            MSG="$MSG"$'\n'"⚠️ 테스트 리포트 게시 실패(권한/토큰 문제일 수 있음)"
+          fi
+
+          printf "message<<EOF\n%s\nEOF\n" "$MSG" >> "$GITHUB_OUTPUT"
+
+      - name: Find existing CI status comment
+        id: find-comment
+        if: ${{ always() && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && !env.ACT }}
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'CI status'
+
+      - name: Create or update PR comment
+        if: ${{ always() && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && !env.ACT }}
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            **CI status**
+            ${{ steps.status.outputs.message }}
+
+
+      - name: Fail if any failed
+        if: ${{ always() && (steps.assemble.outcome != 'success' || steps.test.outcome != 'success') }}
+        run: exit 1

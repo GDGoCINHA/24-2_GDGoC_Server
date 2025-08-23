@@ -2,8 +2,10 @@ package inha.gdgoc.config;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.annotation.PostConstruct;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+@Profile("!test")
 @Component
 public class DotenvLoader {
 

@@ -21,8 +21,14 @@ spring:
       hibernate:
         default_batch_fetch_size: 100
         time_zone: Asia/Seoul
-    show-sql: true
+    show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true # 변경 확인 후 제거 예정
+    clean-disabled: true
+    validate-migration-naming: true
+    locations: classpath:db/migration
   mail:
     host: smtp.gmail.com
     port: 587
@@ -38,7 +44,7 @@ spring:
 logging:
   level:
     org.hibernate.SQL: debug
-    org.hibername.type: trace
+    org.hibernate.type: off
 
 
 google:
