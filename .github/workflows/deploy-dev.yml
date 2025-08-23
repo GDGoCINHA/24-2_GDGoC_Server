@@ -51,6 +51,8 @@ jobs:
           echo "AWS_TEST_RESOURCE_BUCKET=${{secrets.AWS_TEST_RESOURCE_BUCKET}}" >> .env
           echo "GMAIL=${{secrets.GMAIL}}" >> .env
           echo "GMAIL_PASSWORD=${{secrets.GMAIL_PASSWORD}}" >> .env
+          echo "DOZZLE_USERNAME=${{ secrets.DOZZLE_USERNAME }}" >> .env
+          echo "DOZZLE_PASSWORD=${{ secrets.DOZZLE_PASSWORD }}" >> .env
           
           zip -r deploy.zip .env docker-compose-dev.yml deploy.dev.sh appspec.dev.yml
 
