@@ -16,3 +16,17 @@ services:
       - /home/ubuntu/gdgoc-be-app/.env:/app/.env
     env_file:
       - .env
+
+  dozzle:
+    container_name: dozzle
+    image: amir20/dozzle:v5.4.0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 9999:8080
+    environment:
+      DOZZLE_USERNAME: "${DOZZLE_USERNAME}"
+      DOZZLE_PASSWORD: "${DOZZLE_PASSWORD}"
+    restart: always
+    env_file:
+      - .env

@@ -65,4 +65,4 @@ cloud:
     region:
       static: ${AWS_REGION}
     s3:
-      bucket: ${AWS_RESOURCE_BUCKET}
+      bucket: ${WS_TEST_RESOURCE_BUCKET}
