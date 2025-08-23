@@ -45,7 +45,6 @@ jobs:
       - name: Gradle test (H2 in-memory)
         id: test
         working-directory: gdgoc
-        continue-on-error: true
         env:
           GRADLE_OPTS: "-Dorg.gradle.vfs.watch=false"
           SPRING_PROFILES_ACTIVE: test
@@ -55,4 +54,42 @@ jobs:
           SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.h2.Driver
           SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.H2Dialect
           SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+          SPRING_FLYWAY_ENABLED: "false"
         run: ./gradlew test --no-daemon --stacktrace --info --no-watch-fs | tee ../test.log
+
+      - name: Publish unit-test results (check UI)
+        id: publish
+        if: ${{ always() && !env.ACT && hashFiles('**/build/test-results/test/**/*.xml') != '' }}
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          files: "**/build/test-results/test/**/*.xml"
+          comment_mode: off
+          check_run: ${{ !github.event.pull_request.head.repo.fork }}
+          job_summary: true
+
+      - name: Compose message
+        id: status
+        if: ${{ always() }}
+        run: |
+          if [ "${{ steps.assemble.outcome }}" = "success" ]; then
+            MSG="✅ Assemble 성공"
+          else
+            MSG="❌ Assemble 실패"
+          fi
+
+          if [ "${{ steps.test.outcome }}" = "success" ]; then
+            MSG="$MSG"$'\n'"✅ Test 성공"
+          else
+            MSG="$MSG"$'\n'"❌ Test 실패"
+          fi
+
+          if [ "${{ steps.publish.outcome }}" = "failure" ]; then
+            MSG="$MSG"$'\n'"⚠️ 테스트 리포트 게시 실패(권한/토큰 문제일 수 있음)"
+          fi
+
+          printf "message<<EOF\n%s\nEOF\n" "$MSG" >> "$GITHUB_OUTPUT"
+
+      - name: Fail if any failed
+        if: ${{ always() && (steps.assemble.outcome != 'success' || steps.test.outcome != 'success') }}
+        run: exit 1
