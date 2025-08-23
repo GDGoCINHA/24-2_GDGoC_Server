@@ -1,0 +1,72 @@
+name: CD - DEV
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/gdgoc-be-app-dev:latest .
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/gdgoc-be-app-dev:latest
+
+      - name: move files to Root
+        run: |
+          cp gdgoc/docker-compose-dev.yml ./docker-compose-dev.yml
+          cp gdgoc/deploy.dev.sh ./deploy.dev.sh
+          cp gdgoc/appspec.dev.yml ./appspec.dev.yml
+
+      - name: Create Deployment Package
+        run: |
+          echo "DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}" > .env
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env 
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+          echo "DB_NAME=${{ secrets.DB_NAME_DEV }}" >> .env
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
+          echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
+          echo "GOOGLE_REDIRECT_URI=${{ secrets.GOOGLE_REDIRECT_URI }}" >> .env
+          echo "GOOGLE_ISSUER=${{secrets.GOOGLE_ISSUER}}" >> .env
+          echo "SELF_ISSUER=${{secrets.SELF_ISSUER}}" >> .env
+          echo "SECRET_KEY=${{secrets.SECRET_KEY}}" >> .env
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
+          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env
+          echo "AWS_RESOURCE_BUCKET=${{secrets.AWS_RESOURCE_BUCKET}}" >> .env
+          echo "AWS_TEST_RESOURCE_BUCKET=${{secrets.AWS_TEST_RESOURCE_BUCKET}}" >> .env
+          echo "GMAIL=${{secrets.GMAIL}}" >> .env
+          echo "GMAIL_PASSWORD=${{secrets.GMAIL_PASSWORD}}" >> .env
+          
+          zip -r deploy.zip .env docker-compose-dev.yml deploy.dev.sh appspec.dev.yml
+
+      - name: Configure AWS credentials
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region ${{ secrets.AWS_REGION }}
+
+      - name: Upload Deployment Package to S3
+        run: |
+          aws s3 cp deploy.zip s3://${{ secrets.AWS_S3_BUCKET }}/deploy-dev.zip
+
+      - name: Deploy to AWS CodeDeploy
+        run: |
+          aws deploy create-deployment \
+            --application-name ${{ secrets.AWS_CODEDEPLOY_APP }} \  
+            --deployment-group-name ${{ secrets.AWS_CODEDEPLOY_GROUP_DEV }} \
+            --s3-location bucket=${{ secrets.AWS_S3_BUCKET }},bundleType=zip,key=deploy-dev.zip

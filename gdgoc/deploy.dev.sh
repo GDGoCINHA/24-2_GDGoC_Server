@@ -1,5 +1,6 @@
 #!/bin/bash
-cd /home/ubuntu/gdgoc-be-app
+# shellcheck disable=SC2164
+cd /home/ubuntu/gdgoc-be-app-dev
 
 # Docker & Docker Compose가 설치되어 있는지 확인
 if ! [ -x "$(command -v docker)" ]; then
@@ -28,8 +29,10 @@ docker system prune -af
 docker volume prune -f
 
 # 최신 이미지 가져오기
+# shellcheck disable=SC2046
 export $(grep -v '^#' .env | xargs)
-docker pull ${DOCKER_HUB_USERNAME}/gdgoc-be-app:latest
+# shellcheck disable=SC2086
+docker pull ${DOCKER_HUB_USERNAME}/gdgoc-be-app-dev:latest
 
 # 컨테이너 실행
 docker-compose --env-file .env up -d

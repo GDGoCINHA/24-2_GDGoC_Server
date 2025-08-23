@@ -1,4 +1,4 @@
-name: Deploy to EC2 via Docker Hub and CodeDeploy
+name: CD - PROD
 
 on:
   push:
@@ -26,9 +26,9 @@ jobs:
 
       - name: move files to Root
         run: |
-          cp gdgoc/docker-compose.yml ./docker-compose.yml
-          cp gdgoc/deploy.sh ./deploy.sh
-          cp gdgoc/appspec.yml ./appspec.yml
+          cp gdgoc/docker-compose-prod.yml ./docker-compose-prod.yml
+          cp gdgoc/deploy.prod.sh ./deploy.prod.sh
+          cp gdgoc/appspec.prod.yml ./appspec.prod.yml
 
       - name: Create Deployment Package
         run: |
@@ -52,7 +52,7 @@ jobs:
           echo "GMAIL=${{secrets.GMAIL}}" >> .env
           echo "GMAIL_PASSWORD=${{secrets.GMAIL_PASSWORD}}" >> .env
           
-          zip -r deploy.zip .env docker-compose.yml deploy.sh appspec.yml
+          zip -r deploy.zip .env docker-compose-prod.yml deploy.prod.sh appspec.prod.yml
 
       - name: Configure AWS credentials
         run: |
