@@ -23,6 +23,8 @@ spring:
         time_zone: Asia/Seoul
     show-sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
   mail:
     host: smtp.gmail.com
     port: 587
@@ -38,7 +40,7 @@ spring:
 logging:
   level:
     org.hibernate.SQL: debug
-    org.hibername.type: trace
+    org.hibernate.type: trace
 
 
 google:
