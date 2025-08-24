@@ -1,10 +1,10 @@
 package inha.gdgoc.global.common;
 
 import inha.gdgoc.global.error.ErrorCode;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
+@Getter
 public class ErrorResponse {
 
     private final int status;
@@ -20,11 +20,4 @@ public class ErrorResponse {
         this.message = message;
     }
 
-    public int getStatus() {
-        return status;
-    }
-
-    public String getMessage() {
-        return message;
-    }
 }

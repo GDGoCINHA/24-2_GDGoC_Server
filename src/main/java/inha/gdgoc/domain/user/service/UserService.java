@@ -1,7 +1,7 @@
 package inha.gdgoc.domain.user.service;
 
-import static inha.gdgoc.util.EncryptUtil.encrypt;
-import static inha.gdgoc.util.EncryptUtil.generateSalt;
+import static inha.gdgoc.global.util.EncryptUtil.encrypt;
+import static inha.gdgoc.global.util.EncryptUtil.generateSalt;
 
 import inha.gdgoc.domain.auth.dto.request.FindIdRequest;
 import inha.gdgoc.domain.user.dto.request.CheckDuplicatedEmailRequest;
@@ -10,7 +10,7 @@ import inha.gdgoc.domain.auth.dto.response.FindIdResponse;
 import inha.gdgoc.domain.user.dto.response.CheckDuplicatedEmailResponse;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
-import inha.gdgoc.exception.NotFoundException;
+import inha.gdgoc.global.exception.NotFoundException;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;

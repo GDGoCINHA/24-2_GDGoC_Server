@@ -1,4 +1,4 @@
-package inha.gdgoc.config.jwt;
+package inha.gdgoc.global.config.jwt;
 
 import lombok.Getter;
 import lombok.Setter;

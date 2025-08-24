@@ -1,4 +1,4 @@
-package inha.gdgoc.util;
+package inha.gdgoc.global.util;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;

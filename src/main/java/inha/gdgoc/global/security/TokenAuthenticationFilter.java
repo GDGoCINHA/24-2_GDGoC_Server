@@ -1,8 +1,6 @@
-package inha.gdgoc.config;
+package inha.gdgoc.global.security;
 
-import inha.gdgoc.config.jwt.TokenProvider;
-import inha.gdgoc.global.error.BusinessException;
-import inha.gdgoc.global.error.GlobalErrorCode;
+import inha.gdgoc.global.config.jwt.TokenProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,6 +21,20 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
     private final TokenProvider tokenProvider;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String p = request.getRequestURI();
+        return p.startsWith("/v3/api-docs")
+            || p.startsWith("/swagger-ui")
+            || p.equals("/swagger-ui.html")
+            || p.startsWith("/auth/")
+            || p.startsWith("/test/")
+            || p.startsWith("/game/")
+            || p.startsWith("/apply/")
+            || p.startsWith("/check/")
+            || "OPTIONS".equalsIgnoreCase(request.getMethod());
+    }
 
     @Override
     protected void doFilterInternal(
