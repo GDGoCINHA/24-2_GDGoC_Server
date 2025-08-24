@@ -4,6 +4,7 @@ HELP.md
 **/.env.*
 *.env
 .env
+.env.properties
 !.env.example
 **/.env.example
 build/
