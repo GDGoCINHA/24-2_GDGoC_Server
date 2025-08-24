@@ -13,7 +13,10 @@ public class OpenApiConfig {
 
     @Bean
     public GroupedOpenApi all() {
-        return groupedApi("all", "/**");
+        return GroupedOpenApi.builder()
+            .group("all")
+            .pathsToMatch("/**")
+            .build();
     }
 
     @Bean
