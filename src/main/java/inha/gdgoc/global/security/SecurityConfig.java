@@ -30,30 +30,33 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .formLogin(AbstractHttpConfigurer::disable)
-                .httpBasic(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/test/**", "/game/**", "/apply/**", "/check/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.setStatus(HttpStatus.FORBIDDEN.value());
-                            response.setContentType("application/json; charset=UTF-8");
+            .csrf(AbstractHttpConfigurer::disable)
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .formLogin(AbstractHttpConfigurer::disable)
+            .httpBasic(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**",
+                    "/swagger-ui.html", "/auth/**", "/test/**", "/game/**", "/apply/**",
+                    "/check/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(HttpStatus.FORBIDDEN.value());
+                    response.setContentType("application/json; charset=UTF-8");
 
-                            // ErrorResponse 생성
-                            ErrorResponse errorResponse = new ErrorResponse(GlobalErrorCode.INVALID_JWT_REQUEST);
+                    // ErrorResponse 생성
+                    ErrorResponse errorResponse = new ErrorResponse(
+                        GlobalErrorCode.INVALID_JWT_REQUEST);
 
-                            // JSON 직렬화 후 응답에 쓰기
-                            ObjectMapper objectMapper = new ObjectMapper();
-                            response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
-                            response.getWriter().flush();
-                        })
-                );
+                    // JSON 직렬화 후 응답에 쓰기
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+                    response.getWriter().flush();
+                })
+            );
 
         return http.build();
     }
@@ -62,15 +65,16 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "http://gdgocinha.com",
-                "https://gdgocinha.com",
-                "https://www.gdgocinha.com",
-                "https://typing-game-alpha-umber.vercel.app"
+            "http://localhost:3000",
+            "http://gdgocinha.com",
+            "https://gdgocinha.com",
+            "https://www.gdgocinha.com",
+            "https://typing-game-alpha-umber.vercel.app"
         ));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")); // ✅ OPTIONS 포함
-        config.setAllowedHeaders(List.of("Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"));
-        config.setAllowCredentials(true); // ✅ 쿠키 전송 허용
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(
+            List.of("Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"));
+        config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

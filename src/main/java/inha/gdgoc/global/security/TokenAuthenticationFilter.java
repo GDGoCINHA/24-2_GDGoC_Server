@@ -23,6 +23,20 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     private final TokenProvider tokenProvider;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String p = request.getRequestURI();
+        return p.startsWith("/v3/api-docs")
+            || p.startsWith("/swagger-ui")
+            || p.equals("/swagger-ui.html")
+            || p.startsWith("/auth/")
+            || p.startsWith("/test/")
+            || p.startsWith("/game/")
+            || p.startsWith("/apply/")
+            || p.startsWith("/check/")
+            || "OPTIONS".equalsIgnoreCase(request.getMethod());
+    }
+
+    @Override
     protected void doFilterInternal(
             @NotNull HttpServletRequest request,
             @NotNull HttpServletResponse response,
