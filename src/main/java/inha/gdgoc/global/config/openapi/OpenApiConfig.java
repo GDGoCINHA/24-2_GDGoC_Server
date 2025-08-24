@@ -12,6 +12,11 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
     @Bean
+    public GroupedOpenApi all() {
+        return groupedApi("all", "/**");
+    }
+
+    @Bean
     public GroupedOpenApi v1Api() {
         return groupedApi("v1", "/api/v1");
     }
