@@ -1,6 +1,6 @@
 package inha.gdgoc.domain.auth.service;
 
-import inha.gdgoc.config.jwt.TokenProvider;
+import inha.gdgoc.global.config.jwt.TokenProvider;
 import inha.gdgoc.domain.auth.entity.RefreshToken;
 import inha.gdgoc.domain.auth.enums.LoginType;
 import inha.gdgoc.domain.auth.repository.RefreshTokenRepository;

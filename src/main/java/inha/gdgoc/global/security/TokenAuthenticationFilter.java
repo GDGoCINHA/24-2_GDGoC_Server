@@ -1,8 +1,6 @@
-package inha.gdgoc.config;
+package inha.gdgoc.global.security;
 
-import inha.gdgoc.config.jwt.TokenProvider;
-import inha.gdgoc.global.error.BusinessException;
-import inha.gdgoc.global.error.GlobalErrorCode;
+import inha.gdgoc.global.config.jwt.TokenProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

@@ -1,4 +1,4 @@
-package inha.gdgoc.config;
+package inha.gdgoc.global.config.querydsl;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;

@@ -1,4 +1,4 @@
-package inha.gdgoc.config.jwt;
+package inha.gdgoc.global.config.jwt;
 
 import inha.gdgoc.domain.auth.enums.LoginType;
 import inha.gdgoc.domain.user.entity.User;

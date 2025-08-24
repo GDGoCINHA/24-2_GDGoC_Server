@@ -4,7 +4,7 @@ import inha.gdgoc.domain.study.entity.Study;
 import inha.gdgoc.domain.study.entity.StudyAttendee;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.global.common.BaseEntity;
-import inha.gdgoc.util.EncryptUtil;
+import inha.gdgoc.global.util.EncryptUtil;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

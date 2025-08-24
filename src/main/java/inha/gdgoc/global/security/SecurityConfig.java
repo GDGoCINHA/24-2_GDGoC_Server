@@ -1,4 +1,4 @@
-package inha.gdgoc.config;
+package inha.gdgoc.global.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import inha.gdgoc.global.common.ErrorResponse;
