@@ -1,0 +1,9 @@
+.git
+.gradle
+build
+*.log
+.DS_Store
+.env
+*.env
+**/*.env
+deploy-*.zip
