@@ -1,5 +1,8 @@
 package inha.gdgoc.domain.game.controller;
 
+import static inha.gdgoc.domain.game.controller.message.GameUserMessage.GAME_RANK_RETRIEVED_SUCCESS;
+import static inha.gdgoc.domain.game.controller.message.GameUserMessage.GAME_RANK_SAVE_SUCCESS;
+
 import inha.gdgoc.domain.game.dto.request.GameUserRequest;
 import inha.gdgoc.domain.game.dto.response.GameUserResponse;
 import inha.gdgoc.domain.game.service.GameUserService;
@@ -19,12 +22,18 @@ public class GameUserController {
     private final GameUserService gameUserService;
 
     @PostMapping("/game/result")
-    public ResponseEntity<ApiResponse<List<GameUserResponse>>> saveGameResult(@RequestBody GameUserRequest request) {
-        return ResponseEntity.ok(ApiResponse.of(gameUserService.saveGameResultAndGetRanking(request)));
+    public ResponseEntity<ApiResponse<List<GameUserResponse>, Void>> saveGameResult(
+            @RequestBody GameUserRequest request
+    ) {
+        List<GameUserResponse> response = gameUserService.saveGameResultAndGetRanking(request);
+
+        return ResponseEntity.ok(ApiResponse.ok(GAME_RANK_SAVE_SUCCESS, response));
     }
 
     @GetMapping("/game/results")
-    public ResponseEntity<ApiResponse<List<GameUserResponse>>> getUserRankings() {
-        return ResponseEntity.ok(ApiResponse.of(gameUserService.findUserRankings()));
+    public ResponseEntity<ApiResponse<List<GameUserResponse>, Void>> getUserRankings() {
+        List<GameUserResponse> response = gameUserService.findUserRankings();
+
+        return ResponseEntity.ok(ApiResponse.ok(GAME_RANK_RETRIEVED_SUCCESS, response));
     }
 }
