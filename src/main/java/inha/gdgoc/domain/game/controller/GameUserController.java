@@ -13,15 +13,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@RequestMapping("/api/v1/game")
 @RequiredArgsConstructor
 @RestController
 public class GameUserController {
 
     private final GameUserService gameUserService;
 
-    @PostMapping("/game/result")
+    @PostMapping("/result")
     public ResponseEntity<ApiResponse<List<GameUserResponse>, Void>> saveGameResult(
             @RequestBody GameUserRequest request
     ) {
@@ -30,7 +32,7 @@ public class GameUserController {
         return ResponseEntity.ok(ApiResponse.ok(GAME_RANK_SAVE_SUCCESS, response));
     }
 
-    @GetMapping("/game/results")
+    @GetMapping("/results")
     public ResponseEntity<ApiResponse<List<GameUserResponse>, Void>> getUserRankings() {
         List<GameUserResponse> response = gameUserService.findUserRankings();
 
