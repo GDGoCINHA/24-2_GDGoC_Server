@@ -1,22 +1,37 @@
 package inha.gdgoc.global.dto.response;
 
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import inha.gdgoc.global.error.ErrorCode;
 
-@Getter
-public class ApiResponse<T> {
-    private final T data;
-    private final Object meta; // meta는 optional
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record ApiResponse<T, M>(int code, String message, T data, M meta) {
 
-    private ApiResponse(T data, Object meta) {
-        this.data = data;
-        this.meta = meta;
+    public static <T> ApiResponse<T, Void> ok(String message, T data) {
+        return new ApiResponse<>(200, message, data, null);
     }
 
-    public static <T> ApiResponse<T> of(T data) {
-        return new ApiResponse<>(data, null);
+    public static <T, M> ApiResponse<T, M> ok(String message, T data, M meta) {
+        return new ApiResponse<>(200, message, data, meta);
     }
 
-    public static <T> ApiResponse<T> of(T data, Object meta) {
-        return new ApiResponse<>(data, meta);
+    public static ApiResponse<Void, Void> ok(String message) {
+        return new ApiResponse<>(200, message, null, null);
+    }
+
+    public static ApiResponse<Void, Void> created(String message) {
+        return new ApiResponse<>(201, message, null, null);
+    }
+
+    public static <T> ApiResponse<T, Void> created(T data, String message) {
+        return new ApiResponse<>(201, message, data, null);
+    }
+
+    public static ApiResponse<Void, ErrorMeta> error(ErrorCode errorCode, ErrorMeta meta) {
+        return new ApiResponse<>(errorCode.getStatus().value(), errorCode.getMessage(), null, meta);
+    }
+
+    public static ApiResponse<Void, ErrorMeta> error(int code, String message, ErrorMeta meta) {
+        return new ApiResponse<>(code, message, null, meta);
     }
 }
+
