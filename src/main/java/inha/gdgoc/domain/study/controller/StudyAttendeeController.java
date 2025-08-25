@@ -1,5 +1,10 @@
 package inha.gdgoc.domain.study.controller;
 
+import static inha.gdgoc.domain.study.controller.message.StudyAttendeeMessage.STUDY_ATTENDEES_RETRIEVED_SUCCESS;
+import static inha.gdgoc.domain.study.controller.message.StudyAttendeeMessage.STUDY_ATTENDEE_RETRIEVED_SUCCESS;
+import static inha.gdgoc.domain.study.controller.message.StudyAttendeeMessage.STUDY_ATTENDEE_SAVE_SUCCESS;
+import static inha.gdgoc.domain.study.controller.message.StudyAttendeeMessage.STUDY_ATTENDEE_UPDATE_SUCCESS;
+
 import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.study.dto.StudyAttendeeListWithMetaDto;
 import inha.gdgoc.domain.study.dto.request.AttendeeCreateRequest;
@@ -27,55 +32,72 @@ import java.util.Optional;
 @RequestMapping("/study/{studyId}/attendee")
 @RequiredArgsConstructor
 public class StudyAttendeeController {
+
     private final StudyAttendeeService studyAttendeeService;
     private final AuthService authService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<GetStudyAttendeeListResponse>> getAttendeeList(
+    public ResponseEntity<ApiResponse<GetStudyAttendeeListResponse, PageResponse>> getAttendeeList(
             @PathVariable("studyId") Long studyId,
             @RequestParam("page") Optional<Long> page
     ) {
-        StudyAttendeeListWithMetaDto result = studyAttendeeService.getStudyAttendeeList(studyId, page);
+        StudyAttendeeListWithMetaDto result = studyAttendeeService.getStudyAttendeeList(
+                studyId,
+                page
+        );
         PageResponse meta = new PageResponse(
                 result.getPage().intValue(),
                 result.getPageCount().intValue()
         );
-        return ResponseEntity.ok(ApiResponse.of(new GetStudyAttendeeListResponse(result.getAttendees()), meta));
+        GetStudyAttendeeListResponse response = new GetStudyAttendeeListResponse(
+                result.getAttendees()
+        );
+
+        return ResponseEntity.ok(ApiResponse.ok(STUDY_ATTENDEES_RETRIEVED_SUCCESS, response, meta));
     }
 
     @GetMapping("/{attendeeId}")
-    public ResponseEntity<ApiResponse<GetStudyAttendeeResponse>> getStudyAttendee(
+    public ResponseEntity<ApiResponse<GetStudyAttendeeResponse, Void>> getStudyAttendee(
             Authentication authentication,
             @PathVariable Long studyId,
             @PathVariable Long attendeeId
     ) {
-        return ResponseEntity.ok(ApiResponse.of(studyAttendeeService.getStudyAttendee(
-                authService.getAuthenticationUserId(authentication), studyId, attendeeId))
+        GetStudyAttendeeResponse response = studyAttendeeService.getStudyAttendee(
+                authService.getAuthenticationUserId(authentication),
+                studyId,
+                attendeeId
         );
+
+        return ResponseEntity.ok(ApiResponse.ok(STUDY_ATTENDEE_RETRIEVED_SUCCESS, response));
     }
 
-
+    // TODO 이거 언제 쓰이는 거지
     @PostMapping
-    public ResponseEntity<ApiResponse<GetStudyAttendeeResponse>> createAttendee(
+    public ResponseEntity<ApiResponse<GetStudyAttendeeResponse, Void>> createAttendee(
             Authentication authentication,
             @PathVariable Long studyId,
             @RequestBody AttendeeCreateRequest attendeeCreateRequest
     ) {
         Long userId = authService.getAuthenticationUserId(authentication);
-        return ResponseEntity.ok(
-                ApiResponse.of(studyAttendeeService.createAttendee(userId, studyId, attendeeCreateRequest))
+        GetStudyAttendeeResponse response = studyAttendeeService.createAttendee(
+                userId,
+                studyId,
+                attendeeCreateRequest
         );
+
+        return ResponseEntity.ok(ApiResponse.ok(STUDY_ATTENDEE_SAVE_SUCCESS, response));
     }
 
     @PatchMapping
-    public ResponseEntity<ApiResponse<Boolean>> updateAttendee(
+    public ResponseEntity<ApiResponse<Boolean, Void>> updateAttendee(
             Authentication authentication,
             @PathVariable("studyId") Long studyId,
             @RequestBody AttendeeUpdateRequest request
     ) {
         Long userId = authService.getAuthenticationUserId(authentication);
         studyAttendeeService.updateAttendee(userId, studyId, request);
-        return ResponseEntity.ok(ApiResponse.of(true));
+
+        return ResponseEntity.ok(ApiResponse.ok(STUDY_ATTENDEE_UPDATE_SUCCESS, true));
     }
 
 }

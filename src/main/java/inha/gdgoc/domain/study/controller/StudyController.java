@@ -1,5 +1,11 @@
 package inha.gdgoc.domain.study.controller;
 
+import static inha.gdgoc.domain.study.controller.message.StudyMessage.APPLIED_STUDY_LIST_RETRIEVED_SUCCESS;
+import static inha.gdgoc.domain.study.controller.message.StudyMessage.MY_STUDY_LIST_RETRIEVED_SUCCESS;
+import static inha.gdgoc.domain.study.controller.message.StudyMessage.STUDY_CREATE_SUCCESS;
+import static inha.gdgoc.domain.study.controller.message.StudyMessage.STUDY_LIST_RETRIEVED_SUCCESS;
+import static inha.gdgoc.domain.study.controller.message.StudyMessage.STUDY_RETRIEVED_SUCCESS;
+
 import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.study.dto.StudyAttendeeResultDto;
 import inha.gdgoc.domain.study.dto.StudyDto;
@@ -39,7 +45,7 @@ public class StudyController {
     private final AuthService authService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<StudyListRequest>> getStudyList(
+    public ResponseEntity<ApiResponse<StudyListRequest, PageResponse>> getStudyList(
             @RequestParam("page") Optional<Long> page,
             @RequestParam("status") Optional<StudyStatus> status,
             @RequestParam("creatorType") Optional<CreatorType> creatorType
@@ -49,40 +55,54 @@ public class StudyController {
                 result.getPage().intValue(),
                 result.getPageCount().intValue()
         );
-        return ResponseEntity.ok(ApiResponse.of(new StudyListRequest(result.getStudyList()), meta));
+        StudyListRequest response = new StudyListRequest(result.getStudyList());
+
+        return ResponseEntity.ok(ApiResponse.ok(STUDY_LIST_RETRIEVED_SUCCESS, response, meta));
     }
 
     @GetMapping("/attendee/result")
-    public ResponseEntity<ApiResponse<GetStudyAttendeeResultResponse>> getStudyAttendeeResultList(
+    public ResponseEntity<ApiResponse<GetStudyAttendeeResultResponse, Void>> getStudyAttendeeResultList(
             Authentication authentication
     ) {
         Long userId = authService.getAuthenticationUserId(authentication);
-        List<StudyAttendeeResultDto> attendeeDtoList = studyAttendeeService.getStudyAttendeeResultListByUserId(userId);
-        return ResponseEntity.ok(ApiResponse.of(new GetStudyAttendeeResultResponse(attendeeDtoList)));
+        List<StudyAttendeeResultDto> attendeeDtoList = studyAttendeeService
+                .getStudyAttendeeResultListByUserId(userId);
+        GetStudyAttendeeResultResponse response = new GetStudyAttendeeResultResponse(
+                attendeeDtoList
+        );
+
+        return ResponseEntity.ok(ApiResponse.ok(APPLIED_STUDY_LIST_RETRIEVED_SUCCESS, response));
     }
 
 
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<MyStudyRecruitResponse>> getMyStudyList(
+    public ResponseEntity<ApiResponse<MyStudyRecruitResponse, Void>> getMyStudyList(
             Authentication authentication
     ) {
         Long userId = authService.getAuthenticationUserId(authentication);
-        return ResponseEntity.ok(ApiResponse.of(studyService.getMyStudyList(userId)));
+        MyStudyRecruitResponse response = studyService.getMyStudyList(userId);
+
+        return ResponseEntity.ok(ApiResponse.ok(MY_STUDY_LIST_RETRIEVED_SUCCESS, response));
     }
 
     @GetMapping("/{studyId}")
-    public ResponseEntity<ApiResponse<GetDetailedStudyResponse>> getStudy(@PathVariable("studyId") Long id) {
-        return ResponseEntity.ok(ApiResponse.of(studyService.getStudyById(id)));
+    public ResponseEntity<ApiResponse<GetDetailedStudyResponse, Void>> getStudy(
+            @PathVariable("studyId") Long id
+    ) {
+        GetDetailedStudyResponse response = studyService.getStudyById(id);
+
+        return ResponseEntity.ok(ApiResponse.ok(STUDY_RETRIEVED_SUCCESS, response));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<StudyDto>> createStudy(
+    public ResponseEntity<ApiResponse<StudyDto, Void>> createStudy(
             Authentication authentication,
             @RequestBody StudyCreateRequest body
     ) {
         Long userId = authService.getAuthenticationUserId(authentication);
         StudyDto createdStudy = studyService.createStudy(userId, body);
-        return ResponseEntity.ok(ApiResponse.of(createdStudy));
+
+        return ResponseEntity.ok(ApiResponse.ok(STUDY_CREATE_SUCCESS, createdStudy));
     }
 
 }
