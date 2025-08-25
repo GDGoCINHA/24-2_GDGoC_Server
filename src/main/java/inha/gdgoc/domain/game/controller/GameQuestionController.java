@@ -13,15 +13,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@RequestMapping("/api/v1/game/questions")
 @RequiredArgsConstructor
 @RestController
 public class GameQuestionController {
 
     private final GameQuestionService gameQuestionService;
 
-    @PostMapping("/game/question")
+    // 얘 api 엔드포인트 바뀜!
+    @PostMapping
     public ResponseEntity<ApiResponse<Void, Void>> saveQuestion(
             @RequestBody GameQuestionRequest gameQuestionRequest
     ) {
@@ -30,7 +33,7 @@ public class GameQuestionController {
         return ResponseEntity.ok(ApiResponse.ok(GAME_QUESTION_SAVE_SUCCESS));
     }
 
-    @GetMapping("/game/questions")
+    @GetMapping
     public ResponseEntity<ApiResponse<List<GameQuestionResponse>, Void>> getRandomGameQuestions() {
         List<GameQuestionResponse> response = gameQuestionService.getRandomQuestionsByLanguage();
 

@@ -28,8 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Optional;
 
+@RequestMapping("/api/v1/study/{studyId}/attendee")
 @RestController
-@RequestMapping("/study/{studyId}/attendee")
 @RequiredArgsConstructor
 public class StudyAttendeeController {
 
@@ -99,5 +99,4 @@ public class StudyAttendeeController {
 
         return ResponseEntity.ok(ApiResponse.ok(STUDY_ATTENDEE_UPDATE_SUCCESS, true));
     }
-
 }
