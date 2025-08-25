@@ -3,7 +3,7 @@ package inha.gdgoc.domain.study.entity;
 import inha.gdgoc.domain.study.enums.CreatorType;
 import inha.gdgoc.domain.study.enums.StudyStatus;
 import inha.gdgoc.domain.user.entity.User;
-import inha.gdgoc.global.common.BaseEntity;
+import inha.gdgoc.global.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

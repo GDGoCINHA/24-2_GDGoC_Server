@@ -10,7 +10,7 @@ import inha.gdgoc.domain.auth.dto.response.FindIdResponse;
 import inha.gdgoc.domain.user.dto.response.CheckDuplicatedEmailResponse;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
-import inha.gdgoc.global.exception.NotFoundException;
+import inha.gdgoc.global.error.NotFoundException;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;

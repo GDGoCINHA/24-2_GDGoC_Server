@@ -22,7 +22,8 @@ spring:
     properties:
       hibernate:
         default_batch_fetch_size: 100
-        time_zone: Asia/Seoul
+        jdbc:
+          time_zone: UTC
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
   flyway:

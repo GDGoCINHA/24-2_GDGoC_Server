@@ -1,5 +1,15 @@
 package inha.gdgoc.domain.auth.controller;
 
+import static inha.gdgoc.domain.auth.controller.message.AuthMessage.ACCESS_TOKEN_REFRESH_SUCCESS;
+import static inha.gdgoc.domain.auth.controller.message.AuthMessage.CODE_CREATION_SUCCESS;
+import static inha.gdgoc.domain.auth.controller.message.AuthMessage.LOGIN_WITH_PASSWORD_SUCCESS;
+import static inha.gdgoc.domain.auth.controller.message.AuthMessage.LOGOUT_SUCCESS;
+import static inha.gdgoc.domain.auth.controller.message.AuthMessage.OAUTH_LOGIN_SIGNUP_SUCCESS;
+import static inha.gdgoc.domain.auth.controller.message.AuthMessage.PASSWORD_CHANGE_SUCCESS;
+import static inha.gdgoc.domain.auth.controller.message.AuthMessage.PASSWORD_RESET_VERIFICATION_SUCCESS;
+import static inha.gdgoc.domain.auth.exception.AuthErrorCode.UNAUTHORIZED_USER;
+import static inha.gdgoc.domain.auth.exception.AuthErrorCode.USER_NOT_FOUND;
+
 import inha.gdgoc.domain.auth.dto.request.CodeVerificationRequest;
 import inha.gdgoc.domain.auth.dto.request.PasswordResetRequest;
 import inha.gdgoc.domain.auth.dto.request.SendingCodeRequest;
@@ -14,11 +24,8 @@ import inha.gdgoc.domain.auth.service.MailService;
 import inha.gdgoc.domain.auth.service.RefreshTokenService;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
-import inha.gdgoc.global.common.ApiResponse;
-import inha.gdgoc.global.common.ErrorResponse;
-
+import inha.gdgoc.global.dto.response.ApiResponse;
 import inha.gdgoc.global.error.BusinessException;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -26,7 +33,6 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -39,7 +45,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
-@RequestMapping("/auth")
+@RequestMapping("/api/v1/auth")
 @RestController
 @RequiredArgsConstructor
 public class AuthController {
@@ -51,18 +57,18 @@ public class AuthController {
     private final AuthCodeService authCodeService;
 
     @GetMapping("/oauth2/google/callback")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> handleGoogleCallback(
+    public ResponseEntity<ApiResponse<Map<String, Object>, Void>> handleGoogleCallback(
             @RequestParam String code,
             HttpServletResponse response
     ) {
         Map<String, Object> data = authService.processOAuthLogin(code, response);
-        return ResponseEntity.ok(ApiResponse.of(data, null));
+        return ResponseEntity.ok(ApiResponse.ok(OAUTH_LOGIN_SIGNUP_SUCCESS, data));
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshAccessToken(
-            @CookieValue(value = "refresh_token", required = false) String refreshToken) {
-
+            @CookieValue(value = "refresh_token", required = false) String refreshToken
+    ) {
         log.info("리프레시 토큰 요청 받음. 토큰 존재 여부: {}", refreshToken != null);
 
         if (refreshToken == null) {
@@ -74,7 +80,9 @@ public class AuthController {
         try {
             String newAccessToken = refreshTokenService.refreshAccessToken(refreshToken);
             AccessTokenResponse accessTokenResponse = new AccessTokenResponse(newAccessToken);
-            return ResponseEntity.ok(ApiResponse.of(accessTokenResponse, null));
+
+            return ResponseEntity.ok(
+                    ApiResponse.ok(ACCESS_TOKEN_REFRESH_SUCCESS, accessTokenResponse, null));
         } catch (Exception e) {
             log.error("리프레시 토큰 처리 중 오류: {}", e.getMessage(), e);
             throw new BusinessException(AuthErrorCode.INVALID_REFRESH_TOKEN);
@@ -82,28 +90,27 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody UserLoginRequest userLoginRequest,
-                                                            HttpServletResponse response)
-            throws NoSuchAlgorithmException, InvalidKeyException {
+    public ResponseEntity<ApiResponse<LoginResponse, Void>> login(
+            @RequestBody UserLoginRequest userLoginRequest,
+            HttpServletResponse response
+    ) throws NoSuchAlgorithmException, InvalidKeyException {
         LoginResponse loginResponse = authService.loginWithPassword(userLoginRequest, response);
-        return ResponseEntity.ok(ApiResponse.of(loginResponse, null));
+
+        return ResponseEntity.ok(ApiResponse.ok(LOGIN_WITH_PASSWORD_SUCCESS, loginResponse));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(
-            HttpServletRequest request,
-            HttpServletResponse response
-    ) {
+    public ResponseEntity<ApiResponse<Void, Void>> logout() {
+        // TODO 서비스로 넘기기
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.of(null, "인증되지 않은 사용자"));
+            throw new BusinessException(UNAUTHORIZED_USER);
         }
 
         String email = authentication.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
+                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
         Long userId = user.getId();
 
         log.info("로그아웃 시도: 사용자 ID: {}, 이메일: {}", userId, email);
@@ -117,47 +124,52 @@ public class AuthController {
                 log.info("사용자 ID: {}의 리프레시 토큰이 성공적으로 삭제되었습니다.", userId);
             }
         } else {
-            log.warn("사용자 ID: {}의 쿠키에서 리프레시 토큰을 찾을 수 없습니다", userId);
+            log.warn("사용자를 찾을 수 없습니다.");
         }
 
-        return ResponseEntity.ok(ApiResponse.of(null, null));
+        return ResponseEntity.ok(ApiResponse.ok(LOGOUT_SUCCESS));
     }
 
     @PostMapping("/password-reset/request")
-    public ResponseEntity<ApiResponse<Void>> responseResponseEntity(
+    public ResponseEntity<ApiResponse<Void, Void>> responseResponseEntity(
             @RequestBody SendingCodeRequest sendingCodeRequest
     ) {
-        if (userRepository.existsByNameAndEmail(sendingCodeRequest.name(), sendingCodeRequest.email())) {
+        // TODO 서비스로 넘기기
+        if (userRepository.existsByNameAndEmail(sendingCodeRequest.name(),
+                sendingCodeRequest.email())) {
             String code = mailService.sendAuthCode(sendingCodeRequest.email());
             authCodeService.saveAuthCode(sendingCodeRequest.email(), code);
-            return ResponseEntity.ok(ApiResponse.of(null));
+
+            return ResponseEntity.ok(ApiResponse.ok(CODE_CREATION_SUCCESS));
         }
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.of(null, null));
+        throw new BusinessException(USER_NOT_FOUND);
     }
 
     @PostMapping("/password-reset/verify")
-    public ResponseEntity<ApiResponse<CodeVerificationResponse>> verifyCode(
-            @RequestBody CodeVerificationRequest codeVerificationRequest
+    public ResponseEntity<ApiResponse<CodeVerificationResponse, Void>> verifyCode(
+            @RequestBody CodeVerificationRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.of(new CodeVerificationResponse(authCodeService.verify(
-                codeVerificationRequest.email(), codeVerificationRequest.code()))));
+        // TODO 서비스 단 DTO 추가
+        boolean verified = authCodeService.verify(request.email(), request.code());
+        CodeVerificationResponse response = new CodeVerificationResponse(verified);
+
+        return ResponseEntity.ok(ApiResponse.ok(PASSWORD_RESET_VERIFICATION_SUCCESS, response));
     }
 
     @PostMapping("/password-reset/confirm")
-    public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody PasswordResetRequest passwordResetRequest)
-            throws NoSuchAlgorithmException, InvalidKeyException {
+    public ResponseEntity<ApiResponse<Void, Void>> resetPassword(
+            @RequestBody PasswordResetRequest passwordResetRequest
+    ) throws NoSuchAlgorithmException, InvalidKeyException {
+        // TODO 서비스 단으로
         Optional<User> user = userRepository.findByEmail(passwordResetRequest.email());
         if (user.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.of(null, null));
+            throw new BusinessException(USER_NOT_FOUND);
         }
 
         User foundUser = user.get();
         foundUser.updatePassword(passwordResetRequest.password());
         userRepository.save(foundUser);
 
-        return ResponseEntity.ok(ApiResponse.of(null, null));
+        return ResponseEntity.ok(ApiResponse.ok(PASSWORD_CHANGE_SUCCESS));
     }
 }

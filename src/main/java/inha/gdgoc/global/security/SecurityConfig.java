@@ -1,7 +1,7 @@
 package inha.gdgoc.global.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import inha.gdgoc.global.common.ErrorResponse;
+import inha.gdgoc.global.dto.response.ErrorResponse;
 import inha.gdgoc.global.error.GlobalErrorCode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

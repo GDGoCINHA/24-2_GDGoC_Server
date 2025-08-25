@@ -1,6 +1,6 @@
 package inha.gdgoc.domain.recruit.dto.response;
 
-import inha.gdgoc.global.common.BaseEntity;
+import inha.gdgoc.global.entity.BaseEntity;
 
 public class SpecifiedMemberResponse extends BaseEntity {
     private String name;

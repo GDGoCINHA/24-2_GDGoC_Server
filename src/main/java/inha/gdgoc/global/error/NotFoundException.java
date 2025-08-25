@@ -1,4 +1,4 @@
-package inha.gdgoc.global.exception;
+package inha.gdgoc.global.error;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
