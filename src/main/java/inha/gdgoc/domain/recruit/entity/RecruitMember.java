@@ -3,7 +3,7 @@ package inha.gdgoc.domain.recruit.entity;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import inha.gdgoc.domain.recruit.enums.EnrolledClassification;
 import inha.gdgoc.domain.recruit.enums.Gender;
-import inha.gdgoc.global.common.BaseEntity;
+import inha.gdgoc.global.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

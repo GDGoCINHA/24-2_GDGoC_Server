@@ -14,8 +14,7 @@ import inha.gdgoc.domain.auth.service.MailService;
 import inha.gdgoc.domain.auth.service.RefreshTokenService;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
-import inha.gdgoc.global.common.ApiResponse;
-import inha.gdgoc.global.common.ErrorResponse;
+import inha.gdgoc.global.dto.response.ApiResponse;
 
 import inha.gdgoc.global.error.BusinessException;
 import jakarta.servlet.http.HttpServletRequest;

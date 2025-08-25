@@ -2,9 +2,8 @@ package inha.gdgoc.domain.game.controller;
 
 import inha.gdgoc.domain.game.dto.request.GameQuestionRequest;
 import inha.gdgoc.domain.game.dto.response.GameQuestionResponse;
-import inha.gdgoc.domain.game.entity.GameQuestion;
 import inha.gdgoc.domain.game.service.GameQuestionService;
-import inha.gdgoc.global.common.ApiResponse;
+import inha.gdgoc.global.dto.response.ApiResponse;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

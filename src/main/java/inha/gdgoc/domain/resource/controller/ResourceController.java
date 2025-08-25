@@ -5,7 +5,7 @@ import inha.gdgoc.domain.resource.dto.response.S3ResultResponse;
 import inha.gdgoc.domain.resource.enums.S3KeyType;
 import inha.gdgoc.domain.resource.exception.ResourceException;
 import inha.gdgoc.domain.resource.service.S3Service;
-import inha.gdgoc.global.common.ApiResponse;
+import inha.gdgoc.global.dto.response.ApiResponse;
 import inha.gdgoc.global.error.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

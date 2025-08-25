@@ -8,7 +8,7 @@ import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeListResponse;
 import inha.gdgoc.domain.study.dto.response.GetStudyAttendeeResponse;
 import inha.gdgoc.domain.study.dto.response.PageResponse;
 import inha.gdgoc.domain.study.service.StudyAttendeeService;
-import inha.gdgoc.global.common.ApiResponse;
+import inha.gdgoc.global.dto.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

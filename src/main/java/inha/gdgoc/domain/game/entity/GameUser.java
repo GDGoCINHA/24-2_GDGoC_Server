@@ -1,6 +1,6 @@
 package inha.gdgoc.domain.game.entity;
 
-import inha.gdgoc.global.common.BaseEntity;
+import inha.gdgoc.global.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

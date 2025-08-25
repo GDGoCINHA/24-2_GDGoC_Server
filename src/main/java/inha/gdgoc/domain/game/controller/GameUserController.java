@@ -3,7 +3,7 @@ package inha.gdgoc.domain.game.controller;
 import inha.gdgoc.domain.game.dto.request.GameUserRequest;
 import inha.gdgoc.domain.game.dto.response.GameUserResponse;
 import inha.gdgoc.domain.game.service.GameUserService;
-import inha.gdgoc.global.common.ApiResponse;
+import inha.gdgoc.global.dto.response.ApiResponse;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

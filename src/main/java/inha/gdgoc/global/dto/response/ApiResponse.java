@@ -1,4 +1,4 @@
-package inha.gdgoc.global.common;
+package inha.gdgoc.global.dto.response;
 
 import lombok.Getter;
 

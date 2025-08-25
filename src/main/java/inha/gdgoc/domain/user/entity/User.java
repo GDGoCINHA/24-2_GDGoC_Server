@@ -3,7 +3,7 @@ package inha.gdgoc.domain.user.entity;
 import inha.gdgoc.domain.study.entity.Study;
 import inha.gdgoc.domain.study.entity.StudyAttendee;
 import inha.gdgoc.domain.user.enums.UserRole;
-import inha.gdgoc.global.common.BaseEntity;
+import inha.gdgoc.global.entity.BaseEntity;
 import inha.gdgoc.global.util.EncryptUtil;
 
 import jakarta.persistence.CascadeType;

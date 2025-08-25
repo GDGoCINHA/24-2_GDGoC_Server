@@ -1,6 +1,6 @@
 package inha.gdgoc.domain.auth.dto.response;
 
-import inha.gdgoc.global.common.BaseEntity;
+import inha.gdgoc.global.entity.BaseEntity;
 import lombok.Getter;
 
 @Getter

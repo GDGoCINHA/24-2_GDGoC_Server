@@ -2,7 +2,7 @@ package inha.gdgoc.domain.recruit.entity;
 
 import inha.gdgoc.domain.recruit.enums.InputType;
 import inha.gdgoc.domain.recruit.enums.SurveyType;
-import inha.gdgoc.global.common.BaseEntity;
+import inha.gdgoc.global.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

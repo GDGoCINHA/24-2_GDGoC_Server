@@ -5,7 +5,7 @@ import inha.gdgoc.domain.recruit.dto.request.CheckPhoneNumberRequest;
 import inha.gdgoc.domain.recruit.dto.request.CheckStudentIdRequest;
 import inha.gdgoc.domain.recruit.dto.response.SpecifiedMemberResponse;
 import inha.gdgoc.domain.recruit.service.RecruitMemberService;
-import inha.gdgoc.global.common.ApiResponse;
+import inha.gdgoc.global.dto.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
