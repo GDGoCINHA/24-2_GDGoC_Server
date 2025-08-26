@@ -68,7 +68,7 @@ public class RecruitMember extends BaseEntity {
     @Column(name = "major", nullable = false)
     private String major;
 
-    @Column(name = "double_major", nullable = true)
+    @Column(name = "double_major")
     private String doubleMajor;
 
     @Column(name = "is_payed", nullable = false)
