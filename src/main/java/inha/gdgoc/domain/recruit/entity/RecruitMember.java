@@ -1,6 +1,7 @@
 package inha.gdgoc.domain.recruit.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import inha.gdgoc.domain.recruit.enums.AdmissionSemester;
 import inha.gdgoc.domain.recruit.enums.EnrolledClassification;
 import inha.gdgoc.domain.recruit.enums.Gender;
 import inha.gdgoc.global.entity.BaseEntity;
@@ -72,6 +73,10 @@ public class RecruitMember extends BaseEntity {
 
     @Column(name = "is_payed", nullable = false)
     private Boolean isPayed;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "admission_semester", nullable = false, length = 10)
+    private AdmissionSemester admissionSemester;
 
     @Builder.Default
     @OneToMany(mappedBy = "recruitMember", cascade = CascadeType.ALL, orphanRemoval = true)
