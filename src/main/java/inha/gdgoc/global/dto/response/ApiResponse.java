@@ -1,7 +1,7 @@
 package inha.gdgoc.global.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import inha.gdgoc.global.error.ErrorCode;
+import inha.gdgoc.global.exception.ErrorCode;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ApiResponse<T, M>(int code, String message, T data, M meta) {

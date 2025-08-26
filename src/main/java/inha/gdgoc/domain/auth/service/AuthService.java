@@ -91,7 +91,7 @@ public class AuthService {
         Optional<User> foundUser = userRepository.findByEmail(email);
         if (foundUser.isEmpty()) {
             return Map.of(
-                "exists", false,
+                "isExists", false,
                 "email", email,
                 "name", name
             );
@@ -117,7 +117,7 @@ public class AuthService {
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         return Map.of(
-            "exists", true,
+            "isExists", true,
             "access_token", jwtAccessToken
         );
     }

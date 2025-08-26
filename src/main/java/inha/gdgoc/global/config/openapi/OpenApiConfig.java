@@ -1,6 +1,10 @@
 package inha.gdgoc.global.config.openapi;
 
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Paths;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import java.util.List;
 import org.springdoc.core.customizers.OpenApiCustomizer;
@@ -12,11 +16,27 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
     @Bean
+    public OpenAPI openAPI() {
+        String schemeName = "BearerAuth";
+        return new OpenAPI()
+                .info(new Info().title("GDGoC API").version("v1"))
+                .components(new Components().addSecuritySchemes(
+                        schemeName,
+                        new SecurityScheme()
+                                .name(schemeName)
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")
+                        )
+                );
+    }
+
+    @Bean
     public GroupedOpenApi all() {
         return GroupedOpenApi.builder()
-            .group("all")
-            .pathsToMatch("/**")
-            .build();
+                .group("all")
+                .pathsToMatch("/**")
+                .build();
     }
 
     @Bean
@@ -24,29 +44,34 @@ public class OpenApiConfig {
         return groupedApi("v1", "/api/v1");
     }
 
-     @Bean
-     public GroupedOpenApi v2Api() {
-       return groupedApi("v2", "/api/v2");
-     }
+    @Bean
+    public GroupedOpenApi v2Api() {
+        return groupedApi("v2", "/api/v2");
+    }
 
     private GroupedOpenApi groupedApi(String group, String fullPrefix) {
         return GroupedOpenApi.builder()
-            .group(group)
-            .pathsToMatch(fullPrefix + "/**")
-            .addOpenApiCustomizer(stripPrefixAndSetServer(fullPrefix))
-            .build();
+                .group(group)
+                .pathsToMatch(fullPrefix + "/**")
+                .addOpenApiCustomizer(stripPrefixAndSetServer(fullPrefix))
+                .build();
     }
 
     private OpenApiCustomizer stripPrefixAndSetServer(String fullPrefix) {
         return openApi -> {
             Paths src = openApi.getPaths();
-            if (src == null || src.isEmpty()) return;
+            if (src == null || src.isEmpty()) {
+                return;
+            }
 
             Paths dst = new Paths();
             src.forEach((path, item) -> {
                 String p = path;
-                if (p.equals(fullPrefix)) p = "/";
-                else if (p.startsWith(fullPrefix + "/")) p = p.substring(fullPrefix.length());
+                if (p.equals(fullPrefix)) {
+                    p = "/";
+                } else if (p.startsWith(fullPrefix + "/")) {
+                    p = p.substring(fullPrefix.length());
+                }
                 dst.addPathItem(p, item);
             });
 

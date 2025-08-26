@@ -1,11 +1,18 @@
-package inha.gdgoc.global.error;
+package inha.gdgoc.global.exception;
+
+import static inha.gdgoc.global.exception.GlobalErrorCode.*;
+import static inha.gdgoc.global.exception.GlobalErrorCode.FORBIDDEN_USER;
 
 import inha.gdgoc.global.dto.response.ApiResponse;
 import inha.gdgoc.global.dto.response.ErrorMeta;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -38,7 +45,7 @@ public class GlobalExceptionHandler {
     ) {
         log.error("요청 헤더 {}가 누락되었습니다.", ex.getHeaderName());
 
-        String message = GlobalErrorCode.MISSING_HEADER.format(ex.getHeaderName());
+        String message = MISSING_HEADER.format(ex.getHeaderName());
         ErrorMeta meta = createMeta(request);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -68,12 +75,54 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         log.error("MethodArgumentTypeMismatchException 발생: {}", ex.getMessage());
-        String message = GlobalErrorCode.BAD_REQUEST.format(ex.getName());
+        String message = BAD_REQUEST.format(ex.getName());
 
         ErrorMeta meta = createMeta(request);
 
-        return ResponseEntity.status(GlobalErrorCode.BAD_REQUEST.getStatus())
+        return ResponseEntity.status(BAD_REQUEST.getStatus())
                 .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), message, meta));
+    }
+
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void, ErrorMeta>> handleConstraintViolation(
+            jakarta.validation.ConstraintViolationException ex,
+            HttpServletRequest request
+    ) {
+        String message = ex.getConstraintViolations()
+                .stream()
+                .findFirst()
+                .map(ConstraintViolation::getMessage)
+                .orElse("유효하지 않은 요청입니다.");
+
+        log.error("ConstraintViolationException 발생: {}", message);
+
+        ErrorMeta meta = createMeta(request);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), message, meta));
+    }
+
+    @ExceptionHandler({ AuthenticationCredentialsNotFoundException.class, AuthenticationException.class })
+    public ResponseEntity<ApiResponse<Void, ErrorMeta>> handleAuthentication(
+            AuthenticationException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("AuthenticationException: {}", ex.getMessage());
+        ErrorMeta meta = createMeta(request);
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(UNAUTHORIZED_USER, meta));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void, ErrorMeta>> handleAccessDenied(
+            AccessDeniedException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("AccessDeniedException: {}", ex.getMessage());
+        ErrorMeta meta = createMeta(request);
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(FORBIDDEN_USER, meta));
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)
@@ -86,7 +135,7 @@ public class GlobalExceptionHandler {
         ErrorMeta meta = createMeta(request);
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(GlobalErrorCode.RESOURCE_NOT_FOUND, meta));
+                .body(ApiResponse.error(RESOURCE_NOT_FOUND, meta));
     }
 
     @ExceptionHandler(Exception.class)
@@ -99,7 +148,7 @@ public class GlobalExceptionHandler {
         ErrorMeta meta = createMeta(request);
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error(GlobalErrorCode.INTERNAL_SERVER_ERROR, meta));
+                .body(ApiResponse.error(INTERNAL_SERVER_ERROR, meta));
     }
 
     private ErrorMeta createMeta(HttpServletRequest request) {

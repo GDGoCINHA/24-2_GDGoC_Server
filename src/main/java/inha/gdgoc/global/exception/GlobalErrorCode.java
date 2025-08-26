@@ -1,8 +1,11 @@
-package inha.gdgoc.global.error;
+package inha.gdgoc.global.exception;
 
 import org.springframework.http.HttpStatus;
 
 public enum GlobalErrorCode implements ErrorCode {
+
+    // 401 Unauthorized
+    UNAUTHORIZED_USER(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
 
     // 400 Bad Request
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "요청 경로의 파라미터는 올바른 형식이 아닙니다."),
@@ -11,6 +14,7 @@ public enum GlobalErrorCode implements ErrorCode {
 
     // 403 FORBIDDEN
     INVALID_JWT_REQUEST(HttpStatus.FORBIDDEN, "잘못된 JWT 토큰입니다."),
+    FORBIDDEN_USER(HttpStatus.NOT_FOUND, "권한이 부족합니다."),
 
     // 404 Not Found
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 리소스입니다."),

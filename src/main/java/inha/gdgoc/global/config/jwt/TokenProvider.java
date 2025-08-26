@@ -1,8 +1,11 @@
 package inha.gdgoc.global.config.jwt;
 
+import static inha.gdgoc.global.exception.GlobalErrorCode.INVALID_JWT_REQUEST;
+
 import inha.gdgoc.domain.auth.enums.LoginType;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.UserRole;
+import inha.gdgoc.global.exception.BusinessException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Header;
@@ -11,6 +14,12 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.SignatureException;
 import io.jsonwebtoken.UnsupportedJwtException;
+import java.time.Duration;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,13 +27,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
-
-import java.time.Duration;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Set;
 
 @RequiredArgsConstructor
 @Service
@@ -67,19 +69,23 @@ public class TokenProvider {
 
     public Authentication getAuthentication(String token) {
         Claims claims = getClaims(token);
-        UserRole userRole = UserRole.valueOf(claims.get("role", String.class));
-        Long userId = claims.get("id", Integer.class).longValue();
+
+        Number idNum = claims.get("id", Number.class);
+        if (idNum == null) throw new BusinessException(INVALID_JWT_REQUEST);
+        Long userId = idNum.longValue();
+
         String username = claims.getSubject();
 
-
+        UserRole userRole = UserRole.valueOf(claims.get("role", String.class));
+        String roleName = "ROLE_" + userRole.name();
         Set<SimpleGrantedAuthority> authorities = Collections.singleton(
-                new SimpleGrantedAuthority(userRole.getRole())
+                new SimpleGrantedAuthority(roleName)
         );
 
         CustomUserDetails userDetails = new CustomUserDetails(userId, username, "", authorities);
         return new UsernamePasswordAuthenticationToken(
                 userDetails,
-                token,
+                null,
                 authorities
         );
     }
