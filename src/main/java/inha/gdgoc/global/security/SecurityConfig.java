@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -20,6 +21,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+@EnableMethodSecurity
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -53,17 +55,27 @@ public class SecurityConfig {
                         UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                            response.setContentType("application/json; charset=UTF-8");
+
+                            ErrorResponse errorResponse = new ErrorResponse(
+                                    GlobalErrorCode.UNAUTHORIZED_USER
+                            );
+
+                            ObjectMapper objectMapper = new ObjectMapper();
+                            response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+                            response.getWriter().flush();
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
                             response.setStatus(HttpStatus.FORBIDDEN.value());
                             response.setContentType("application/json; charset=UTF-8");
 
-                            // ErrorResponse 생성
                             ErrorResponse errorResponse = new ErrorResponse(
-                                    GlobalErrorCode.INVALID_JWT_REQUEST);
+                                    GlobalErrorCode.FORBIDDEN_USER
+                            );
 
-                            // JSON 직렬화 후 응답에 쓰기
                             ObjectMapper objectMapper = new ObjectMapper();
-                            response.getWriter()
-                                    .write(objectMapper.writeValueAsString(errorResponse));
+                            response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
                             response.getWriter().flush();
                         })
                 );
