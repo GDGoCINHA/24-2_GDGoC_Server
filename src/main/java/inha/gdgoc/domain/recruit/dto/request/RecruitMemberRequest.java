@@ -3,6 +3,7 @@ package inha.gdgoc.domain.recruit.dto.request;
 import inha.gdgoc.domain.recruit.entity.RecruitMember;
 import inha.gdgoc.domain.recruit.enums.EnrolledClassification;
 import inha.gdgoc.domain.recruit.enums.Gender;
+import inha.gdgoc.global.util.SemesterCalculator;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,6 +42,7 @@ public class RecruitMemberRequest {
                 .major(major)
                 .doubleMajor(doubleMajor)
                 .isPayed(false)
+                .admissionSemester(SemesterCalculator.currentSemester())
                 .build();
     }
 }

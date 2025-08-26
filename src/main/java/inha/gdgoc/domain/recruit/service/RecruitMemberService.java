@@ -14,10 +14,12 @@ import inha.gdgoc.domain.recruit.enums.SurveyType;
 import inha.gdgoc.domain.recruit.exception.RecruitMemberException;
 import inha.gdgoc.domain.recruit.repository.AnswerRepository;
 import inha.gdgoc.domain.recruit.repository.RecruitMemberRepository;
-import jakarta.transaction.Transactional;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Service
@@ -67,4 +69,26 @@ public class RecruitMemberService {
 
         return SpecifiedMemberResponse.from(member, answers, objectMapper);
     }
+
+    @Transactional
+    public void updatePayment(Long memberId, boolean isPayed) {
+        RecruitMember m = recruitMemberRepository.findById(memberId)
+                .orElseThrow(() -> new RecruitMemberException(RECRUIT_MEMBER_NOT_FOUND));
+
+        if (Boolean.TRUE.equals(m.getIsPayed()) == isPayed) return;
+
+        if (isPayed) m.markPaid();
+        else m.markUnpaid();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RecruitMember> findAllMembersPage(Pageable pageable) {
+        return recruitMemberRepository.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RecruitMember> searchMembersByNamePage(String name, Pageable pageable) {
+        return recruitMemberRepository.findByNameContainingIgnoreCase(name, pageable);
+    }
+
 }
