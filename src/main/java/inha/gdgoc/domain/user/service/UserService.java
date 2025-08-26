@@ -14,7 +14,6 @@ import inha.gdgoc.domain.user.exception.UserException;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,12 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
-
-    public List<Long> getAllUserIds() {
-        return userRepository.findAllUsers().stream()
-                .map((User::getId))
-                .toList();
-    }
 
     public CheckDuplicatedEmailResponse isExistsByEmail(CheckDuplicatedEmailRequest request) {
         return new CheckDuplicatedEmailResponse(userRepository.existsByEmail(request.email()));
