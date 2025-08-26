@@ -1,7 +1,7 @@
 package inha.gdgoc.domain.user.exception;
 
-import inha.gdgoc.global.error.BusinessException;
-import inha.gdgoc.global.error.ErrorCode;
+import inha.gdgoc.global.exception.BusinessException;
+import inha.gdgoc.global.exception.ErrorCode;
 
 public class UserException extends BusinessException {
 

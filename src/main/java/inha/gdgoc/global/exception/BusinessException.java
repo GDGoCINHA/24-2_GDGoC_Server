@@ -1,4 +1,4 @@
-package inha.gdgoc.global.error;
+package inha.gdgoc.global.exception;
 
 import lombok.Getter;
 

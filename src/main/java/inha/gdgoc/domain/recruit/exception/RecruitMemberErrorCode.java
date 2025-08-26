@@ -1,6 +1,6 @@
 package inha.gdgoc.domain.recruit.exception;
 
-import inha.gdgoc.global.error.ErrorCode;
+import inha.gdgoc.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 

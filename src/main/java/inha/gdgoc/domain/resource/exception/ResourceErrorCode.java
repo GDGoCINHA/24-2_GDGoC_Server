@@ -1,6 +1,6 @@
 package inha.gdgoc.domain.resource.exception;
 
-import inha.gdgoc.global.error.ErrorCode;
+import inha.gdgoc.global.exception.ErrorCode;
 import org.springframework.http.HttpStatus;
 
 public enum ResourceErrorCode implements ErrorCode {

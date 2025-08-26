@@ -2,7 +2,7 @@ package inha.gdgoc.global.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import inha.gdgoc.global.dto.response.ErrorResponse;
-import inha.gdgoc.global.error.GlobalErrorCode;
+import inha.gdgoc.global.exception.GlobalErrorCode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

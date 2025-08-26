@@ -1,6 +1,6 @@
 package inha.gdgoc.domain.auth.exception;
 
-import inha.gdgoc.global.error.ErrorCode;
+import inha.gdgoc.global.exception.ErrorCode;
 import org.springframework.http.HttpStatus;
 
 public enum AuthErrorCode implements ErrorCode {

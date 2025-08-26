@@ -1,6 +1,6 @@
 package inha.gdgoc.global.dto.response;
 
-import inha.gdgoc.global.error.ErrorCode;
+import inha.gdgoc.global.exception.ErrorCode;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
