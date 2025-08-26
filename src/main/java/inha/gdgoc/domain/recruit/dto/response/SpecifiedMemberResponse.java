@@ -14,7 +14,7 @@ public record SpecifiedMemberResponse(
                 member.getName(),
                 member.getMajor(),
                 member.getStudentId(),
-                member.getIsPayed()
+                Boolean.TRUE.equals(member.getIsPayed())
         );
     }
 }

@@ -76,8 +76,6 @@ public class AuthController {
             throw new AuthException(AuthErrorCode.INVALID_COOKIE);
         }
 
-        log.info("리프레시 토큰 값: {}", refreshToken);
-
         try {
             String newAccessToken = refreshTokenService.refreshAccessToken(refreshToken);
             AccessTokenResponse accessTokenResponse = new AccessTokenResponse(newAccessToken);

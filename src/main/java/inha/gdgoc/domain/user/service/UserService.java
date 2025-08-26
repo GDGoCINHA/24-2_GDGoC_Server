@@ -45,7 +45,7 @@ public class UserService {
         );
 
         if (user.isEmpty()) {
-            throw new IllegalArgumentException("해당 정보를 가진 사용자를 찾을 수 없습니다.");
+            throw new UserException(USER_NOT_FOUND);
         }
 
         String email = user.get().getEmail();
