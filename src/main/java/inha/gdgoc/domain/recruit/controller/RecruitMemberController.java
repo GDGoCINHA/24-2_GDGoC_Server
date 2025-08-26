@@ -11,6 +11,8 @@ import inha.gdgoc.domain.recruit.dto.response.CheckStudentIdResponse;
 import inha.gdgoc.domain.recruit.dto.response.SpecifiedMemberResponse;
 import inha.gdgoc.domain.recruit.service.RecruitMemberService;
 import inha.gdgoc.global.dto.response.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
@@ -65,6 +67,7 @@ public class RecruitMemberController {
         return ResponseEntity.ok(ApiResponse.ok(PHONE_NUMBER_DUPLICATION_CHECK_SUCCESS, response));
     }
 
+    @Operation(summary = "특정 멤버 가입 신청서 조회", security = { @SecurityRequirement(name = "BearerAuth") })
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/recruit/members/{memberId}")
     public ResponseEntity<ApiResponse<SpecifiedMemberResponse, Void>> getSpecifiedMember(
