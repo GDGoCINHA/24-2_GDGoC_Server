@@ -67,4 +67,17 @@ public class RecruitMemberService {
 
         return SpecifiedMemberResponse.from(member, answers, objectMapper);
     }
+
+    @Transactional
+    public void updatePayment(Long memberId, boolean isPayed) {
+        RecruitMember m = recruitMemberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("RecruitMember not found: " + memberId));
+
+        // 멱등 처리: 이미 동일 상태면 스킵
+        if (Boolean.TRUE.equals(m.getIsPayed()) == isPayed) return;
+
+        if (isPayed) m.markPaid();
+        else m.markUnpaid();
+    }
+
 }

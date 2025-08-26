@@ -81,4 +81,12 @@ public class RecruitMember extends BaseEntity {
     @Builder.Default
     @OneToMany(mappedBy = "recruitMember", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Answer> answers = new ArrayList<>();
+
+    public void markPaid() {
+        this.isPayed = Boolean.TRUE;
+    }
+
+    public void markUnpaid() {
+        this.isPayed = Boolean.FALSE;
+    }
 }
