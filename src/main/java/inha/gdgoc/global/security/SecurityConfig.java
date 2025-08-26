@@ -29,6 +29,24 @@ public class SecurityConfig {
 
     private final TokenAuthenticationFilter tokenAuthenticationFilter;
 
+    /**
+     * 애플리케이션의 Spring Security 필터 체인을 구성하고 반환한다.
+     *
+     * 구성 내용:
+     * - CSRF 비활성화
+     * - CORS 설정은 corsConfigurationSource() 사용
+     * - form 로그인 및 HTTP Basic 인증 비활성화
+     * - 다음 경로들은 인증 없이 접근 허용:
+     *   /swagger-ui/**, /v3/api-docs/**, /swagger-ui.html,
+     *   /api/v1/auth/**, /api/v1/game/**, /api/v1/apply/**, /api/v1/check/**, /api/v1/password-reset/**
+     * - 그 외 모든 요청은 인증 필요
+     * - 세션 정책: STATELESS
+     * - TokenAuthenticationFilter를 UsernamePasswordAuthenticationFilter 앞에 추가
+     * - 인증 실패 시 401 상태와 GlobalErrorCode.UNAUTHORIZED_USER 기반의 JSON ErrorResponse 반환
+     * - 권한 부족 시 403 상태와 GlobalErrorCode.FORBIDDEN_USER 기반의 JSON ErrorResponse 반환
+     *
+     * @return 구성된 SecurityFilterChain 빈
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http

@@ -67,6 +67,17 @@ public class TokenProvider {
         return getClaims(token);
     }
 
+    /**
+     * JWT에서 인증 정보를 추출해 Spring Security Authentication 객체를 생성합니다.
+     *
+     * 토큰의 클레임에서 숫자형 "id"를 읽어 사용자 ID(Long)로 변환하고, 서브젝트를 사용자명(이메일)으로 사용합니다.
+     * "role" 클레임을 UserRole로 변환한 뒤 "ROLE_<ROLE_NAME>" 형태의 권한을 하나 생성하여 CustomUserDetails를 만들고
+     * 해당 사용자 정보를 담은 UsernamePasswordAuthenticationToken을 반환합니다.
+     *
+     * @param token JWT 문자열
+     * @return 토큰으로부터 생성된 Authentication (principal: CustomUserDetails, credentials: null, authorities 포함)
+     * @throws BusinessException token에 숫자형 "id" 클레임이 없을 경우 INVALID_JWT_REQUEST로 발생합니다.
+     */
     public Authentication getAuthentication(String token) {
         Claims claims = getClaims(token);
 

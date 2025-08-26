@@ -50,6 +50,30 @@ public class AuthService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final TokenProvider tokenProvider;
 
+    /**
+     * Google OAuth 인증 코드를 처리하여 사용자 정보 확인 및 로그인 토큰을 발급한다.
+     *
+     * <p>작업 흐름:
+     * <ol>
+     *   <li>전달된 authorization code로 Google 토큰 엔드포인트에 요청하여 Google access token을 획득한다.</li>
+     *   <li>획득한 Google access token으로 Google 사용자정보(email, name)를 조회한다.</li>
+     *   <li>조회한 이메일로 로컬 사용자 조회:
+     *     <ul>
+     *       <li>사용자가 존재하지 않으면 사용자 존재 여부와 Google에서의 email, name을 반환한다.</li>
+     *       <li>사용자가 존재하면 서비스용 JWT access token을 생성하고(유효기간 1시간),/ 로그인용 refresh token을 생성 또는 조회(유효기간 1일)하여
+     *           HttpOnly Secure 쿠키("refresh_token", SameSite=None, domain=".gdgocinha.com", path="/")로 응답에 설정한 뒤 access token을 반환한다.</li>
+     *     </ul>
+     *   </li>
+     * </ol>
+     *
+     * @param code Google이 발급한 authorization code
+     * @param response 존재하는 사용자일 때 refresh_token 쿠키를 HttpServletResponse의 Set-Cookie 헤더로 추가하기 위해 사용되는 응답 객체
+     * @return 결과 맵:
+     *         <ul>
+     *           <li>사용자가 존재하지 않을 때: {"isExists": false, "email": &lt;google 이메일&gt;, "name": &lt;google 이름&gt;}</li>
+     *           <li>사용자가 존재할 때: {"isExists": true, "access_token": &lt;서비스용 JWT access token&gt;}</li>
+     *         </ul>
+     */
     public Map<String, Object> processOAuthLogin(String code, HttpServletResponse response) {
         // 1. code → access token 요청
         HttpHeaders headers = new HttpHeaders();
