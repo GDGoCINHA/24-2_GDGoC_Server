@@ -77,11 +77,11 @@ public class StudyAttendeeService {
             Long attendeeId) {
         Study study = studyRepository.findById(studyId)
                 .orElseThrow(() -> new StudyException(STUDY_NOT_FOUND));
-        if (!userRepository.existsById(attendeeId)) {
-            throw new UserException(USER_NOT_FOUND);
-        }
         if (!study.isCreatedBy(authenticatedUser)) {
             throw new StudyException(STUDY_APPLICANT_ACCESS_DENIED);
+        }
+        if (!userRepository.existsById(attendeeId)) {
+            throw new UserException(USER_NOT_FOUND);
         }
 
         StudyAttendee studyAttendee = studyAttendeeRepository.findStudyAttendeeByStudyIdAndUserId(
