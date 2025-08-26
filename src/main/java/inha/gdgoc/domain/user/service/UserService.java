@@ -1,26 +1,25 @@
 package inha.gdgoc.domain.user.service;
 
+import static inha.gdgoc.domain.user.exception.UserErrorCode.USER_NOT_FOUND;
 import static inha.gdgoc.global.util.EncryptUtil.encrypt;
 import static inha.gdgoc.global.util.EncryptUtil.generateSalt;
 
 import inha.gdgoc.domain.auth.dto.request.FindIdRequest;
+import inha.gdgoc.domain.auth.dto.response.FindIdResponse;
 import inha.gdgoc.domain.user.dto.request.CheckDuplicatedEmailRequest;
 import inha.gdgoc.domain.user.dto.request.UserSignupRequest;
-import inha.gdgoc.domain.auth.dto.response.FindIdResponse;
 import inha.gdgoc.domain.user.dto.response.CheckDuplicatedEmailResponse;
 import inha.gdgoc.domain.user.entity.User;
+import inha.gdgoc.domain.user.exception.UserException;
 import inha.gdgoc.domain.user.repository.UserRepository;
-import inha.gdgoc.global.error.NotFoundException;
-
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Slf4j
 @Service
@@ -42,7 +41,7 @@ public class UserService {
 
     public User findUserById(Long userId) {
         return userRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("User not found user id: " + userId));
+                .orElseThrow(() -> new UserException(USER_NOT_FOUND));
     }
   
     public FindIdResponse findId(FindIdRequest findIdRequest) {
