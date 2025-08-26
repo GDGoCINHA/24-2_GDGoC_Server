@@ -6,18 +6,16 @@ import static inha.gdgoc.domain.recruit.controller.message.RecruitMemberMessage.
 import static inha.gdgoc.domain.recruit.controller.message.RecruitMemberMessage.STUDENT_ID_DUPLICATION_CHECK_SUCCESS;
 
 import inha.gdgoc.domain.recruit.dto.request.ApplicationRequest;
-import inha.gdgoc.domain.recruit.dto.request.CheckPhoneNumberRequest;
+import inha.gdgoc.domain.recruit.dto.response.CheckPhoneNumberResponse;
 import inha.gdgoc.domain.recruit.dto.response.CheckStudentIdResponse;
 import inha.gdgoc.domain.recruit.dto.response.SpecifiedMemberResponse;
 import inha.gdgoc.domain.recruit.service.RecruitMemberService;
 import inha.gdgoc.global.dto.response.ApiResponse;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -52,20 +50,22 @@ public class RecruitMemberController {
         return ResponseEntity.ok(ApiResponse.ok(STUDENT_ID_DUPLICATION_CHECK_SUCCESS, response));
     }
 
-
-    // TODO DTO로 응답 리팩토링
     @GetMapping("/check/phoneNumber")
-    public ResponseEntity<ApiResponse<Boolean, Void>> duplicatedPhoneNumberDetails(
-            @Valid @ModelAttribute CheckPhoneNumberRequest phoneNumberRequest
+    public ResponseEntity<ApiResponse<CheckPhoneNumberResponse, Void>> duplicatedPhoneNumberDetails(
+            @RequestParam
+            @NotBlank(message = "전화번호는 필수 입력 값입니다.")
+            @Pattern(regexp = "^010-\\d{4}-\\d{4}$", message = "전화번호 형식은 010-XXXX-XXXX 이어야 합니다.")
+            String phoneNumber
     ) {
-        boolean exists = recruitMemberService.isRegisteredPhoneNumber(phoneNumberRequest.getPhoneNumber());
+        CheckPhoneNumberResponse response = recruitMemberService
+                .isRegisteredPhoneNumber(phoneNumber);
 
-        return ResponseEntity.ok(ApiResponse.ok(PHONE_NUMBER_DUPLICATION_CHECK_SUCCESS, exists));
+        return ResponseEntity.ok(ApiResponse.ok(PHONE_NUMBER_DUPLICATION_CHECK_SUCCESS, response));
     }
 
     // TODO 코어 멤버 인증 리팩토링 (Authentication), requestparam으로 변경하기
     @GetMapping("/recruit/member")
-    public ResponseEntity<ApiResponse<SpecifiedMemberResponse, Void>> getSpecifiedMember (
+    public ResponseEntity<ApiResponse<SpecifiedMemberResponse, Void>> getSpecifiedMember(
             @RequestParam Long userId
     ) {
         SpecifiedMemberResponse response = recruitMemberService.findSpecifiedMember(userId);
