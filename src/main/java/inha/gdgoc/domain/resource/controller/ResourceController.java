@@ -5,10 +5,11 @@ import static inha.gdgoc.domain.resource.controller.message.ResourceMessage.IMAG
 import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.resource.dto.response.S3ResultResponse;
 import inha.gdgoc.domain.resource.enums.S3KeyType;
+import inha.gdgoc.domain.resource.exception.ResourceErrorCode;
 import inha.gdgoc.domain.resource.exception.ResourceException;
 import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.global.dto.response.ApiResponse;
-import inha.gdgoc.global.error.BusinessException;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -17,8 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/resource")
@@ -38,7 +37,7 @@ public class ResourceController {
             @RequestParam("s3key") S3KeyType s3key
     ) {
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new BusinessException(ResourceException.INVALID_BIG_FILE);
+            throw new ResourceException(ResourceErrorCode.INVALID_BIG_FILE);
         }
 
         Long userId = authService.getAuthenticationUserId(authentication);
