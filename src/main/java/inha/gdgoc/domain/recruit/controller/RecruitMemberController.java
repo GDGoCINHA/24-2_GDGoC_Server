@@ -15,7 +15,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -63,12 +65,12 @@ public class RecruitMemberController {
         return ResponseEntity.ok(ApiResponse.ok(PHONE_NUMBER_DUPLICATION_CHECK_SUCCESS, response));
     }
 
-    // TODO 코어 멤버 인증 리팩토링 (Authentication), requestparam으로 변경하기
-    @GetMapping("/recruit/member")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/recruit/members/{memberId}")
     public ResponseEntity<ApiResponse<SpecifiedMemberResponse, Void>> getSpecifiedMember(
-            @RequestParam Long userId
+            @PathVariable Long memberId
     ) {
-        SpecifiedMemberResponse response = recruitMemberService.findSpecifiedMember(userId);
+        SpecifiedMemberResponse response = recruitMemberService.findSpecifiedMember(memberId);
 
         return ResponseEntity.ok(ApiResponse.ok(MEMBER_RETRIEVED_SUCCESS, response));
     }

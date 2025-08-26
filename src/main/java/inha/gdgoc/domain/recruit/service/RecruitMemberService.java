@@ -62,7 +62,9 @@ public class RecruitMemberService {
     public SpecifiedMemberResponse findSpecifiedMember(Long id) {
         RecruitMember member = recruitMemberRepository.findById(id)
                 .orElseThrow(() -> new RecruitMemberException(RECRUIT_MEMBER_NOT_FOUND));
+        List<Answer> answers = answerRepository
+                .findByRecruitMemberAndSurveyType(member, SurveyType.RECRUIT);
 
-        return SpecifiedMemberResponse.from(member);
+        return SpecifiedMemberResponse.from(member, answers, objectMapper);
     }
 }
