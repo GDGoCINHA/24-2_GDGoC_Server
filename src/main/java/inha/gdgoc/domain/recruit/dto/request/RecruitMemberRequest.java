@@ -40,7 +40,7 @@ public class RecruitMemberRequest {
                 .birth(birth)
                 .major(major)
                 .doubleMajor(doubleMajor)
-                .isPayed(isPayed)
+                .isPayed(false)
                 .build();
     }
 }
