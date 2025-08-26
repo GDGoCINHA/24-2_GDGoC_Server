@@ -7,11 +7,13 @@ import static inha.gdgoc.domain.recruit.controller.message.RecruitMemberMessage.
 
 import inha.gdgoc.domain.recruit.dto.request.ApplicationRequest;
 import inha.gdgoc.domain.recruit.dto.request.CheckPhoneNumberRequest;
-import inha.gdgoc.domain.recruit.dto.request.CheckStudentIdRequest;
+import inha.gdgoc.domain.recruit.dto.response.CheckStudentIdResponse;
 import inha.gdgoc.domain.recruit.dto.response.SpecifiedMemberResponse;
 import inha.gdgoc.domain.recruit.service.RecruitMemberService;
 import inha.gdgoc.global.dto.response.ApiResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,16 +40,18 @@ public class RecruitMemberController {
         return ResponseEntity.ok(ApiResponse.ok(MEMBER_SAVE_SUCCESS));
     }
 
-    // TODO valid 핸들러 추가
-    // TODO DTO로 응답 리팩토링, requestparam으로 변경하기
-    @GetMapping("/check/studentId")
-    public ResponseEntity<ApiResponse<Boolean, Void>> duplicatedStudentIdDetails(
-            @Valid @ModelAttribute CheckStudentIdRequest studentIdRequest
+    @GetMapping("/studentId")
+    public ResponseEntity<ApiResponse<CheckStudentIdResponse, Void>> duplicatedStudentIdDetails(
+            @RequestParam
+            @NotBlank(message = "학번은 필수 입력 값입니다.")
+            @Pattern(regexp = "^12[0-9]{6}$", message = "유효하지 않은 학번 값입니다.")
+            String studentId
     ) {
-        boolean exists = recruitMemberService.isRegisteredStudentId(studentIdRequest.getStudentId());
+        CheckStudentIdResponse response = recruitMemberService.isRegisteredStudentId(studentId);
 
-        return ResponseEntity.ok(ApiResponse.ok(STUDENT_ID_DUPLICATION_CHECK_SUCCESS, exists));
+        return ResponseEntity.ok(ApiResponse.ok(STUDENT_ID_DUPLICATION_CHECK_SUCCESS, response));
     }
+
 
     // TODO DTO로 응답 리팩토링
     @GetMapping("/check/phoneNumber")
@@ -68,4 +72,10 @@ public class RecruitMemberController {
 
         return ResponseEntity.ok(ApiResponse.ok(MEMBER_RETRIEVED_SUCCESS, response));
     }
+
+    // TODO 전체 응답 조회 및 검색
+
+    // TODO 입금 완료
+
+    // TODO 입금 미완료
 }

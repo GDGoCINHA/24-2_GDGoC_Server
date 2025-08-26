@@ -3,6 +3,7 @@ package inha.gdgoc.global.error;
 import inha.gdgoc.global.dto.response.ApiResponse;
 import inha.gdgoc.global.dto.response.ErrorMeta;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -73,6 +74,24 @@ public class GlobalExceptionHandler {
         ErrorMeta meta = createMeta(request);
 
         return ResponseEntity.status(GlobalErrorCode.BAD_REQUEST.getStatus())
+                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), message, meta));
+    }
+
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void, ErrorMeta>> handleConstraintViolation(
+            jakarta.validation.ConstraintViolationException ex,
+            HttpServletRequest request
+    ) {
+        String message = ex.getConstraintViolations()
+                .stream()
+                .findFirst()
+                .map(ConstraintViolation::getMessage)
+                .orElse("유효하지 않은 요청입니다.");
+
+        log.error("ConstraintViolationException 발생: {}", message);
+
+        ErrorMeta meta = createMeta(request);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), message, meta));
     }
 

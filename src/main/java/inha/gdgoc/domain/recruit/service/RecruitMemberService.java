@@ -4,6 +4,7 @@ import static inha.gdgoc.domain.recruit.exception.RecruitMemberErrorCode.RECRUIT
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import inha.gdgoc.domain.recruit.dto.request.ApplicationRequest;
+import inha.gdgoc.domain.recruit.dto.response.CheckStudentIdResponse;
 import inha.gdgoc.domain.recruit.dto.response.SpecifiedMemberResponse;
 import inha.gdgoc.domain.recruit.entity.Answer;
 import inha.gdgoc.domain.recruit.entity.RecruitMember;
@@ -45,8 +46,9 @@ public class RecruitMemberService {
         answerRepository.saveAll(answers);
     }
 
-    public boolean isRegisteredStudentId(String studentId) {
-        return recruitMemberRepository.existsByStudentId(studentId);
+    public CheckStudentIdResponse isRegisteredStudentId(String studentId) {
+        boolean exists = recruitMemberRepository.existsByStudentId(studentId);
+        return new CheckStudentIdResponse(exists);
     }
 
     public boolean isRegisteredPhoneNumber(String phoneNumber) {
