@@ -1,5 +1,8 @@
 package inha.gdgoc.domain.study.service;
 
+import static inha.gdgoc.domain.study.exception.StudyErrorCode.INVALID_PAGE;
+import static inha.gdgoc.domain.study.exception.StudyErrorCode.STUDY_NOT_FOUND;
+
 import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.study.dto.MyStudyRecruitDto;
 import inha.gdgoc.domain.study.dto.StudyDto;
@@ -11,6 +14,7 @@ import inha.gdgoc.domain.study.dto.response.MyStudyRecruitResponse;
 import inha.gdgoc.domain.study.entity.Study;
 import inha.gdgoc.domain.study.enums.CreatorType;
 import inha.gdgoc.domain.study.enums.StudyStatus;
+import inha.gdgoc.domain.study.exception.StudyException;
 import inha.gdgoc.domain.study.repository.StudyRepository;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.service.UserService;
@@ -41,7 +45,7 @@ public class StudyService {
         Long page = _page.orElse(1L);
 
         if (page < 1) {
-            throw new RuntimeException("page가 1보다 작을 수 없습니다.");
+            throw new StudyException(INVALID_PAGE);
         }
 
         Long limit = STUDY_PAGE_COUNT;
@@ -92,7 +96,7 @@ public class StudyService {
     public GetDetailedStudyResponse getStudyById(Long studyId) {
         Optional<Study> study = studyRepository.findById(studyId);
         if (study.isEmpty()) {
-            throw new RuntimeException("해당 스터디가 존재하지 않습니다.");
+            throw new StudyException(STUDY_NOT_FOUND);
         }
         return detailedStudyResponse(study.orElse(null), study.get().getUser());
     }
@@ -143,9 +147,11 @@ public class StudyService {
     }
 
     private GetDetailedStudyResponse detailedStudyResponse(Study study, User user) {
-        return new GetDetailedStudyResponse(study.getId(), GetCreatorResponse.from(user), study.getTitle(),
+        return new GetDetailedStudyResponse(study.getId(), GetCreatorResponse.from(user),
+                study.getTitle(),
                 study.getSimpleIntroduce(), study.getActivityIntroduce(), study.getStatus(),
-                study.getRecruitStartDate(), study.getRecruitEndDate(), study.getActivityStartDate(),
+                study.getRecruitStartDate(), study.getRecruitEndDate(),
+                study.getActivityStartDate(),
                 study.getActivityEndDate(), study.getExpectedTime(), study.getExpectedPlace(),
                 s3Service.getS3FileUrl(study.getImagePath()));
     }

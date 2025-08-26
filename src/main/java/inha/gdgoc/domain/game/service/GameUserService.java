@@ -25,17 +25,7 @@ public class GameUserService {
         GameUser gameUser = gameUserRequest.toEntity();
         gameUserRepository.save(gameUser);
 
-        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
-        LocalDateTime startOfDay = today.atStartOfDay(); // 00:00:00
-        LocalDateTime endOfDay = today.atTime(23, 59, 59); // 23:59:59
-
-        // 전체 유저 순위 리스트 가져오기
-        List<GameUser> results = gameUserRepository.findAllByCreatedAtBetweenOrderByTypingSpeedAsc(startOfDay,
-                endOfDay);
-
-        return results.stream()
-                .map(user -> new GameUserResponse(results.indexOf(user) + 1, user))
-                .collect(Collectors.toList());
+        return findUserRankings();
     }
 
     public List<GameUserResponse> findUserRankings() {

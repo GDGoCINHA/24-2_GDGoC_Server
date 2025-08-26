@@ -18,6 +18,7 @@ import inha.gdgoc.domain.auth.dto.response.AccessTokenResponse;
 import inha.gdgoc.domain.auth.dto.response.CodeVerificationResponse;
 import inha.gdgoc.domain.auth.dto.response.LoginResponse;
 import inha.gdgoc.domain.auth.exception.AuthErrorCode;
+import inha.gdgoc.domain.auth.exception.AuthException;
 import inha.gdgoc.domain.auth.service.AuthCodeService;
 import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.auth.service.MailService;
@@ -25,7 +26,6 @@ import inha.gdgoc.domain.auth.service.RefreshTokenService;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.dto.response.ApiResponse;
-import inha.gdgoc.global.error.BusinessException;
 import jakarta.servlet.http.HttpServletResponse;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -62,6 +62,7 @@ public class AuthController {
             HttpServletResponse response
     ) {
         Map<String, Object> data = authService.processOAuthLogin(code, response);
+
         return ResponseEntity.ok(ApiResponse.ok(OAUTH_LOGIN_SIGNUP_SUCCESS, data));
     }
 
@@ -72,10 +73,8 @@ public class AuthController {
         log.info("리프레시 토큰 요청 받음. 토큰 존재 여부: {}", refreshToken != null);
 
         if (refreshToken == null) {
-            throw new BusinessException(AuthErrorCode.INVALID_COOKIE);
+            throw new AuthException(AuthErrorCode.INVALID_COOKIE);
         }
-
-        log.info("리프레시 토큰 값: {}", refreshToken);
 
         try {
             String newAccessToken = refreshTokenService.refreshAccessToken(refreshToken);
@@ -85,7 +84,7 @@ public class AuthController {
                     ApiResponse.ok(ACCESS_TOKEN_REFRESH_SUCCESS, accessTokenResponse, null));
         } catch (Exception e) {
             log.error("리프레시 토큰 처리 중 오류: {}", e.getMessage(), e);
-            throw new BusinessException(AuthErrorCode.INVALID_REFRESH_TOKEN);
+            throw new AuthException(AuthErrorCode.INVALID_REFRESH_TOKEN);
         }
     }
 
@@ -105,12 +104,12 @@ public class AuthController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new BusinessException(UNAUTHORIZED_USER);
+            throw new AuthException(UNAUTHORIZED_USER);
         }
 
         String email = authentication.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+                .orElseThrow(() -> new AuthException(USER_NOT_FOUND));
         Long userId = user.getId();
 
         log.info("로그아웃 시도: 사용자 ID: {}, 이메일: {}", userId, email);
@@ -142,7 +141,7 @@ public class AuthController {
 
             return ResponseEntity.ok(ApiResponse.ok(CODE_CREATION_SUCCESS));
         }
-        throw new BusinessException(USER_NOT_FOUND);
+        throw new AuthException(USER_NOT_FOUND);
     }
 
     @PostMapping("/password-reset/verify")
@@ -163,7 +162,7 @@ public class AuthController {
         // TODO 서비스 단으로
         Optional<User> user = userRepository.findByEmail(passwordResetRequest.email());
         if (user.isEmpty()) {
-            throw new BusinessException(USER_NOT_FOUND);
+            throw new AuthException(USER_NOT_FOUND);
         }
 
         User foundUser = user.get();

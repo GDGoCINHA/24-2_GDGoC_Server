@@ -1,17 +1,20 @@
 package inha.gdgoc.domain.recruit.dto.response;
 
-import inha.gdgoc.global.entity.BaseEntity;
+import inha.gdgoc.domain.recruit.entity.RecruitMember;
 
-public class SpecifiedMemberResponse extends BaseEntity {
-    private String name;
-    private String major;
-    private String studentId;
-    private boolean isPayed;
+public record SpecifiedMemberResponse(
+        String name,
+        String major,
+        String studentId,
+        boolean isPayed
+) {
 
-    public SpecifiedMemberResponse(String name, String major, String studentId, boolean isPayed) {
-        this.name = name;
-        this.major = major;
-        this.studentId = studentId;
-        this.isPayed = isPayed;
+    public static SpecifiedMemberResponse from(RecruitMember member) {
+        return new SpecifiedMemberResponse(
+                member.getName(),
+                member.getMajor(),
+                member.getStudentId(),
+                Boolean.TRUE.equals(member.getIsPayed())
+        );
     }
 }

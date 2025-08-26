@@ -65,6 +65,7 @@ public class RecruitMemberController {
             @RequestParam Long userId
     ) {
         SpecifiedMemberResponse response = recruitMemberService.findSpecifiedMember(userId);
+
         return ResponseEntity.ok(ApiResponse.ok(MEMBER_RETRIEVED_SUCCESS, response));
     }
 }
