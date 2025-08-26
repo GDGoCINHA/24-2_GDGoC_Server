@@ -14,10 +14,12 @@ import inha.gdgoc.domain.recruit.enums.SurveyType;
 import inha.gdgoc.domain.recruit.exception.RecruitMemberException;
 import inha.gdgoc.domain.recruit.repository.AnswerRepository;
 import inha.gdgoc.domain.recruit.repository.RecruitMemberRepository;
-import jakarta.transaction.Transactional;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Service
@@ -78,6 +80,16 @@ public class RecruitMemberService {
 
         if (isPayed) m.markPaid();
         else m.markUnpaid();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RecruitMember> findAllMembersPage(Pageable pageable) {
+        return recruitMemberRepository.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RecruitMember> searchMembersByNamePage(String name, Pageable pageable) {
+        return recruitMemberRepository.findByNameContainingIgnoreCase(name, pageable);
     }
 
 }

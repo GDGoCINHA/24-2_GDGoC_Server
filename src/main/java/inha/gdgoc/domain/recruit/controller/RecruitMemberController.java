@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.recruit.controller;
 
+import static inha.gdgoc.domain.recruit.controller.message.RecruitMemberMessage.MEMBER_LIST_RETRIEVED_SUCCESS;
 import static inha.gdgoc.domain.recruit.controller.message.RecruitMemberMessage.MEMBER_RETRIEVED_SUCCESS;
 import static inha.gdgoc.domain.recruit.controller.message.RecruitMemberMessage.MEMBER_SAVE_SUCCESS;
 import static inha.gdgoc.domain.recruit.controller.message.RecruitMemberMessage.PAYMENT_MARKED_COMPLETE_SUCCESS;
@@ -11,15 +12,25 @@ import inha.gdgoc.domain.recruit.dto.request.ApplicationRequest;
 import inha.gdgoc.domain.recruit.dto.request.PaymentUpdateRequest;
 import inha.gdgoc.domain.recruit.dto.response.CheckPhoneNumberResponse;
 import inha.gdgoc.domain.recruit.dto.response.CheckStudentIdResponse;
+import inha.gdgoc.domain.recruit.dto.response.RecruitMemberSummaryResponse;
 import inha.gdgoc.domain.recruit.dto.response.SpecifiedMemberResponse;
+import inha.gdgoc.domain.recruit.entity.RecruitMember;
 import inha.gdgoc.domain.recruit.service.RecruitMemberService;
 import inha.gdgoc.global.dto.response.ApiResponse;
+import inha.gdgoc.global.dto.response.PageMeta;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -84,9 +95,6 @@ public class RecruitMemberController {
         return ResponseEntity.ok(ApiResponse.ok(MEMBER_RETRIEVED_SUCCESS, response));
     }
 
-    // TODO 전체 응답 조회 및 검색
-
-
     @Operation(
             summary = "입금 상태 변경",
             description = "설정하려는 상태(NOT 현재 상태)를 body에 보내주세요. true=입금 완료, false=입금 미완료",
@@ -107,6 +115,44 @@ public class RecruitMemberController {
                         : PAYMENT_MARKED_INCOMPLETE_SUCCESS
                 )
         );
+    }
+
+    @Operation(
+            summary = "지원자 목록 조회",
+            description = "전체 목록 또는 이름 검색 결과를 반환합니다. 검색어(question)를 주면 이름 포함 검색, 없으면 전체 조회. sort랑 dir은 example 값 그대로 코딩하는 것 추천...",
+            security = { @SecurityRequirement(name = "BearerAuth") }
+    )
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/recruit/members")
+    public ResponseEntity<ApiResponse<List<RecruitMemberSummaryResponse>, PageMeta>> getMembers(
+            @Parameter(description = "검색어(이름 부분 일치). 없으면 전체 조회", example = "소연")
+            @RequestParam(required = false) String question,
+
+            @Parameter(description = "페이지(0부터 시작)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+
+            @Parameter(description = "페이지 크기", example = "20")
+            @RequestParam(defaultValue = "20") int size,
+
+            @Parameter(description = "정렬 필드", example = "createdAt")
+            @RequestParam(defaultValue = "createdAt") String sort,
+
+            @Parameter(description = "정렬 방향 ASC/DESC", example = "DESC")
+            @RequestParam(defaultValue = "DESC") String dir
+    ) {
+        Direction direction = "ASC".equalsIgnoreCase(dir) ? Direction.ASC : Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort));
+
+        Page<RecruitMember> memberPage = (question == null || question.isBlank())
+                ? recruitMemberService.findAllMembersPage(pageable)
+                : recruitMemberService.searchMembersByNamePage(question, pageable);
+
+        List<RecruitMemberSummaryResponse> list = memberPage
+                .map(RecruitMemberSummaryResponse::from)
+                .getContent();
+        PageMeta meta = PageMeta.of(memberPage);
+
+        return ResponseEntity.ok(ApiResponse.ok(MEMBER_LIST_RETRIEVED_SUCCESS, list, meta));
     }
 
 }
