@@ -73,9 +73,8 @@ public class RecruitMemberService {
     @Transactional
     public void updatePayment(Long memberId, boolean isPayed) {
         RecruitMember m = recruitMemberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("RecruitMember not found: " + memberId));
+                .orElseThrow(() -> new RecruitMemberException(RECRUIT_MEMBER_NOT_FOUND));
 
-        // 멱등 처리: 이미 동일 상태면 스킵
         if (Boolean.TRUE.equals(m.getIsPayed()) == isPayed) return;
 
         if (isPayed) m.markPaid();
