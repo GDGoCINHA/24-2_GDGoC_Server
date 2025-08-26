@@ -1,11 +1,11 @@
 package inha.gdgoc.domain.study.service;
 
-import static inha.gdgoc.domain.auth.exception.AuthErrorCode.USER_NOT_FOUND;
 import static inha.gdgoc.domain.study.exception.StudyAttendeeErrorCode.STUDY_ALREADY_APPLIED;
 import static inha.gdgoc.domain.study.exception.StudyAttendeeErrorCode.STUDY_ATTENDEE_NOT_FOUND;
 import static inha.gdgoc.domain.study.exception.StudyErrorCode.STUDY_APPLICANT_ACCESS_DENIED;
 import static inha.gdgoc.domain.study.exception.StudyAttendeeErrorCode.INVALID_PAGE;
 import static inha.gdgoc.domain.study.exception.StudyErrorCode.STUDY_NOT_FOUND;
+import static inha.gdgoc.domain.user.exception.UserErrorCode.USER_NOT_FOUND;
 
 import inha.gdgoc.domain.study.dto.AttendeeUpdateDto;
 import inha.gdgoc.domain.study.dto.StudyAttendeeDto;
@@ -53,7 +53,7 @@ public class StudyAttendeeService {
     public StudyAttendeeListWithMetaDto getStudyAttendeeList(Long studyId, Optional<Long> _page) {
         Long page = _page.orElse(1L);
         if (page < 1) {
-            throw new StudyException(INVALID_PAGE);
+            throw new StudyAttendeeException(INVALID_PAGE);
         }
 
         Long limit = STUDY_ATTENDEE_PAGE_COUNT;
