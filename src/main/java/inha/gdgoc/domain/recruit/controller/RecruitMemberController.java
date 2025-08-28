@@ -59,7 +59,7 @@ public class RecruitMemberController {
         return ResponseEntity.ok(ApiResponse.ok(MEMBER_SAVE_SUCCESS));
     }
 
-    @GetMapping("/check/studentId")
+    @GetMapping("/check/student-id")
     public ResponseEntity<ApiResponse<CheckStudentIdResponse, Void>> duplicatedStudentIdDetails(
             @RequestParam
             @NotBlank(message = "학번은 필수 입력 값입니다.")
@@ -71,7 +71,7 @@ public class RecruitMemberController {
         return ResponseEntity.ok(ApiResponse.ok(STUDENT_ID_DUPLICATION_CHECK_SUCCESS, response));
     }
 
-    @GetMapping("/check/phoneNumber")
+    @GetMapping("/check/phone-number")
     public ResponseEntity<ApiResponse<CheckPhoneNumberResponse, Void>> duplicatedPhoneNumberDetails(
             @RequestParam
             @NotBlank(message = "전화번호는 필수 입력 값입니다.")
