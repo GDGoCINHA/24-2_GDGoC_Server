@@ -59,7 +59,7 @@ public class RecruitMemberController {
         return ResponseEntity.ok(ApiResponse.ok(MEMBER_SAVE_SUCCESS));
     }
 
-    @GetMapping("/studentId")
+    @GetMapping("/check/studentId")
     public ResponseEntity<ApiResponse<CheckStudentIdResponse, Void>> duplicatedStudentIdDetails(
             @RequestParam
             @NotBlank(message = "학번은 필수 입력 값입니다.")
