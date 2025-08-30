@@ -32,7 +32,6 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             || uri.startsWith("/swagger-ui")
             || uri.equals("/swagger-ui.html")
             || uri.startsWith("/api/v1/auth/")
-            || uri.startsWith("/api/v1/password-reset/")
             || uri.startsWith("/api/v1/test/")
             || uri.startsWith("/api/v1/game/")
             || uri.startsWith("/api/v1/apply/")
