@@ -95,7 +95,7 @@ public class SecurityConfig {
             "https://www.gdgocinha.com",
             "https://typing-game-alpha-umber.vercel.app"
         ));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(
             List.of("Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"));
         config.setAllowCredentials(true);
