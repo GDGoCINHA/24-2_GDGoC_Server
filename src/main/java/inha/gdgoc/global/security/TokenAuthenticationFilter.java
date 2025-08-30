@@ -45,7 +45,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         @NotNull FilterChain filterChain
     ) throws ServletException, IOException {
         String token = getAccessToken(request);
-        log.info("요청 URI: {}, 추출된 access token: {}", request.getRequestURI(), token);
+        log.info("요청 URI: {}, access token 존재 여부: {}", request.getRequestURI(), token != null);
 
         if (token != null) {
             try {
