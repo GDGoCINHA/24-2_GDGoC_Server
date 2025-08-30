@@ -25,13 +25,18 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
-        }
+        } 
 
         String uri = request.getRequestURI();
         return uri.startsWith("/v3/api-docs")
             || uri.startsWith("/swagger-ui")
             || uri.equals("/swagger-ui.html")
-            || uri.startsWith("/api/v1/auth/")
+            || uri.startsWith("/api/v1/auth/refresh")
+            || uri.startsWith("/api/v1/auth/login")
+            || uri.startsWith("/api/v1/auth/oauth2/google/callback")
+            || uri.startsWith("/api/v1/auth/password-reset/request")
+            || uri.startsWith("/api/v1/auth/password-reset/verify")
+            || uri.startsWith("/api/v1/auth/password-reset/confirm")
             || uri.startsWith("/api/v1/test/")
             || uri.startsWith("/api/v1/game/")
             || uri.startsWith("/api/v1/apply/")
