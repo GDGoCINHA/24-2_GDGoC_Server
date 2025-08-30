@@ -6,7 +6,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -41,20 +40,12 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(
-            @NotNull HttpServletRequest request,
-            @NotNull HttpServletResponse response,
-            @NotNull FilterChain filterChain) throws ServletException, IOException {
-        String uri = request.getRequestURI();
-        List<String> skipPaths = List.of("/auth/refresh", "/auth/login", "/auth/oauth2/google/callback",
-                "/auth/signup", "/auth/findId", "/auth/password-reset/request", "/auth/password-reset/verify",
-                "/auth/password-reset/confirm");
-        if (skipPaths.contains(uri)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
+        @NotNull HttpServletRequest request,
+        @NotNull HttpServletResponse response,
+        @NotNull FilterChain filterChain
+    ) throws ServletException, IOException {
         String token = getAccessToken(request);
-        log.info("요청 URI: {}, 추출된 access token: {}", request.getRequestURI(), token);
+        log.info("요청 URI: {}, access token 존재 여부: {}", request.getRequestURI(), token != null);
 
         if (token != null) {
             try {
