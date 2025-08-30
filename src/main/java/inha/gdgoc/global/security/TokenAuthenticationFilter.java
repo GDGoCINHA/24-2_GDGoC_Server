@@ -39,6 +39,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             || uri.startsWith("/api/v1/check/");
     }
 
+
     @Override
     protected void doFilterInternal(
             @NotNull HttpServletRequest request,
