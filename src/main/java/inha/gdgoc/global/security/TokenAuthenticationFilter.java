@@ -6,7 +6,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -26,13 +25,18 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
-        }
+        } 
 
         String uri = request.getRequestURI();
         return uri.startsWith("/v3/api-docs")
             || uri.startsWith("/swagger-ui")
             || uri.equals("/swagger-ui.html")
-            || uri.startsWith("/api/v1/auth/")
+            || uri.startsWith("/api/v1/auth/refresh")
+            || uri.startsWith("/api/v1/auth/login")
+            || uri.startsWith("/api/v1/auth/oauth2/google/callback")
+            || uri.startsWith("/api/v1/auth/password-reset/request")
+            || uri.startsWith("/api/v1/auth/password-reset/verify")
+            || uri.startsWith("/api/v1/auth/password-reset/confirm")
             || uri.startsWith("/api/v1/test/")
             || uri.startsWith("/api/v1/game/")
             || uri.startsWith("/api/v1/apply/")
@@ -41,20 +45,12 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(
-            @NotNull HttpServletRequest request,
-            @NotNull HttpServletResponse response,
-            @NotNull FilterChain filterChain) throws ServletException, IOException {
-        String uri = request.getRequestURI();
-        List<String> skipPaths = List.of("/auth/refresh", "/auth/login", "/auth/oauth2/google/callback",
-                "/auth/signup", "/auth/findId", "/auth/password-reset/request", "/auth/password-reset/verify",
-                "/auth/password-reset/confirm");
-        if (skipPaths.contains(uri)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
+        @NotNull HttpServletRequest request,
+        @NotNull HttpServletResponse response,
+        @NotNull FilterChain filterChain
+    ) throws ServletException, IOException {
         String token = getAccessToken(request);
-        log.info("요청 URI: {}, 추출된 access token: {}", request.getRequestURI(), token);
+        log.info("요청 URI: {}, access token 존재 여부: {}", request.getRequestURI(), token != null);
 
         if (token != null) {
             try {

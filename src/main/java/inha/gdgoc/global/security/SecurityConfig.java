@@ -7,6 +7,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -32,54 +33,54 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .formLogin(AbstractHttpConfigurer::disable)
-                .httpBasic(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/swagger-ui.html",
-                                "/api/v1/auth/**",
-                                "/api/v1/game/**",
-                                "/api/v1/apply/**",
-                                "/api/v1/check/**",
-                                "/api/v1/password-reset/**")
-                        .permitAll()
-                        .anyRequest()
-                        .authenticated()
-                )
-                .sessionManagement(
-                        sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(tokenAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class)
-                .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
-                            response.setContentType("application/json; charset=UTF-8");
+            .csrf(AbstractHttpConfigurer::disable)
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .formLogin(AbstractHttpConfigurer::disable)
+            .httpBasic(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers(
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**",
+                    "/swagger-ui.html",
+                    "/api/v1/auth/**",
+                    "/api/v1/game/**",
+                    "/api/v1/apply/**",
+                    "/api/v1/check/**")
+                .permitAll()
+                .anyRequest()
+                .authenticated()
+            )
+            .sessionManagement(
+                sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .addFilterBefore(tokenAuthenticationFilter,
+                UsernamePasswordAuthenticationFilter.class)
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                    response.setContentType("application/json; charset=UTF-8");
 
-                            ErrorResponse errorResponse = new ErrorResponse(
-                                    GlobalErrorCode.UNAUTHORIZED_USER
-                            );
+                    ErrorResponse errorResponse = new ErrorResponse(
+                        GlobalErrorCode.UNAUTHORIZED_USER
+                    );
 
-                            ObjectMapper objectMapper = new ObjectMapper();
-                            response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
-                            response.getWriter().flush();
-                        })
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.setStatus(HttpStatus.FORBIDDEN.value());
-                            response.setContentType("application/json; charset=UTF-8");
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+                    response.getWriter().flush();
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(HttpStatus.FORBIDDEN.value());
+                    response.setContentType("application/json; charset=UTF-8");
 
-                            ErrorResponse errorResponse = new ErrorResponse(
-                                    GlobalErrorCode.FORBIDDEN_USER
-                            );
+                    ErrorResponse errorResponse = new ErrorResponse(
+                        GlobalErrorCode.FORBIDDEN_USER
+                    );
 
-                            ObjectMapper objectMapper = new ObjectMapper();
-                            response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
-                            response.getWriter().flush();
-                        })
-                );
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+                    response.getWriter().flush();
+                })
+            );
 
         return http.build();
     }
@@ -96,7 +97,7 @@ public class SecurityConfig {
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(
-                List.of("Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"));
+            List.of("Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
