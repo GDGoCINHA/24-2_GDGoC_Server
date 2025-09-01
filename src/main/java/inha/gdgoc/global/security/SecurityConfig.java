@@ -90,6 +90,7 @@ public class SecurityConfig {
         config.setAllowedOrigins(List.of(
                 "http://localhost:3000",
                 "https://gdgocinha.com",
+                "https://dev.gdgocinha.com",
                 "https://www.gdgocinha.com",
                 "https://typing-game-alpha-umber.vercel.app"
         ));
