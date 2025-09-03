@@ -28,6 +28,9 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         } 
 
         String uri = request.getRequestURI();
+
+        if (uri.equals("/api/v1/auth/logout")) return false;
+
         return uri.startsWith("/v3/api-docs")
             || uri.startsWith("/swagger-ui")
             || uri.equals("/swagger-ui.html")
