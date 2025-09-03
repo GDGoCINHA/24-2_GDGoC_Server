@@ -39,6 +39,7 @@ public class SecurityConfig {
             .httpBasic(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/api/v1/auth/logout").authenticated()
                 .requestMatchers(
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
@@ -89,10 +90,11 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
-            "http://localhost:3000",
-            "https://gdgocinha.com",
-            "https://www.gdgocinha.com",
-            "https://typing-game-alpha-umber.vercel.app"
+                "http://localhost:3000",
+                "https://gdgocinha.com",
+                "https://dev.gdgocinha.com",
+                "https://www.gdgocinha.com",
+                "https://typing-game-alpha-umber.vercel.app"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(
