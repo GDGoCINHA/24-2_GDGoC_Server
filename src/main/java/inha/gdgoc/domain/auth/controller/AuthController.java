@@ -25,6 +25,7 @@ import inha.gdgoc.domain.auth.service.MailService;
 import inha.gdgoc.domain.auth.service.RefreshTokenService;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.repository.UserRepository;
+import inha.gdgoc.global.config.jwt.TokenProvider;
 import inha.gdgoc.global.dto.response.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import java.security.InvalidKeyException;
@@ -34,6 +35,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CookieValue;
@@ -99,18 +101,26 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void, Void>> logout() {
         // TODO 서비스로 넘기기
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated()) {
+        // 1) 익명 방어
+        if (authentication == null
+            || !authentication.isAuthenticated()
+            || "anonymousUser".equals(authentication.getName())) {
             throw new AuthException(UNAUTHORIZED_USER);
         }
 
-        String email = authentication.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AuthException(USER_NOT_FOUND));
-        Long userId = user.getId();
+        // 2) principal 캐스팅해서 확정적으로 userId/email 사용
+        Object principal = authentication.getPrincipal();
+        if (!(principal instanceof TokenProvider.CustomUserDetails userDetails)) {
+            throw new AuthException(UNAUTHORIZED_USER);
+        }
+
+        Long userId = userDetails.getUserId();
+        String email = userDetails.getUsername();
 
         log.info("로그아웃 시도: 사용자 ID: {}, 이메일: {}", userId, email);
 
