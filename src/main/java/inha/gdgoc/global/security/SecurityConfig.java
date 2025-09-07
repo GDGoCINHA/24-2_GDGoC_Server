@@ -47,7 +47,9 @@ public class SecurityConfig {
                     "/api/v1/auth/**",
                     "/api/v1/game/**",
                     "/api/v1/apply/**",
-                    "/api/v1/check/**")
+                    "/api/v1/check/**",
+                    "/api/v1/core-recruit",
+                    "/api/v1/fileupload")
                 .permitAll()
                 .anyRequest()
                 .authenticated()
