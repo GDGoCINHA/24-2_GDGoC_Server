@@ -48,8 +48,8 @@ public class SecurityConfig {
                     "/api/v1/game/**",
                     "/api/v1/apply/**",
                     "/api/v1/check/**",
-                    "/core-recruit",
-                    "/fileupload")
+                    "/api/v1/core-recruit",
+                    "/api/v1/fileupload")
                 .permitAll()
                 .anyRequest()
                 .authenticated()

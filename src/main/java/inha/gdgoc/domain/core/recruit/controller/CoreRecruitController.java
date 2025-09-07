@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/core-recruit")
+@RequestMapping("/api/v1/core-recruit")
 @RequiredArgsConstructor
 public class CoreRecruitController {
 
