@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.resource.controller;
 
+import inha.gdgoc.domain.resource.enums.S3KeyType;
 import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.global.dto.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ public class FileUploadController {
     public ResponseEntity<ApiResponse<UploadResponse, Void>> upload(
         @RequestParam("file") MultipartFile file
     ) throws Exception {
-        String key = s3Service.upload(0L, inha.gdgoc.domain.resource.enums.S3KeyType.ETC, file);
+        String key = s3Service.upload(0L, S3KeyType.study, file);
         String url = s3Service.getS3FileUrl(key);
         return ResponseEntity.ok(ApiResponse.ok("OK", new UploadResponse(url)));
     }
