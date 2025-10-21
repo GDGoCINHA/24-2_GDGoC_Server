@@ -2,6 +2,7 @@ package inha.gdgoc.domain.user.entity;
 
 import inha.gdgoc.domain.study.entity.Study;
 import inha.gdgoc.domain.study.entity.StudyAttendee;
+import inha.gdgoc.domain.user.enums.TeamType;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.global.entity.BaseEntity;
 import inha.gdgoc.global.util.EncryptUtil;
@@ -64,6 +65,10 @@ public class User extends BaseEntity {
     @Column(name = "user_role", nullable = false)
     private UserRole userRole;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "team")
+    private TeamType team;
+
     @Column(name = "salt", nullable = false)
     private byte[] salt;
 
@@ -88,7 +93,9 @@ public class User extends BaseEntity {
     public User(
             String name, String major, String studentId, String phoneNumber,
             String email, String password, UserRole userRole,
-            byte[] salt, String image, SocialUrls social, Careers careers) {
+            TeamType team,
+            byte[] salt, String image, SocialUrls social, Careers careers
+    ) {
         this.name = name;
         this.major = major;
         this.studentId = studentId;
@@ -96,10 +103,11 @@ public class User extends BaseEntity {
         this.email = email;
         this.password = password;
         this.userRole = userRole;
+        this.team = team;
         this.salt = salt;
         this.image = image;
-        this.social = social != null ? social : new SocialUrls();
-        this.careers = careers != null ? careers : new Careers();
+        this.social = (social != null ? social : new SocialUrls());
+        this.careers = (careers != null ? careers : new Careers());
     }
 
     public void addStudy(Study study) {

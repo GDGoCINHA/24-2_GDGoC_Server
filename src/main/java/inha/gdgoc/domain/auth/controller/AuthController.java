@@ -32,6 +32,8 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.Optional;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -92,11 +94,11 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse, Void>> login(
-            @RequestBody UserLoginRequest userLoginRequest,
+            @Valid @RequestBody UserLoginRequest req,
             HttpServletResponse response
     ) throws NoSuchAlgorithmException, InvalidKeyException {
-        LoginResponse loginResponse = authService.loginWithPassword(userLoginRequest, response);
-
+        String email = req.email().trim();
+        LoginResponse loginResponse = authService.loginWithPassword(email, req.password(), response);
         return ResponseEntity.ok(ApiResponse.ok(LOGIN_WITH_PASSWORD_SUCCESS, loginResponse));
     }
 

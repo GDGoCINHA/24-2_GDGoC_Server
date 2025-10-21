@@ -4,6 +4,7 @@ HELP.md
 **/.env.*
 *.env
 .env
+.DS_Store
 .env.properties
 !.env.example
 **/.env.example
