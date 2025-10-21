@@ -41,18 +41,17 @@ public class CoreAttendanceService {
     @Transactional
     public void addDate(String date) {
         LocalDate d = LocalDate.parse(date);
-        if (!meetingRepository.existsById(d)) {
-            meetingRepository.save(Meeting.builder().meetingDate(d).build());
-        }
+        meetingRepository.findByMeetingDate(d)
+                .orElseGet(() -> meetingRepository.save(Meeting.builder().meetingDate(d).build()));
     }
 
     @Transactional
     public void deleteDate(String date) {
         LocalDate d = LocalDate.parse(date);
-        // FK ON DELETE CASCADE가 걸려있다면 아래 한 줄로 충분
-        meetingRepository.deleteById(d);
-        // 만약 FK cascade가 없다면 다음 라인을 활성화
-        // attendanceRecordRepository.deleteByMeetingDate(d);
+        meetingRepository.findByMeetingDate(d).ifPresent(m -> {
+            // FK ON DELETE CASCADE라면 meeting만 지우면 attendance도 함께 삭제됨
+            meetingRepository.deleteById(m.getId());
+        });
     }
 
     /* ===================== Teams ===================== */
@@ -114,12 +113,8 @@ public class CoreAttendanceService {
         if (userIds == null || userIds.isEmpty()) return 0L;
 
         LocalDate d = LocalDate.parse(date);
-        // 회의가 없으면 생성 (idempotent)
-        if (!meetingRepository.existsById(d)) {
-            meetingRepository.save(Meeting.builder().meetingDate(d).build());
-        }
-        int affected = attendanceRecordRepository.upsertBatch(d, userIds, present);
-        // batch 결과는 행수에 대한 DB 드라이버 의존이 있어 절대값으로 환산
+        Long meetingId = ensureMeetingAndGetId(d);
+        int affected = attendanceRecordRepository.upsertBatchByMeetingId(meetingId, userIds, present);
         return Math.max(affected, 0);
     }
 
@@ -219,11 +214,25 @@ public class CoreAttendanceService {
 
     /* ===================== helpers ===================== */
 
+    /** date로 meeting을 보장하고 meetingId 반환 */
+    @Transactional
+    protected Long ensureMeetingAndGetId(LocalDate date) {
+        return meetingRepository.findByMeetingDate(date)
+                .map(Meeting::getId)
+                .orElseGet(() -> meetingRepository.save(
+                        Meeting.builder().meetingDate(date).build()
+                ).getId());
+    }
+
+    /** 특정 날짜의 출석 맵(userId → present) */
     @Transactional(readOnly = true)
     protected Map<Long, Boolean> getPresenceMap(LocalDate date) {
         Map<Long, Boolean> map = new HashMap<>();
-        attendanceRecordRepository.findPresencePairsByDate(date).forEach(row -> {
-            // row[0]=userId(Long/Number), row[1]=present(Boolean)
+        var meetingOpt = meetingRepository.findByMeetingDate(date);
+        if (meetingOpt.isEmpty()) return map;
+
+        Long meetingId = meetingOpt.get().getId();
+        attendanceRecordRepository.findPresencePairsByMeetingId(meetingId).forEach(row -> {
             Long uid = ((Number) row[0]).longValue();
             Boolean present = (Boolean) row[1];
             map.put(uid, present != null && present);
