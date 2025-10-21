@@ -2,10 +2,14 @@ package inha.gdgoc.domain.core.attendance.controller;
 
 import inha.gdgoc.domain.core.attendance.controller.message.CoreAttendanceMessage;
 import inha.gdgoc.domain.core.attendance.dto.request.CreateDateRequest;
+import inha.gdgoc.domain.core.attendance.dto.request.SetAttendanceRequest;
 import inha.gdgoc.domain.core.attendance.dto.response.DateListResponse;
 import inha.gdgoc.domain.core.attendance.dto.response.DaySummaryResponse;
 import inha.gdgoc.domain.core.attendance.dto.response.TeamResponse;
 import inha.gdgoc.domain.core.attendance.service.CoreAttendanceService;
+import inha.gdgoc.domain.user.enums.TeamType;
+import inha.gdgoc.domain.user.enums.UserRole;
+import inha.gdgoc.global.config.jwt.TokenProvider.CustomUserDetails;
 import inha.gdgoc.global.dto.response.ApiResponse;
 import inha.gdgoc.global.dto.response.PageMeta;
 import jakarta.validation.Valid;
@@ -13,130 +17,115 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
-/**
- * TODO: 임시 운용판(내일까지)
- *  - 권한 제거
- *  - 팀 구분은 query parameter로 처리 (?leadName=김정민 또는 ?teamId=team_xxx)
- *  - present 값은 query로 받음 (true/false), 바디 없이 호출 가능
- *  - 추후 리팩토링 시 Security/JWT/Service 분리 강화 예정
- */
 @RestController
-@RequestMapping("/api/v1/core-attendance")
+@RequestMapping("/api/v1/core-attendance/meetings")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('LEAD','ORGANIZER','ADMIN')")
 public class CoreAttendanceController {
 
     private final CoreAttendanceService service;
 
-    /* Dates */
-    @GetMapping("/dates")
-    public ResponseEntity<ApiResponse<DateListResponse, Void>> getDates() {
-        return ResponseEntity.ok(
-                ApiResponse.ok(CoreAttendanceMessage.DATE_LIST_RETRIEVED_SUCCESS,
-                        new DateListResponse(service.getDates()))
-        );
+    /* ===== helpers ===== */
+    private static TeamType requiredTeamFrom(CustomUserDetails me) {
+        if (me.getTeam() == null) throw new IllegalArgumentException("LEAD 권한 토큰에 team 정보가 없습니다.");
+        return me.getTeam();
     }
 
-    @PostMapping("/dates")
-    public ResponseEntity<ApiResponse<DateListResponse, Void>> createDate(
-            @Valid @RequestBody CreateDateRequest request
-    ) {
+    private static ResponseEntity<ApiResponse<Map<String, Object>, Void>> okUpdated(long updated, List<Long> ignored) {
+        return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.ATTENDANCE_ALL_SET_SUCCESS, Map.of("updated", updated, "ignoredUserIds", ignored)));
+    }
+
+    /* ===== Meetings(날짜) 목록 ===== */
+    @GetMapping
+    public ResponseEntity<ApiResponse<DateListResponse, Void>> listDates() {
+        return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.DATE_LIST_RETRIEVED_SUCCESS, new DateListResponse(service.getDates())));
+    }
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<DateListResponse, Void>> createDate(@Valid @RequestBody CreateDateRequest request) {
         service.addDate(request.getDate());
-        return ResponseEntity.ok(
-                ApiResponse.ok(CoreAttendanceMessage.DATE_CREATED_SUCCESS,
-                        new DateListResponse(service.getDates()))
-        );
+        return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.DATE_CREATED_SUCCESS, new DateListResponse(service.getDates())));
     }
 
-    @DeleteMapping("/dates/{date}")
-    public ResponseEntity<ApiResponse<DateListResponse, Void>> deleteDate(@PathVariable String date) {
-        service.deleteDate(date);
-        return ResponseEntity.ok(
-                ApiResponse.ok(CoreAttendanceMessage.DATE_DELETED_SUCCESS,
-                        new DateListResponse(service.getDates()))
-        );
+    @DeleteMapping("/{date}")
+    public ResponseEntity<ApiResponse<DateListResponse, Void>> deleteDate(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        service.deleteDate(date.toString());
+        return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.DATE_DELETED_SUCCESS, new DateListResponse(service.getDates())));
     }
 
-    /* Teams – leadName/teamId 로 필터 */
+    /* ===== 팀 목록 (리드=본인 팀만 / 관리자=전체) ===== */
     @GetMapping("/teams")
-    public ResponseEntity<ApiResponse<List<TeamResponse>, PageMeta>> getTeams(
-            @RequestParam(required = false) String leadName,
-            @RequestParam(required = false) String teamId
-    ) {
-        List<TeamResponse> list = service.getTeams(leadName, teamId);
+    public ResponseEntity<ApiResponse<List<TeamResponse>, PageMeta>> getTeams(@AuthenticationPrincipal CustomUserDetails me) {
+        List<TeamResponse> list = (me.getRole() == UserRole.LEAD) ? service.getTeamsForLead(requiredTeamFrom(me)) : service.getTeamsForOrganizerOrAdmin();
 
-        // 임시 Page 객체 생성 (page=0, size=list.size())
-        var page = new PageImpl<>(list, PageRequest.of(0, Math.max(1, list.size()),
-                Sort.by(Sort.Direction.DESC, "createdAt")), list.size());
-
-        return ResponseEntity.ok(
-                ApiResponse.ok(CoreAttendanceMessage.TEAM_LIST_RETRIEVED_SUCCESS, list, PageMeta.of(page))
-        );
+        var page = new PageImpl<>(list, PageRequest.of(0, Math.max(1, list.size()), Sort.by(Sort.Direction.DESC, "createdAt")), list.size());
+        return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.TEAM_LIST_RETRIEVED_SUCCESS, list, PageMeta.of(page)));
     }
 
-    /* Members – 간단한 쿼리 파라미터 방식 */
-    @PostMapping("/members")
-    public ResponseEntity<ApiResponse<String, Void>> addMember(
-            @RequestParam String teamId,
-            @RequestParam String name
+    /* ===== 특정 날짜의 팀원+현재 출석 상태 조회 (리드=본인 팀만) ===== */
+    // 프론트가 체크박스 채우기 전에 필요한 목록/상태
+    @GetMapping("/{date}/members")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>, Void>> membersOfMeeting(@AuthenticationPrincipal CustomUserDetails me, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam(required = false) TeamType team // 관리자만 사용, 리드는 무시
     ) {
-        service.addMember(teamId, name);
-        return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.MEMBER_ADDED_SUCCESS, "OK"));
+        TeamType effectiveTeam = (me.getRole() == UserRole.LEAD) ? requiredTeamFrom(me) : team;
+        var list = service.getMembersWithPresence(date.toString(), effectiveTeam);
+        // list 원소 예시: { "userId": "123", "name": "홍길동", "present": true, "lastModifiedAt": "..." }
+        return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.TEAM_LIST_RETRIEVED_SUCCESS, list));
     }
 
-    @PutMapping("/members")
-    public ResponseEntity<ApiResponse<String, Void>> renameMember(
-            @RequestParam String teamId,
-            @RequestParam String memberId,
-            @RequestParam String name
-    ) {
-        service.renameMember(teamId, memberId, name);
-        return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.MEMBER_UPDATED_SUCCESS, "OK"));
+    /* ===== 특정 날짜 출석 일괄 저장 (멱등 스냅샷) ===== */
+    // Body: { "userIds": ["1","2",...], "present": true }  → presentUserIds만 보내는 구조로도 쉽게 변환 가능
+    @PutMapping("/{date}/attendance")
+    public ResponseEntity<ApiResponse<Map<String, Object>, Void>> saveAttendanceSnapshot(@AuthenticationPrincipal CustomUserDetails me, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam(required = false) TeamType team,   // 관리자만 사용, 리드는 무시
+                                                                                         @RequestBody @Valid SetAttendanceRequest req) {
+        var userIds = req.safeUserIds();
+
+        if (me.getRole() == UserRole.LEAD) {
+            TeamType myTeam = requiredTeamFrom(me);
+            var validation = service.filterUserIdsNotInTeam(myTeam, userIds);
+            if (validation.validIds().isEmpty()) {
+                return okUpdated(0L, validation.invalidIds());
+            }
+            long updated = service.setAttendance(date.toString(), validation.validIds(), req.presentValue());
+            return okUpdated(updated, validation.invalidIds());
+        }
+
+        // ORGANIZER / ADMIN
+        TeamType effectiveTeam = (team != null) ? team : service.inferTeamFromUserIds(userIds)
+                .orElseThrow(() -> new IllegalArgumentException("userIds로 팀을 추론할 수 없습니다."));
+
+        var validation = service.filterUserIdsNotInTeam(effectiveTeam, userIds);
+        if (validation.validIds().isEmpty()) {
+            return okUpdated(0L, validation.invalidIds());
+        }
+        long updated = service.setAttendance(date.toString(), validation.validIds(), req.presentValue());
+        return okUpdated(updated, validation.invalidIds());
     }
 
-    @DeleteMapping("/members")
-    public ResponseEntity<ApiResponse<String, Void>> deleteMember(
-            @RequestParam String teamId,
-            @RequestParam String memberId
-    ) {
-        service.removeMember(teamId, memberId);
-        return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.MEMBER_DELETED_SUCCESS, "OK"));
-    }
-
-    /* Attendance – present 를 쿼리로, 바디 불필요 */
-    @PutMapping("/records/one")
-    public ResponseEntity<ApiResponse<String, Void>> setAttendance(
-            @RequestParam String date,     // YYYY-MM-DD
-            @RequestParam String teamId,
-            @RequestParam String memberId,
-            @RequestParam boolean present
-    ) {
-        service.setAttendance(date, teamId, memberId, present);
-        return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.ATTENDANCE_SET_SUCCESS, "OK"));
-    }
-
-    @PutMapping("/records/all")
-    public ResponseEntity<ApiResponse<Long, Void>> setAll(
-            @RequestParam String date,     // YYYY-MM-DD
-            @RequestParam String teamId,
-            @RequestParam boolean present
-    ) {
-        long count = service.setAll(date, teamId, present);
-        return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.ATTENDANCE_ALL_SET_SUCCESS, count));
-    }
-
-    /* Summary – leadName/teamId 필터 가능 */
-    @GetMapping("/summary")
-    public ResponseEntity<ApiResponse<DaySummaryResponse, Void>> summary(
-            @RequestParam String date,     // YYYY-MM-DD
-            @RequestParam(required = false) String leadName,
-            @RequestParam(required = false) String teamId
-    ) {
-        DaySummaryResponse body = service.summary(date, leadName, teamId);
+    /* ===== 날짜 요약(JSON) ===== */
+    @GetMapping("/{date}/summary")
+    public ResponseEntity<ApiResponse<DaySummaryResponse, Void>> summary(@AuthenticationPrincipal CustomUserDetails me, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam(required = false) TeamType team) {
+        DaySummaryResponse body = (me.getRole() == UserRole.LEAD) ? service.summary(date.toString(), requiredTeamFrom(me)) : service.summary(date.toString(), team);
         return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.SUMMARY_RETRIEVED_SUCCESS, body));
+    }
+
+    /* ===== 날짜 요약(CSV) ===== */
+    @GetMapping(value = "/{date}/summary.csv", produces = "text/csv; charset=UTF-8")
+    public ResponseEntity<String> summaryCsv(@AuthenticationPrincipal CustomUserDetails me, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam(required = false) TeamType team) {
+        TeamType effective = (me.getRole() == UserRole.LEAD) ? requiredTeamFrom(me) : team;
+        String csv = service.buildSummaryCsv(date.toString(), effective); // 서비스에 구현
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"attendance-" + date + ".csv\"")
+                .body(csv);
     }
 }

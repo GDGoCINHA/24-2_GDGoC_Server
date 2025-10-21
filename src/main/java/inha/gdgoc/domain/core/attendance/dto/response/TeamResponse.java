@@ -13,6 +13,5 @@ import java.util.List;
 public class TeamResponse {
     private String id;
     private String name;
-    private String lead;
     private List<MemberResponse> members;
 }
