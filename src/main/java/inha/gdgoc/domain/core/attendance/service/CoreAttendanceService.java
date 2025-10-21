@@ -1,18 +1,21 @@
-// inha/gdgoc/domain/core/attendance/service/CoreAttendanceService.java
 package inha.gdgoc.domain.core.attendance.service;
 
 import inha.gdgoc.domain.core.attendance.dto.response.DaySummaryResponse;
 import inha.gdgoc.domain.core.attendance.dto.response.MemberResponse;
 import inha.gdgoc.domain.core.attendance.dto.response.TeamResponse;
-import inha.gdgoc.domain.core.attendance.entity.Member;
-import inha.gdgoc.domain.core.attendance.entity.Team;
+import inha.gdgoc.domain.core.attendance.entity.Meeting;
 import inha.gdgoc.domain.core.attendance.repository.AttendanceRecordRepository;
-import inha.gdgoc.domain.core.attendance.repository.MemberRepository;
-import inha.gdgoc.domain.core.attendance.repository.TeamRepository;
-import jakarta.annotation.PostConstruct;
+import inha.gdgoc.domain.core.attendance.repository.MeetingRepository;
+import inha.gdgoc.domain.user.entity.User;
+import inha.gdgoc.domain.user.enums.TeamType;
+import inha.gdgoc.domain.user.enums.UserRole;
+import inha.gdgoc.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -21,122 +24,218 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CoreAttendanceService {
 
-    private final TeamRepository teamRepo;
-    private final MemberRepository memberRepo;
-    private final AttendanceRecordRepository recordRepo;
+    private final MeetingRepository meetingRepository;
+    private final AttendanceRecordRepository attendanceRecordRepository;
+    private final UserRepository userRepository;
 
-    // 날짜 목록만 내부 보관 (임시 운용)
-    private final LinkedHashSet<String> dates = new LinkedHashSet<>();
+    /* ===================== Meetings (dates) ===================== */
 
-    private static String uuid(String p) {
-        return p + "_" + java.util.UUID.randomUUID()
-                .toString()
-                .replace("-", "")
-                .substring(0, 8);
+    @Transactional(readOnly = true)
+    public List<String> getDates() {
+        return meetingRepository.findAll(Sort.by(Sort.Direction.DESC, "meetingDate"))
+                .stream()
+                .map(m -> m.getMeetingDate().toString())
+                .toList();
     }
 
-    private static String dkey(String date) {return date.replaceAll("-", "");}
-
-    @PostConstruct
-    void initSeed() { // ✅ 빈 생성 후 시드
-        seed();
+    @Transactional
+    public void addDate(String date) {
+        LocalDate d = LocalDate.parse(date);
+        if (!meetingRepository.existsById(d)) {
+            meetingRepository.save(Meeting.builder().meetingDate(d).build());
+        }
     }
 
-    private void seed() {
-        String today = LocalDate.now().toString();
-        dates.add(today);
-
-        Team alpha = new Team(uuid("team"), "Alpha", "김정민");
-        alpha.getMembers().add(new Member(uuid("m"), "홍길동"));
-        alpha.getMembers().add(new Member(uuid("m"), "이서연"));
-        teamRepo.save(alpha);
-
-        Team beta = new Team(uuid("team"), "Beta", "이나경");
-        beta.getMembers().add(new Member(uuid("m"), "장우진"));
-        beta.getMembers().add(new Member(uuid("m"), "유하늘"));
-        teamRepo.save(beta);
-    }
-
-    /* Dates */
-    public List<String> getDates() {return new ArrayList<>(dates);}
-
-    public void addDate(String date) {dates.add(date);}
-
+    @Transactional
     public void deleteDate(String date) {
-        dates.remove(date);
-        recordRepo.removeDate(dkey(date));
+        LocalDate d = LocalDate.parse(date);
+        // FK ON DELETE CASCADE가 걸려있다면 아래 한 줄로 충분
+        meetingRepository.deleteById(d);
+        // 만약 FK cascade가 없다면 다음 라인을 활성화
+        // attendanceRecordRepository.deleteByMeetingDate(d);
     }
 
-    /* Teams */
-    public List<TeamResponse> getTeams(String leadName, String teamId) {
-        return teamRepo.findAll()
-                .stream()
-                .filter(t -> leadName == null || leadName.isBlank() || t.getLead().equals(leadName))
-                .filter(t -> teamId == null || teamId.isBlank() || t.getId().equals(teamId))
-                .map(this::toTeamResponse)
-                .collect(Collectors.toList());
+    /* ===================== Teams ===================== */
+
+    @Transactional(readOnly = true)
+    public List<TeamResponse> getTeamsForLead(TeamType leadTeam) {
+        var roles = List.of(UserRole.CORE, UserRole.LEAD);
+        List<User> users = userRepository.findByTeamAndUserRoleIn(leadTeam, roles);
+        return toTeamResponsesGrouped(users);
     }
 
-    /* Members */
-    public void addMember(String teamId, String name) {
-        Team t = team(teamId);
-        memberRepo.add(t, new Member(uuid("m"), name));
-        teamRepo.save(t);
+    @Transactional(readOnly = true)
+    public List<TeamResponse> getTeamsForOrganizerOrAdmin() {
+        var roles = List.of(UserRole.CORE, UserRole.LEAD);
+        List<User> users = userRepository.findByUserRoleIn(roles);
+        return toTeamResponsesGrouped(users);
     }
 
-    public void renameMember(String teamId, String memberId, String name) {
-        Team t = team(teamId);
-        Member m = memberRepo.find(t, memberId).orElseThrow(() -> new NoSuchElementException("member not found"));
-        m.setName(name);
-        teamRepo.save(t);
+    private List<TeamResponse> toTeamResponsesGrouped(List<User> users) {
+        Map<TeamType, List<User>> grouped = users.stream()
+                .filter(u -> u.getTeam() != null)
+                .collect(Collectors.groupingBy(User::getTeam, LinkedHashMap::new, Collectors.toList()));
+
+        return grouped.entrySet().stream()
+                .map(e -> {
+                    TeamType team = e.getKey();
+                    List<MemberResponse> members = e.getValue().stream()
+                            .sorted(Comparator.comparing(User::getName))
+                            .map(u -> new MemberResponse(String.valueOf(u.getId()), u.getName()))
+                            .toList();
+                    return new TeamResponse(team.name(), team.getLabel(), members);
+                })
+                .toList();
     }
 
-    public void removeMember(String teamId, String memberId) {
-        Team t = team(teamId);
-        memberRepo.remove(t, memberId);
-        teamRepo.save(t);
-        recordRepo.removeMemberEverywhere(teamId, memberId);
+    /* ===================== Attendance ===================== */
+
+    public record UserIdValidationResult(List<Long> validIds, List<Long> invalidIds) {}
+
+    /** 주어진 userIds 중 team 소속만 골라냄 */
+    @Transactional(readOnly = true)
+    public UserIdValidationResult filterUserIdsNotInTeam(TeamType team, List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return new UserIdValidationResult(List.of(), List.of());
+        }
+        var users = userRepository.findAllById(userIds);
+        var inTeam = new HashSet<Long>();
+        for (var u : users) {
+            if (u.getTeam() == team) inTeam.add(u.getId());
+        }
+        List<Long> valid = userIds.stream().filter(inTeam::contains).toList();
+        List<Long> invalid = userIds.stream().filter(id -> !inTeam.contains(id)).toList();
+        return new UserIdValidationResult(valid, invalid);
     }
 
-    /* Attendance */
-    public void setAttendance(String date, String teamId, String memberId, boolean present) {
-        recordRepo.setPresence(dkey(date), teamId, memberId, present);
+    /** 배치로 출석 true/false 반영 (고성능 UPSERT) */
+    @Transactional
+    public long setAttendance(String date, List<Long> userIds, boolean present) {
+        if (userIds == null || userIds.isEmpty()) return 0L;
+
+        LocalDate d = LocalDate.parse(date);
+        // 회의가 없으면 생성 (idempotent)
+        if (!meetingRepository.existsById(d)) {
+            meetingRepository.save(Meeting.builder().meetingDate(d).build());
+        }
+        int affected = attendanceRecordRepository.upsertBatch(d, userIds, present);
+        // batch 결과는 행수에 대한 DB 드라이버 의존이 있어 절대값으로 환산
+        return Math.max(affected, 0);
     }
 
-    public long setAll(String date, String teamId, boolean present) {
-        Team t = team(teamId);
-        List<String> memberIds = t.getMembers().stream().map(Member::getId).toList();
-        return recordRepo.setAll(dkey(date), teamId, memberIds, present);
+    /** 특정 날짜에 대해 팀원 + 현재 출석 여부 목록 */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getMembersWithPresence(String date, TeamType teamOrNull) {
+        LocalDate d = LocalDate.parse(date);
+        Map<Long, Boolean> day = getPresenceMap(d);
+
+        var roles = List.of(UserRole.CORE, UserRole.LEAD);
+        List<User> users = (teamOrNull == null)
+                ? userRepository.findByUserRoleIn(roles)
+                : userRepository.findByTeamAndUserRoleIn(teamOrNull, roles);
+
+        return users.stream()
+                .filter(u -> u.getTeam() != null)
+                .sorted(Comparator.comparing(User::getName))
+                .map(u -> {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("userId", String.valueOf(u.getId()));
+                    row.put("name", u.getName());
+                    row.put("team", u.getTeam().getLabel());
+                    row.put("present", day.getOrDefault(u.getId(), false));
+                    row.put("lastModifiedAt", null); // 추후 updatedAt/updatedBy 확장 시 채우기
+                    return row;
+                })
+                .toList();
     }
 
-    /* Summary */
-    public DaySummaryResponse summary(String date, String leadName, String teamId) {
-        var dm = recordRepo.getDay(dkey(date));
-        var per = teamRepo.findAll()
-                .stream()
-                .filter(t -> leadName == null || leadName.isBlank() || t.getLead().equals(leadName))
-                .filter(t -> teamId == null || teamId.isBlank() || t.getId().equals(teamId))
-                .map(t -> {
-                    var tm = dm.getOrDefault(t.getId(), Map.of());
-                    long p = t.getMembers().stream().filter(m -> tm.getOrDefault(m.getId(), false)).count();
-                    return new DaySummaryResponse.TeamSummary(t.getId(), t.getName(), p, t.getMembers().size());
+    /** userIds 로부터 단일 팀을 추론 (다르면 empty) */
+    @Transactional(readOnly = true)
+    public Optional<TeamType> inferTeamFromUserIds(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) return Optional.empty();
+        var users = userRepository.findAllById(userIds).stream()
+                .filter(u -> u.getTeam() != null)
+                .toList();
+        if (users.isEmpty()) return Optional.empty();
+
+        TeamType first = users.get(0).getTeam();
+        boolean same = users.stream().allMatch(u -> first == u.getTeam());
+        return same ? Optional.of(first) : Optional.empty();
+    }
+
+    /* ===================== Summary ===================== */
+
+    @Transactional(readOnly = true)
+    public DaySummaryResponse summary(String date, TeamType teamForLeadOrNull) {
+        LocalDate d = LocalDate.parse(date);
+        Map<Long, Boolean> day = getPresenceMap(d);
+
+        var roles = List.of(UserRole.CORE, UserRole.LEAD);
+        List<User> baseUsers = (teamForLeadOrNull == null)
+                ? userRepository.findByUserRoleIn(roles)
+                : userRepository.findByTeamAndUserRoleIn(teamForLeadOrNull, roles);
+
+        Map<TeamType, List<User>> byTeam = baseUsers.stream()
+                .filter(u -> u.getTeam() != null)
+                .collect(Collectors.groupingBy(User::getTeam, LinkedHashMap::new, Collectors.toList()));
+
+        var perTeam = byTeam.entrySet().stream()
+                .map(e -> {
+                    TeamType team = e.getKey();
+                    List<User> us = e.getValue();
+                    long p = us.stream().filter(u -> day.getOrDefault(u.getId(), false)).count();
+                    return new DaySummaryResponse.TeamSummary(team.name(), team.getLabel(), p, us.size());
                 })
                 .sorted(Comparator.comparing(DaySummaryResponse.TeamSummary::getTeamName))
-                .collect(Collectors.toList());
+                .toList();
 
-        long present = per.stream().mapToLong(DaySummaryResponse.TeamSummary::getPresent).sum();
-        long total = per.stream().mapToLong(DaySummaryResponse.TeamSummary::getTotal).sum();
+        long present = perTeam.stream().mapToLong(DaySummaryResponse.TeamSummary::getPresent).sum();
+        long total = perTeam.stream().mapToLong(DaySummaryResponse.TeamSummary::getTotal).sum();
 
-        return new DaySummaryResponse(date, per, present, total);
+        return new DaySummaryResponse(date, perTeam, present, total);
     }
 
-    /* helpers */
-    private Team team(String id) {
-        return teamRepo.findById(id).orElseThrow(() -> new NoSuchElementException("team not found: " + id));
+    /** 요약 CSV 생성 (UTF-8) */
+    @Transactional(readOnly = true)
+    public String buildSummaryCsv(String date, TeamType teamOrNull) {
+        DaySummaryResponse s = summary(date, teamOrNull);
+        StringBuilder sb = new StringBuilder();
+        sb.append("date,team_id,team_name,present,total\n");
+        for (var t : s.getPerTeam()) {
+            sb.append(escape(date)).append(',')
+                    .append(escape(t.getTeamId())).append(',')
+                    .append(escape(t.getTeamName())).append(',')
+                    .append(t.getPresent()).append(',')
+                    .append(t.getTotal()).append('\n');
+        }
+        sb.append(escape(date)).append(',')
+                .append("ALL").append(',')
+                .append("전체").append(',')
+                .append(s.getPresent()).append(',')
+                .append(s.getTotal()).append('\n');
+
+        return new String(sb.toString().getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
     }
 
-    private TeamResponse toTeamResponse(Team t) {
-        var ms = t.getMembers().stream().map(m -> new MemberResponse(m.getId(), m.getName())).toList();
-        return new TeamResponse(t.getId(), t.getName(), t.getLead(), ms);
+    /* ===================== helpers ===================== */
+
+    @Transactional(readOnly = true)
+    protected Map<Long, Boolean> getPresenceMap(LocalDate date) {
+        Map<Long, Boolean> map = new HashMap<>();
+        attendanceRecordRepository.findPresencePairsByDate(date).forEach(row -> {
+            // row[0]=userId(Long/Number), row[1]=present(Boolean)
+            Long uid = ((Number) row[0]).longValue();
+            Boolean present = (Boolean) row[1];
+            map.put(uid, present != null && present);
+        });
+        return map;
+    }
+
+    private static String escape(String s) {
+        if (s == null) return "";
+        String needsQuote = ",\"\n";
+        boolean mustQuote = s.chars().anyMatch(ch -> needsQuote.indexOf(ch) >= 0);
+        if (!mustQuote) return s;
+        return "\"" + s.replace("\"", "\"\"") + "\"";
     }
 }

@@ -1,4 +1,3 @@
-// CreateDateRequest.java
 package inha.gdgoc.domain.core.attendance.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
