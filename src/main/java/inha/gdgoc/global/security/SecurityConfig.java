@@ -33,8 +33,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(AbstractHttpConfigurer::disable)
             .formLogin(AbstractHttpConfigurer::disable)
             .httpBasic(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
@@ -96,12 +96,15 @@ public class SecurityConfig {
                 "https://gdgocinha.com",
                 "https://dev.gdgocinha.com",
                 "https://www.gdgocinha.com",
-                "https://typing-game-alpha-umber.vercel.app"
+                "https://typing-game-alpha-umber.vercel.app",
+                "https://api.gdgocinha.com",
+                "https://*.gdgocinha.com"
         ));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        config.setAllowedHeaders(
-            List.of("Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"));
+        config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
+        config.setAllowedHeaders(List.of("Origin","X-Requested-With","Content-Type","Accept","Authorization"));
+        config.setExposedHeaders(List.of("Authorization","Set-Cookie")); // 필요시 노출
         config.setAllowCredentials(true);
+        config.setMaxAge(3600L); // 프리플라이트 캐시
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
