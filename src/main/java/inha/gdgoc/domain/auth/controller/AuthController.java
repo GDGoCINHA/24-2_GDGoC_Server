@@ -1,15 +1,5 @@
 package inha.gdgoc.domain.auth.controller;
 
-import static inha.gdgoc.domain.auth.controller.message.AuthMessage.ACCESS_TOKEN_REFRESH_SUCCESS;
-import static inha.gdgoc.domain.auth.controller.message.AuthMessage.CODE_CREATION_SUCCESS;
-import static inha.gdgoc.domain.auth.controller.message.AuthMessage.LOGIN_WITH_PASSWORD_SUCCESS;
-import static inha.gdgoc.domain.auth.controller.message.AuthMessage.LOGOUT_SUCCESS;
-import static inha.gdgoc.domain.auth.controller.message.AuthMessage.OAUTH_LOGIN_SIGNUP_SUCCESS;
-import static inha.gdgoc.domain.auth.controller.message.AuthMessage.PASSWORD_CHANGE_SUCCESS;
-import static inha.gdgoc.domain.auth.controller.message.AuthMessage.PASSWORD_RESET_VERIFICATION_SUCCESS;
-import static inha.gdgoc.domain.auth.exception.AuthErrorCode.UNAUTHORIZED_USER;
-import static inha.gdgoc.domain.auth.exception.AuthErrorCode.USER_NOT_FOUND;
-
 import inha.gdgoc.domain.auth.dto.request.CodeVerificationRequest;
 import inha.gdgoc.domain.auth.dto.request.PasswordResetRequest;
 import inha.gdgoc.domain.auth.dto.request.SendingCodeRequest;
@@ -24,29 +14,31 @@ import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.auth.service.MailService;
 import inha.gdgoc.domain.auth.service.RefreshTokenService;
 import inha.gdgoc.domain.user.entity.User;
+import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.config.jwt.TokenProvider;
 import inha.gdgoc.global.dto.response.ApiResponse;
+import inha.gdgoc.global.exception.GlobalErrorCode;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.Optional;
 
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import static inha.gdgoc.domain.auth.controller.message.AuthMessage.*;
+import static inha.gdgoc.domain.auth.exception.AuthErrorCode.UNAUTHORIZED_USER;
+import static inha.gdgoc.domain.auth.exception.AuthErrorCode.USER_NOT_FOUND;
 
 @Slf4j
 @RequestMapping("/api/v1/auth")
@@ -61,19 +53,14 @@ public class AuthController {
     private final AuthCodeService authCodeService;
 
     @GetMapping("/oauth2/google/callback")
-    public ResponseEntity<ApiResponse<Map<String, Object>, Void>> handleGoogleCallback(
-            @RequestParam String code,
-            HttpServletResponse response
-    ) {
+    public ResponseEntity<ApiResponse<Map<String, Object>, Void>> handleGoogleCallback(@RequestParam String code, HttpServletResponse response) {
         Map<String, Object> data = authService.processOAuthLogin(code, response);
 
         return ResponseEntity.ok(ApiResponse.ok(OAUTH_LOGIN_SIGNUP_SUCCESS, data));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refreshAccessToken(
-            @CookieValue(value = "refresh_token", required = false) String refreshToken
-    ) {
+    public ResponseEntity<?> refreshAccessToken(@CookieValue(value = "refresh_token", required = false) String refreshToken) {
         log.info("리프레시 토큰 요청 받음. 토큰 존재 여부: {}", refreshToken != null);
 
         if (refreshToken == null) {
@@ -84,8 +71,7 @@ public class AuthController {
             String newAccessToken = refreshTokenService.refreshAccessToken(refreshToken);
             AccessTokenResponse accessTokenResponse = new AccessTokenResponse(newAccessToken);
 
-            return ResponseEntity.ok(
-                    ApiResponse.ok(ACCESS_TOKEN_REFRESH_SUCCESS, accessTokenResponse, null));
+            return ResponseEntity.ok(ApiResponse.ok(ACCESS_TOKEN_REFRESH_SUCCESS, accessTokenResponse, null));
         } catch (Exception e) {
             log.error("리프레시 토큰 처리 중 오류: {}", e.getMessage(), e);
             throw new AuthException(AuthErrorCode.INVALID_REFRESH_TOKEN);
@@ -93,10 +79,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse, Void>> login(
-            @Valid @RequestBody UserLoginRequest req,
-            HttpServletResponse response
-    ) throws NoSuchAlgorithmException, InvalidKeyException {
+    public ResponseEntity<ApiResponse<LoginResponse, Void>> login(@Valid @RequestBody UserLoginRequest req, HttpServletResponse response) throws NoSuchAlgorithmException, InvalidKeyException {
         String email = req.email().trim();
         LoginResponse loginResponse = authService.loginWithPassword(email, req.password(), response);
         return ResponseEntity.ok(ApiResponse.ok(LOGIN_WITH_PASSWORD_SUCCESS, loginResponse));
@@ -109,9 +92,7 @@ public class AuthController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         // 1) 익명 방어
-        if (authentication == null
-            || !authentication.isAuthenticated()
-            || "anonymousUser".equals(authentication.getName())) {
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
             throw new AuthException(UNAUTHORIZED_USER);
         }
 
@@ -142,12 +123,9 @@ public class AuthController {
     }
 
     @PostMapping("/password-reset/request")
-    public ResponseEntity<ApiResponse<Void, Void>> responseResponseEntity(
-            @RequestBody SendingCodeRequest sendingCodeRequest
-    ) {
+    public ResponseEntity<ApiResponse<Void, Void>> responseResponseEntity(@RequestBody SendingCodeRequest sendingCodeRequest) {
         // TODO 서비스로 넘기기
-        if (userRepository.existsByNameAndEmail(sendingCodeRequest.name(),
-                sendingCodeRequest.email())) {
+        if (userRepository.existsByNameAndEmail(sendingCodeRequest.name(), sendingCodeRequest.email())) {
             String code = mailService.sendAuthCode(sendingCodeRequest.email());
             authCodeService.saveAuthCode(sendingCodeRequest.email(), code);
 
@@ -157,9 +135,7 @@ public class AuthController {
     }
 
     @PostMapping("/password-reset/verify")
-    public ResponseEntity<ApiResponse<CodeVerificationResponse, Void>> verifyCode(
-            @RequestBody CodeVerificationRequest request
-    ) {
+    public ResponseEntity<ApiResponse<CodeVerificationResponse, Void>> verifyCode(@RequestBody CodeVerificationRequest request) {
         // TODO 서비스 단 DTO 추가
         boolean verified = authCodeService.verify(request.email(), request.code());
         CodeVerificationResponse response = new CodeVerificationResponse(verified);
@@ -168,9 +144,7 @@ public class AuthController {
     }
 
     @PostMapping("/password-reset/confirm")
-    public ResponseEntity<ApiResponse<Void, Void>> resetPassword(
-            @RequestBody PasswordResetRequest passwordResetRequest
-    ) throws NoSuchAlgorithmException, InvalidKeyException {
+    public ResponseEntity<ApiResponse<Void, Void>> resetPassword(@RequestBody PasswordResetRequest passwordResetRequest) throws NoSuchAlgorithmException, InvalidKeyException {
         // TODO 서비스 단으로
         Optional<User> user = userRepository.findByEmail(passwordResetRequest.email());
         if (user.isEmpty()) {
@@ -182,5 +156,28 @@ public class AuthController {
         userRepository.save(foundUser);
 
         return ResponseEntity.ok(ApiResponse.ok(PASSWORD_CHANGE_SUCCESS));
+    }
+
+    /**
+     * 요구 권한(role) 이상이면 200, 아니면 403
+     * 미인증이면 401
+
+     * 예) /api/v1/auth/LEAD, /api/v1/auth/ORGANIZER, /api/v1/auth/ADMIN
+     */
+    @GetMapping("/{role}")
+    public ResponseEntity<ApiResponse<Void, ?>> checkRole(@AuthenticationPrincipal TokenProvider.CustomUserDetails me, @PathVariable UserRole role) {
+        if (me == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(GlobalErrorCode.UNAUTHORIZED_USER.getStatus()
+                            .value(), GlobalErrorCode.UNAUTHORIZED_USER.getMessage(), null));
+        }
+
+        if (UserRole.hasAtLeast(me.getRole(), role)) {
+            return ResponseEntity.ok(ApiResponse.ok("ROLE_CHECK_PASSED", null));
+        }
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(GlobalErrorCode.FORBIDDEN_USER.getStatus()
+                        .value(), GlobalErrorCode.FORBIDDEN_USER.getMessage(), null));
     }
 }
