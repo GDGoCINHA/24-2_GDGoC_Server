@@ -114,7 +114,10 @@ public class CoreAttendanceService {
 
         LocalDate d = LocalDate.parse(date);
         Long meetingId = ensureMeetingAndGetId(d);
-        int affected = attendanceRecordRepository.upsertBatchByMeetingId(meetingId, userIds, present);
+
+        Long[] arr = userIds.toArray(Long[]::new); // ✅ List -> Array
+        int affected = attendanceRecordRepository
+                .upsertBatchByMeetingId(meetingId, arr, present);
         return Math.max(affected, 0);
     }
 
