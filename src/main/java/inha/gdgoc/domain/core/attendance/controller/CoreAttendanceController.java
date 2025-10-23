@@ -86,10 +86,10 @@ public class CoreAttendanceController {
     /* ===== 특정 날짜 출석 일괄 저장 (멱등 스냅샷) ===== */
     // Body: { "userIds": ["1","2",...], "present": true }  → presentUserIds만 보내는 구조로도 쉽게 변환 가능
     @PutMapping("/{date}/attendance")
-    public ResponseEntity<ApiResponse<Map<String, Object>, Void>> saveAttendanceSnapshot(@AuthenticationPrincipal CustomUserDetails me, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam(required = false) TeamType team,   // 관리자만 사용, 리드는 무시
-                                                                                         @RequestBody @Valid SetAttendanceRequest req) {
+    public ResponseEntity<ApiResponse<Map<String, Object>, Void>> saveAttendanceSnapshot(@AuthenticationPrincipal CustomUserDetails me, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestBody @Valid SetAttendanceRequest req) {
         var userIds = req.safeUserIds();
 
+        // LEAD → 본인 팀 검증
         if (me.getRole() == UserRole.LEAD) {
             TeamType myTeam = requiredTeamFrom(me);
             var validation = service.filterUserIdsNotInTeam(myTeam, userIds);
@@ -100,16 +100,9 @@ public class CoreAttendanceController {
             return okUpdated(updated, validation.invalidIds());
         }
 
-        // ORGANIZER / ADMIN
-        TeamType effectiveTeam = (team != null) ? team : service.inferTeamFromUserIds(userIds)
-                .orElseThrow(() -> new IllegalArgumentException("userIds로 팀을 추론할 수 없습니다."));
-
-        var validation = service.filterUserIdsNotInTeam(effectiveTeam, userIds);
-        if (validation.validIds().isEmpty()) {
-            return okUpdated(0L, validation.invalidIds());
-        }
-        long updated = service.setAttendance(date.toString(), validation.validIds(), req.presentValue());
-        return okUpdated(updated, validation.invalidIds());
+        // ORGANIZER / ADMIN → 팀 추론/검증 없이 바로 업서트
+        long updated = service.setAttendance(date.toString(), userIds, req.presentValue());
+        return okUpdated(updated, List.of());
     }
 
     /* ===== 날짜 요약(JSON) ===== */
