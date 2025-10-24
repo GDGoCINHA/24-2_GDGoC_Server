@@ -51,12 +51,14 @@ public class CoreAttendanceController {
         return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.DATE_LIST_RETRIEVED_SUCCESS, new DateListResponse(service.getDates())));
     }
 
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     @PostMapping
     public ResponseEntity<ApiResponse<DateListResponse, Void>> createDate(@Valid @RequestBody CreateDateRequest request) {
         service.addDate(request.getDate());
         return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.DATE_CREATED_SUCCESS, new DateListResponse(service.getDates())));
     }
 
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     @DeleteMapping("/{date}")
     public ResponseEntity<ApiResponse<DateListResponse, Void>> deleteDate(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         service.deleteDate(date.toString());
