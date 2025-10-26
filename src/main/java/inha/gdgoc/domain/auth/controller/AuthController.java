@@ -14,6 +14,7 @@ import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.auth.service.MailService;
 import inha.gdgoc.domain.auth.service.RefreshTokenService;
 import inha.gdgoc.domain.user.entity.User;
+import inha.gdgoc.domain.user.enums.TeamType;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.config.jwt.TokenProvider;
@@ -165,15 +166,30 @@ public class AuthController {
      * 예) /api/v1/auth/LEAD, /api/v1/auth/ORGANIZER, /api/v1/auth/ADMIN
      */
     @GetMapping("/{role}")
-    public ResponseEntity<ApiResponse<Void, ?>> checkRole(@AuthenticationPrincipal TokenProvider.CustomUserDetails me, @PathVariable UserRole role) {
+    public ResponseEntity<ApiResponse<Void, ?>> checkRoleOrTeam(@AuthenticationPrincipal TokenProvider.CustomUserDetails me, @PathVariable UserRole role, @RequestParam(value = "team", required = false) TeamType requiredTeam) {
+        // 1) 인증 체크
         if (me == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error(GlobalErrorCode.UNAUTHORIZED_USER.getStatus()
                             .value(), GlobalErrorCode.UNAUTHORIZED_USER.getMessage(), null));
         }
 
-        if (UserRole.hasAtLeast(me.getRole(), role)) {
-            return ResponseEntity.ok(ApiResponse.ok("ROLE_CHECK_PASSED", null));
+        // 2) role check
+        final boolean roleOk = UserRole.hasAtLeast(me.getRole(), role);
+
+        // 3) team check if team parameter exists
+        boolean teamOk = false;
+        if (requiredTeam != null) {
+            if (UserRole.hasAtLeast(me.getRole(), UserRole.ORGANIZER)) {
+                teamOk = true;
+            } else {
+                teamOk = (me.getTeam() != null && me.getTeam() == requiredTeam);
+            }
+        }
+
+        // 4) OR 조건으로 최종 판정
+        if (roleOk || teamOk) {
+            return ResponseEntity.ok(ApiResponse.ok("ROLE_OR_TEAM_CHECK_PASSED", null));
         }
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
