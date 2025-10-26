@@ -131,4 +131,6 @@ public class User extends BaseEntity {
     public boolean isGuest() {
         return this.userRole == UserRole.GUEST;
     }
+    public void changeRole(UserRole role) { this.userRole = role; }
+    public void changeTeam(TeamType team) { this.team = team; }
 }

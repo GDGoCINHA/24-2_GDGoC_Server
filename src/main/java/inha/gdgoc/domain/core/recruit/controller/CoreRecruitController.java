@@ -52,7 +52,7 @@ public class CoreRecruitController {
         description = "전체 목록 또는 이름 검색 결과를 반환합니다.",
         security = { @SecurityRequirement(name = "BearerAuth") }
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('LEAD', 'ORGANIZER', 'ADMIN')")
     @GetMapping("/applicants")
     public ResponseEntity<ApiResponse<java.util.List<CoreRecruitApplicantSummaryResponse>, PageMeta>> getApplicants(
         @Parameter(description = "검색어(이름 부분 일치). 없으면 전체 조회", example = "홍길동")
@@ -89,7 +89,7 @@ public class CoreRecruitController {
         summary = "코어 리쿠르트 지원자 상세 조회",
         security = { @SecurityRequirement(name = "BearerAuth") }
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('LEAD', 'ORGANIZER', 'ADMIN')")
     @GetMapping("/applicants/{id}")
     public ResponseEntity<ApiResponse<CoreRecruitApplicantDetailResponse, Void>> getApplicant(
         @PathVariable Long id
