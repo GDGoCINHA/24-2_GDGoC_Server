@@ -164,6 +164,63 @@ public class UserAdminService {
         userRepository.save(target);
     }
 
+    @Transactional
+    public void deleteUserWithRules(CustomUserDetails me, Long targetUserId) {
+        User editor = userRepository.findById(me.getUserId())
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.UNAUTHORIZED_USER));
+
+        User target = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
+
+        // 자기 자신 삭제 금지
+        if (Objects.equals(editor.getId(), target.getId())) {
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "자기 자신은 삭제할 수 없습니다.");
+        }
+
+        UserRole editorRole = editor.getUserRole();
+        TeamType editorTeam = editor.getTeam();
+
+        UserRole targetRole = target.getUserRole();
+        TeamType targetTeam = target.getTeam();
+
+        // 공통: '나'는 대상의 현재 role보다 "엄격히" 높아야 함
+        if (!(editorRole.rank() > targetRole.rank())) {
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "동급/상급 사용자는 삭제할 수 없습니다.");
+        }
+
+        switch (editorRole) {
+            case ADMIN -> {
+                // ADMIN: 모두 삭제 가능(단, 자기 자신은 위에서 금지)
+                // 추가 보호가 필요하면 여기서 ADMIN→ADMIN 삭제 금지도 가능
+            }
+            case ORGANIZER -> {
+                // ORGANIZER: ADMIN 삭제 불가(공통 검사로 이미 걸러짐). 그 외 삭제 가능
+                if (targetRole == UserRole.ADMIN) {
+                    throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "ADMIN 사용자는 삭제할 수 없습니다.");
+                }
+            }
+            case LEAD -> {
+                // LEAD: MEMBER/CORE만 삭제 가능
+                if (!(targetRole == UserRole.MEMBER || targetRole == UserRole.CORE)) {
+                    throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "LEAD는 MEMBER/CORE만 삭제할 수 있습니다.");
+                }
+
+                // HR-LEAD 특례: 본인 제외 누구든 팀 무관 삭제 가능
+                if (editorTeam == TeamType.HR) {
+                    // 자기 자신은 위에서 이미 금지
+                } else {
+                    // 일반 LEAD: 같은 팀만 삭제 가능
+                    if (editorTeam == null || targetTeam != editorTeam) {
+                        throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "다른 팀 사용자는 삭제할 수 없습니다.");
+                    }
+                }
+            }
+            default -> throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER);
+        }
+
+        userRepository.delete(target);
+    }
+
     /**
      * 실제 반영 (역할 변경 후 역할 정책에 따라 팀도 정리)
      */

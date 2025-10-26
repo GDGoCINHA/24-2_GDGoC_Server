@@ -53,4 +53,12 @@ public class UserAdminController {
         userAdminService.updateUserRoleWithRules(me, userId, req.role());
         return ResponseEntity.ok(ApiResponse.ok("USER_ROLE_UPDATED"));
     }
+
+    @Operation(summary = "사용자 삭제", security = {@SecurityRequirement(name = "BearerAuth")})
+    @PreAuthorize("hasAnyRole('LEAD', 'ORGANIZER', 'ADMIN')")
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<ApiResponse<Void, Void>> deleteUser(@AuthenticationPrincipal CustomUserDetails me, @PathVariable Long userId) {
+        userAdminService.deleteUserWithRules(me, userId);
+        return ResponseEntity.ok(ApiResponse.ok("USER_DELETED"));
+    }
 }
