@@ -29,10 +29,9 @@ public class UserAdminService {
     /* ======================= 목록 ======================= */
 
     @Transactional(readOnly = true)
-    public Page<UserSummaryResponse> listUsers(String q, UserRole role, TeamType team, Pageable pageable) {
+    public Page<UserSummaryResponse> listUsers(String q, Pageable pageable) {
         Pageable fixed = rewriteSort(pageable);
-        // 레포지토리에 role/team 조건 추가한 메서드가 있어야 함
-        return userRepository.findSummaries(q, role, team, fixed);
+        return userRepository.findSummaries(q, fixed);
     }
 
     private Pageable rewriteSort(Pageable pageable) {
@@ -48,14 +47,21 @@ public class UserAdminService {
 
             if ("userRole".equals(prop)) {
                 hasUserRoleOrder = true;
-                String roleRankCase = "CASE u.userRole " + "WHEN 'GUEST' THEN 0 " + "WHEN 'MEMBER' THEN 1 " + "WHEN 'CORE' THEN 2 " + "WHEN 'LEAD' THEN 3 " + "WHEN 'ORGANIZER' THEN 4 " + "WHEN 'ADMIN' THEN 5 " + "ELSE -1 END";
+                String roleRankCase =
+                        "(CASE " +
+                                " WHEN u.userRole = 'GUEST'     THEN 0 " +
+                                " WHEN u.userRole = 'MEMBER'    THEN 1 " +
+                                " WHEN u.userRole = 'CORE'      THEN 2 " +
+                                " WHEN u.userRole = 'LEAD'      THEN 3 " +
+                                " WHEN u.userRole = 'ORGANIZER' THEN 4 " +
+                                " WHEN u.userRole = 'ADMIN'     THEN 5 " +
+                                " ELSE -1 END)";
                 composed = composed.and(JpaSort.unsafe(dir, roleRankCase));
             } else {
                 composed = composed.and(Sort.by(new Sort.Order(dir, prop)));
             }
         }
 
-        // ROLE 정렬이 있으면 같은 권한 내 name ASC로 안정화
         if (hasUserRoleOrder) {
             composed = composed.and(Sort.by("name").ascending());
         }
