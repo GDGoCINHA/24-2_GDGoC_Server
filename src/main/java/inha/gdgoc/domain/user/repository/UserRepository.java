@@ -20,7 +20,6 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long>, UserRepositoryCustom {
 
     boolean existsByNameAndEmail(String name, String email);
-
     boolean existsByEmail(String email);
 
     /* ===== 출석/팀 뷰용 기본 쿼리 ===== */
@@ -38,22 +37,13 @@ public interface UserRepository extends JpaRepository<User, Long>, UserRepositor
     List<User> findByTeam(TeamType team);
 
     @Query("""
-            select new inha.gdgoc.domain.user.dto.response.UserSummaryResponse(
-                u.id, u.name, u.major, u.studentId, u.email, u.userRole, u.team
-            )
-            from User u
-            where
-              (
-                :q is null or :q = '' or
-                lower(u.name)      like lower(concat('%', :q, '%')) or
-                lower(u.email)     like lower(concat('%', :q, '%')) or
-                u.studentId        like concat('%', :q, '%') or
-                lower(u.major)     like lower(concat('%', :q, '%'))
-              )
-              and (:role is null or u.userRole = :role)
-              and (:team is null or u.team = :team)
-            """)
-    Page<UserSummaryResponse> findSummaries(@Param("q") String q, @Param("role") inha.gdgoc.domain.user.enums.UserRole role, @Param("team") inha.gdgoc.domain.user.enums.TeamType team, Pageable pageable);
+        select new inha.gdgoc.domain.user.dto.response.UserSummaryResponse(
+            u.id, u.name, u.major, u.studentId, u.email, u.userRole, u.team
+        )
+        from User u
+        where (:q is null or :q = '' or u.name like concat('%', :q, '%'))
+        """)
+    Page<UserSummaryResponse> findSummaries(@Param("q") String q, Pageable pageable);
 
     @NotNull Optional<User> findById(@NotNull Long id);
 }
