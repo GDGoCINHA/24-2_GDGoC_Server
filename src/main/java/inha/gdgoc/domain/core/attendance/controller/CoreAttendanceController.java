@@ -68,7 +68,7 @@ public class CoreAttendanceController {
     /* ===== 팀 목록 (리드=본인 팀만 / 관리자=전체) ===== */
     @GetMapping("/teams")
     public ResponseEntity<ApiResponse<List<TeamResponse>, PageMeta>> getTeams(@AuthenticationPrincipal CustomUserDetails me) {
-        List<TeamResponse> list = (me.getRole() == UserRole.LEAD) ? service.getTeamsForLead(requiredTeamFrom(me)) : service.getTeamsForOrganizerOrAdmin();
+        List<TeamResponse> list = (me.getRole() == UserRole.LEAD && me.getTeam() != TeamType.HR) ? service.getTeamsForLead(requiredTeamFrom(me)) : service.getTeamsForOrganizerOrAdmin();
 
         var page = new PageImpl<>(list, PageRequest.of(0, Math.max(1, list.size()), Sort.by(Sort.Direction.DESC, "createdAt")), list.size());
         return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.TEAM_LIST_RETRIEVED_SUCCESS, list, PageMeta.of(page)));
@@ -79,7 +79,7 @@ public class CoreAttendanceController {
     @GetMapping("/{date}/members")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>, Void>> membersOfMeeting(@AuthenticationPrincipal CustomUserDetails me, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam(required = false) TeamType team // 관리자만 사용, 리드는 무시
     ) {
-        TeamType effectiveTeam = (me.getRole() == UserRole.LEAD) ? requiredTeamFrom(me) : team;
+        TeamType effectiveTeam = (me.getRole() == UserRole.LEAD && me.getTeam() != TeamType.HR) ? requiredTeamFrom(me) : team;
         var list = service.getMembersWithPresence(date.toString(), effectiveTeam);
         // list 원소 예시: { "userId": "123", "name": "홍길동", "present": true, "lastModifiedAt": "..." }
         return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.TEAM_LIST_RETRIEVED_SUCCESS, list));
@@ -92,7 +92,7 @@ public class CoreAttendanceController {
         var userIds = req.safeUserIds();
 
         // LEAD → 본인 팀 검증
-        if (me.getRole() == UserRole.LEAD) {
+        if (me.getRole() == UserRole.LEAD && me.getTeam() != TeamType.HR) {
             TeamType myTeam = requiredTeamFrom(me);
             var validation = service.filterUserIdsNotInTeam(myTeam, userIds);
             if (validation.validIds().isEmpty()) {
@@ -110,14 +110,14 @@ public class CoreAttendanceController {
     /* ===== 날짜 요약(JSON) ===== */
     @GetMapping("/{date}/summary")
     public ResponseEntity<ApiResponse<DaySummaryResponse, Void>> summary(@AuthenticationPrincipal CustomUserDetails me, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam(required = false) TeamType team) {
-        DaySummaryResponse body = (me.getRole() == UserRole.LEAD) ? service.summary(date.toString(), requiredTeamFrom(me)) : service.summary(date.toString(), team);
+        DaySummaryResponse body = (me.getRole() == UserRole.LEAD && me.getTeam() != TeamType.HR) ? service.summary(date.toString(), requiredTeamFrom(me)) : service.summary(date.toString(), team);
         return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.SUMMARY_RETRIEVED_SUCCESS, body));
     }
 
     /* ===== 날짜 요약(CSV) ===== */
     @GetMapping(value = "/{date}/summary.csv", produces = "text/csv; charset=UTF-8")
     public ResponseEntity<String> summaryCsv(@AuthenticationPrincipal CustomUserDetails me, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam(required = false) TeamType team) {
-        TeamType effective = (me.getRole() == UserRole.LEAD) ? requiredTeamFrom(me) : team;
+        TeamType effective = (me.getRole() == UserRole.LEAD && me.getTeam() != TeamType.HR) ? requiredTeamFrom(me) : team;
         String csv = service.buildSummaryCsv(date.toString(), effective); // 서비스에 구현
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=\"attendance-" + date + ".csv\"")
