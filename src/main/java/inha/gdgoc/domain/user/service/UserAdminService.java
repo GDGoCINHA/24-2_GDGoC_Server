@@ -11,7 +11,10 @@ import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.GlobalErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.JpaSort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +28,43 @@ public class UserAdminService {
 
     @Transactional(readOnly = true)
     public Page<UserSummaryResponse> listUsers(String q, Pageable pageable) {
-        return userRepository.findSummaries(q, pageable);
+        Pageable fixed = rewriteSort(pageable);
+        return userRepository.findSummaries(q, fixed);
+    }
+
+    private Pageable rewriteSort(Pageable pageable) {
+        Sort original = pageable.getSort();
+        if (original.isUnsorted()) return pageable;
+
+        Sort composed = Sort.unsorted();
+        boolean hasUserRoleOrder = false;
+
+        for (Sort.Order o : original) {
+            String prop = o.getProperty();
+            Sort.Direction dir = o.getDirection();
+
+            if ("userRole".equals(prop)) {
+                hasUserRoleOrder = true;
+                String roleRankCase = "CASE u.userRole " +
+                        "WHEN 'GUEST' THEN 0 " +
+                        "WHEN 'MEMBER' THEN 1 " +
+                        "WHEN 'CORE' THEN 2 " +
+                        "WHEN 'LEAD' THEN 3 " +
+                        "WHEN 'ORGANIZER' THEN 4 " +
+                        "WHEN 'ADMIN' THEN 5 " +
+                        "ELSE -1 END";
+                composed = composed.and(JpaSort.unsafe(dir, roleRankCase));
+            } else {
+                composed = composed.and(Sort.by(new Sort.Order(dir, prop)));
+            }
+        }
+
+        // ROLE 정렬 요청이 있었다면, 같은 권한 내에서 name ASC로 안정화
+        if (hasUserRoleOrder) {
+            composed = composed.and(Sort.by("name").ascending());
+        }
+
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), composed);
     }
 
     /**
