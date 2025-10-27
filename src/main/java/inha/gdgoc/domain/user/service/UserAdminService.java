@@ -40,23 +40,26 @@ public class UserAdminService {
 
         Sort composed = Sort.unsorted();
         boolean hasUserRoleOrder = false;
-
+        boolean hasTeamOrder = false;
+        final String roleRankCase =
+                "(CASE " +
+                        " WHEN u.userRole = 'GUEST'     THEN 0 " +
+                        " WHEN u.userRole = 'MEMBER'    THEN 1 " +
+                        " WHEN u.userRole = 'CORE'      THEN 2 " +
+                        " WHEN u.userRole = 'LEAD'      THEN 3 " +
+                        " WHEN u.userRole = 'ORGANIZER' THEN 4 " +
+                        " WHEN u.userRole = 'ADMIN'     THEN 5 " +
+                        " ELSE -1 END)";
         for (Sort.Order o : original) {
             String prop = o.getProperty();
             Sort.Direction dir = o.getDirection();
 
             if ("userRole".equals(prop)) {
                 hasUserRoleOrder = true;
-                String roleRankCase =
-                        "(CASE " +
-                                " WHEN u.userRole = 'GUEST'     THEN 0 " +
-                                " WHEN u.userRole = 'MEMBER'    THEN 1 " +
-                                " WHEN u.userRole = 'CORE'      THEN 2 " +
-                                " WHEN u.userRole = 'LEAD'      THEN 3 " +
-                                " WHEN u.userRole = 'ORGANIZER' THEN 4 " +
-                                " WHEN u.userRole = 'ADMIN'     THEN 5 " +
-                                " ELSE -1 END)";
                 composed = composed.and(JpaSort.unsafe(dir, roleRankCase));
+            } else if ("team".equals(prop)) {
+                hasTeamOrder = true;
+                composed = composed.and(Sort.by(new Sort.Order(dir, "team")));
             } else {
                 composed = composed.and(Sort.by(new Sort.Order(dir, prop)));
             }
@@ -66,6 +69,10 @@ public class UserAdminService {
             composed = composed.and(Sort.by("name").ascending());
         }
 
+        if (hasTeamOrder) {
+            composed = composed.and(JpaSort.unsafe(Sort.Direction.DESC, roleRankCase));
+            composed = composed.and(Sort.by("name").ascending());
+        }
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), composed);
     }
 
