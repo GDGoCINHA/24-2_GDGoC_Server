@@ -215,6 +215,68 @@ public class CoreAttendanceService {
         return new String(sb.toString().getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
     }
 
+    @Transactional(readOnly = true)
+    public String buildFullMatrixCsv(TeamType teamOrNull) {
+        // 1) 날짜 목록(오름차순)
+        List<LocalDate> dates = meetingRepository
+                .findAll(Sort.by(Sort.Direction.ASC, "meetingDate"))
+                .stream()
+                .map(Meeting::getMeetingDate)
+                .toList();
+
+        // 날짜가 없으면 헤더만
+        if (dates.isEmpty()) {
+            return "이름\n";
+        }
+
+        // 2) 대상 사용자: 기존 정책과 동일 (CORE/LEAD/ORGANIZER), 팀 필터 적용
+        var roles = List.of(UserRole.CORE, UserRole.LEAD, UserRole.ORGANIZER);
+        List<User> users = (teamOrNull == null)
+                ? userRepository.findByUserRoleIn(roles)
+                : userRepository.findByTeamAndUserRoleIn(teamOrNull, roles);
+
+        // 팀 없는 사용자 제외 + 이름순 정렬
+        users = users.stream()
+                .filter(u -> u.getTeam() != null)
+                .sorted(Comparator.comparing(User::getName))
+                .toList();
+
+        // 사용자 없으면 헤더만
+        if (users.isEmpty()) {
+            StringBuilder onlyHeader = new StringBuilder("이름");
+            for (LocalDate d : dates) onlyHeader.append(',').append(d);
+            onlyHeader.append('\n');
+            return new String(onlyHeader.toString().getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+        }
+
+        // 3) 날짜별 출석 맵을 한 번에 수집 (N×M 쿼리 방지 필요시 Repository 확장 고려)
+        //    여기서는 기존 getPresenceMap(LocalDate)를 재사용해 날짜 단위로 가져옴
+        List<Map<Long, Boolean>> presenceByDate = new ArrayList<>(dates.size());
+        for (LocalDate d : dates) {
+            presenceByDate.add(getPresenceMap(d)); // userId -> present
+        }
+
+        // 4) CSV 빌드
+        StringBuilder sb = new StringBuilder();
+        // Header
+        sb.append("이름");
+        for (LocalDate d : dates) sb.append(',').append(d);
+        sb.append('\n');
+
+        // Rows
+        for (User u : users) {
+            sb.append(escape(u.getName()));
+            Long uid = u.getId();
+            for (Map<Long, Boolean> day : presenceByDate) {
+                boolean present = Boolean.TRUE.equals(day.getOrDefault(uid, false));
+                sb.append(',').append(present ? 'O' : 'X');
+            }
+            sb.append('\n');
+        }
+
+        return new String(sb.toString().getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+    }
+
     /* ===================== helpers ===================== */
 
     /** date로 meeting을 보장하고 meetingId 반환 */

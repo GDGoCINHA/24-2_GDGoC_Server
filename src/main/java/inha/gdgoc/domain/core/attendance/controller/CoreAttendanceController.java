@@ -118,9 +118,26 @@ public class CoreAttendanceController {
     @GetMapping(value = "/{date}/summary.csv", produces = "text/csv; charset=UTF-8")
     public ResponseEntity<String> summaryCsv(@AuthenticationPrincipal CustomUserDetails me, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam(required = false) TeamType team) {
         TeamType effective = (me.getRole() == UserRole.LEAD && me.getTeam() != TeamType.HR) ? requiredTeamFrom(me) : team;
-        String csv = service.buildSummaryCsv(date.toString(), effective); // 서비스에 구현
+        String csv = service.buildSummaryCsv(date.toString(), effective);
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=\"attendance-" + date + ".csv\"")
                 .body(csv);
     }
+
+    @GetMapping(value = "/summary.csv", produces = "text/csv; charset=UTF-8")
+    public ResponseEntity<String> summaryCsvAll(
+            @AuthenticationPrincipal CustomUserDetails me,
+            @RequestParam(required = false) TeamType team
+    ) {
+        // LEAD & not HR → 자신의 팀만
+        TeamType effective = (me.getRole() == UserRole.LEAD && me.getTeam() != TeamType.HR)
+                ? requiredTeamFrom(me)
+                : team;
+
+        String csv = service.buildFullMatrixCsv(effective);
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"attendance-summary.csv\"")
+                .body(csv);
+    }
+
 }
