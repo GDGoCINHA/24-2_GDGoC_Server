@@ -127,7 +127,7 @@ public class CoreAttendanceService {
         LocalDate d = LocalDate.parse(date);
         Map<Long, Boolean> day = getPresenceMap(d);
 
-        var roles = List.of(UserRole.CORE, UserRole.LEAD);
+        var roles = List.of(UserRole.CORE, UserRole.LEAD, UserRole.ORGANIZER);
         List<User> users = (teamOrNull == null)
                 ? userRepository.findByUserRoleIn(roles)
                 : userRepository.findByTeamAndUserRoleIn(teamOrNull, roles);
@@ -168,7 +168,7 @@ public class CoreAttendanceService {
         LocalDate d = LocalDate.parse(date);
         Map<Long, Boolean> day = getPresenceMap(d);
 
-        var roles = List.of(UserRole.CORE, UserRole.LEAD);
+        var roles = List.of(UserRole.CORE, UserRole.LEAD, UserRole.ORGANIZER);
         List<User> baseUsers = (teamForLeadOrNull == null)
                 ? userRepository.findByUserRoleIn(roles)
                 : userRepository.findByTeamAndUserRoleIn(teamForLeadOrNull, roles);
