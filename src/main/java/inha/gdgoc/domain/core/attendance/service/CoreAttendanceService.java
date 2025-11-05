@@ -65,7 +65,7 @@ public class CoreAttendanceService {
 
     @Transactional(readOnly = true)
     public List<TeamResponse> getTeamsForOrganizerOrAdmin() {
-        var roles = List.of(UserRole.CORE, UserRole.LEAD);
+        var roles = List.of(UserRole.CORE, UserRole.LEAD, UserRole.ORGANIZER);
         List<User> users = userRepository.findByUserRoleIn(roles);
         return toTeamResponsesGrouped(users);
     }
