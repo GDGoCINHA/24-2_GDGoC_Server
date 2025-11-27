@@ -135,6 +135,14 @@ public class ManitoAdminService {
                 String studentId = cleanCsvField(cols[studentIdx]);
                 String name = cleanCsvField(cols[nameIdx]);
                 String pinPlain = cleanCsvField(cols[pinIdx]);
+                pinPlain = pinPlain.replaceAll("\\D", ""); // 숫자만 추출
+
+                if (pinPlain.length() > 4) {
+                    pinPlain = pinPlain.substring(0, 4);   // 혹시 4자리 넘으면 앞 4자리
+                }
+
+                // zero padding to 4 digits
+                pinPlain = String.format("%04d", Integer.parseInt(pinPlain));
 
                 name = name.replace("`", "").trim();
 
