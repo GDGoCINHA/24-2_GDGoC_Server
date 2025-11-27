@@ -10,6 +10,7 @@ import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.GlobalErrorCode;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ManitoAdminService {
@@ -258,6 +260,8 @@ public class ManitoAdminService {
 
                 String studentId = cleanCsvField(cols[0]);
                 String encryptedManitto = cleanCsvField(cols[1]);
+
+                log.info("[MANITO] upload-encrypted row: studentId='{}', enc='{}'", studentId, encryptedManitto);
 
                 if (studentId.isEmpty() || encryptedManitto.isEmpty()) {
                     // 비어 있는 줄은 그냥 스킵
