@@ -86,40 +86,73 @@ public class ManitoAdminService {
                 throw new BusinessException(GlobalErrorCode.BAD_REQUEST, "비어 있는 CSV 파일입니다.");
             }
 
+            // 1) 구분자 추론 (탭 우선)
+            String delimiter = header.contains("\t") ? "\t" : ",";
+
+            // 2) 헤더 컬럼 개수 확인
+            String[] headerCols = header.split(delimiter, -1);
+            //   - 4개 이상: [타임스탬프, 학번, 이름, PIN, ...]
+            //   - 3개:      [studentId, name, pin] 형식으로 이미 전처리된 경우
+            int studentIdx;
+            int nameIdx;
+            int pinIdx;
+
+            if (headerCols.length >= 4) {
+                // 구글폼 원본처럼 타임스탬프 포함된 케이스
+                studentIdx = 1;
+                nameIdx = 2;
+                pinIdx = 3;
+            } else if (headerCols.length == 3) {
+                // 사전에 [studentId,name,pin] 으로 정리된 파일
+                studentIdx = 0;
+                nameIdx = 1;
+                pinIdx = 2;
+            } else {
+                throw new BusinessException(GlobalErrorCode.BAD_REQUEST, "지원하지 않는 CSV 헤더 형식입니다. (컬럼 수: " + headerCols.length + ")");
+            }
+
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.isBlank()) continue;
 
-                String[] cols = line.split(",", -1);
-                if (cols.length < 3) {
+                String[] cols = line.split(delimiter, -1);
+                if (cols.length <= pinIdx) {
                     throw new BusinessException(GlobalErrorCode.BAD_REQUEST, "CSV 컬럼 수가 부족합니다: " + line);
                 }
 
-                String studentId = cols[0].trim();
-                String name = cols[1].trim();
-                String pinPlain = cols[2].trim();
+                String studentId = cols[studentIdx].trim();
+                String name = cols[nameIdx].trim();
+                String pinPlain = cols[pinIdx].trim();
+
+                // 혹시 이상한 문자 섞였으면 (예: 김가은`)
+                name = name.replace("`", "").trim();
 
                 if (studentId.isEmpty() || name.isEmpty() || pinPlain.isEmpty()) {
-                    // 필요하면 스킵 또는 에러
+                    // 비어 있으면 스킵 (원하면 여기서 에러 던져도 됨)
                     continue;
                 }
+
+                // 여기서 PIN 길이 정책은 네가 선택
+                // - 그대로 쓰기
+                // - 숫자만 남기고 4자리 zero padding 하기 등
+                // ex) 숫자만 추출:
+                // pinPlain = pinPlain.replaceAll("\\D", "");
+                // if (pinPlain.length() < 4) { ... }
 
                 String pinHash = passwordEncoder.encode(pinPlain);
 
                 var existingOpt = assignmentRepository.findBySessionAndStudentId(session, studentId);
 
                 if (existingOpt.isPresent()) {
-                    // 기존 row 있으면 이름/핀 갱신 (암호문은 그대로 둠)
                     ManitoAssignment existing = existingOpt.get();
                     existing.changeName(name);
                     existing.changePinHash(pinHash);
                 } else {
-                    // 새로 생성 (encryptedManitto는 나중에 다른 과정에서 채움)
                     ManitoAssignment assignment = ManitoAssignment.builder()
                             .session(session)
                             .studentId(studentId)
                             .name(name)
-                            .encryptedManitto(null) // 또는 "" 로 두고 나중에 채움
+                            .encryptedManitto(null) // 나중에 upload-encrypted 로 채움
                             .pinHash(pinHash)
                             .build();
                     assignmentRepository.save(assignment);
