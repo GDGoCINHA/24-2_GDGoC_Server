@@ -272,6 +272,13 @@ public class ManitoAdminService {
                         .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND, "해당 학번에 대한 참가자 정보가 없습니다: " + studentId));
 
                 assignment.changeEncryptedManitto(encryptedManitto);
+
+                assignmentRepository.flush();
+
+                ManitoAssignment reloaded = assignmentRepository.findBySessionAndStudentId(session, studentId)
+                        .orElseThrow();
+
+                log.info("[MANITO] after save: studentId='{}', enc='{}'", reloaded.getStudentId(), reloaded.getEncryptedManitto());
             }
         } catch (BusinessException e) {
             throw e;
