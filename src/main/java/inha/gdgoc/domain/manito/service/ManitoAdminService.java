@@ -41,6 +41,18 @@ public class ManitoAdminService {
         return '"' + s.replace("\"", "\"\"") + '"';
     }
 
+    private static String cleanCsvField(String raw) {
+        if (raw == null) return "";
+        String s = raw.trim();
+        // 양 끝에 쌍따옴표가 있으면 제거
+        if (s.length() >= 2 && s.startsWith("\"") && s.endsWith("\"")) {
+            s = s.substring(1, s.length() - 1);
+            // CSV 이스케이프 처리된 "" → " 로 복원
+            s = s.replace("\"\"", "\"");
+        }
+        return s;
+    }
+
     private static List<Integer> computeGroupSizes(int n) {
         if (n < 5) {
             throw new IllegalArgumentException("n must be >= 5");
@@ -120,11 +132,10 @@ public class ManitoAdminService {
                     throw new BusinessException(GlobalErrorCode.BAD_REQUEST, "CSV 컬럼 수가 부족합니다: " + line);
                 }
 
-                String studentId = cols[studentIdx].trim();
-                String name = cols[nameIdx].trim();
-                String pinPlain = cols[pinIdx].trim();
+                String studentId = cleanCsvField(cols[studentIdx]);
+                String name = cleanCsvField(cols[nameIdx]);
+                String pinPlain = cleanCsvField(cols[pinIdx]);
 
-                // 혹시 이상한 문자 섞였으면 (예: 김가은`)
                 name = name.replace("`", "").trim();
 
                 if (studentId.isEmpty() || name.isEmpty() || pinPlain.isEmpty()) {
@@ -237,8 +248,8 @@ public class ManitoAdminService {
                     throw new BusinessException(GlobalErrorCode.BAD_REQUEST, "CSV 컬럼 수가 부족합니다: " + line);
                 }
 
-                String studentId = cols[0].trim();
-                String encryptedManitto = cols[1].trim();
+                String studentId = cleanCsvField(cols[0]);
+                String encryptedManitto = cleanCsvField(cols[1]);
 
                 if (studentId.isEmpty() || encryptedManitto.isEmpty()) {
                     // 비어 있는 줄은 그냥 스킵
