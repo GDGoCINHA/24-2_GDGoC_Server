@@ -31,8 +31,7 @@ public class ManitoAssignment extends BaseEntity {
      * clientKey/hash로만 복호화 가능한 암호문
      * 처음 업로드 시에는 아직 없을 수 있으므로 nullable 허용
      */
-    @Lob
-    @Column(name = "encrypted_manitto") // nullable = true (default)
+    @Column(name = "encrypted_manitto", columnDefinition = "text")
     private String encryptedManitto;
 
     @Column(name = "pin_hash", nullable = false, length = 255)
@@ -58,4 +57,4 @@ public class ManitoAssignment extends BaseEntity {
     public void changeName(String name) {
         this.name = name;
     }
-}
+}}

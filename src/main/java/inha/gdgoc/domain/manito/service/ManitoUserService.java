@@ -10,10 +10,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ManitoUserService {
 
     private final ManitoSessionRepository sessionRepository;
@@ -24,6 +25,7 @@ public class ManitoUserService {
     /**
      * pin 검증 후 암호문 반환
      */
+    @Transactional(readOnly = true)
     public String verifyAndGetCipher(String sessionCode, String studentId, String pinPlain) {
 
         log.info("[MANITO] >>> verifyAndGetCipher CALLED (sessionCode={}, studentId={})", sessionCode, studentId);
@@ -34,9 +36,7 @@ public class ManitoUserService {
         ManitoAssignment assignment = assignmentRepository.findBySessionAndStudentId(session, studentId)
                 .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND, "해당 학번은 세션에 참여하지 않았습니다."));
 
-        // ✅ Admin 쪽과 동일한 규칙으로 PIN 정규화
         String normalizedPin = manitoPinPolicy.normalize(pinPlain);
-
         if (normalizedPin.isEmpty()) {
             throw new BusinessException(GlobalErrorCode.BAD_REQUEST, "PIN 형식이 올바르지 않습니다.");
         }
