@@ -32,6 +32,7 @@ public class ManitoAdminService {
     private final ManitoSessionRepository sessionRepository;
     private final ManitoAssignmentRepository assignmentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ManitoPinPolicy manitoPinPolicy;   // ✅ PIN 정책 주입
 
     /**
      * 간단 CSV escape (콤마/따옴표/줄바꿈 포함 시 따옴표 감싸기)
@@ -136,15 +137,9 @@ public class ManitoAdminService {
 
                 String studentId = cleanCsvField(cols[studentIdx]);
                 String name = cleanCsvField(cols[nameIdx]);
-                String pinPlain = cleanCsvField(cols[pinIdx]);
-                pinPlain = pinPlain.replaceAll("\\D", ""); // 숫자만 추출
+                String pinRaw = cleanCsvField(cols[pinIdx]);
 
-                if (pinPlain.length() > 4) {
-                    pinPlain = pinPlain.substring(0, 4);   // 혹시 4자리 넘으면 앞 4자리
-                }
-
-                // zero padding to 4 digits
-                pinPlain = String.format("%04d", Integer.parseInt(pinPlain));
+                String pinPlain = manitoPinPolicy.normalize(pinRaw);
 
                 name = name.replace("`", "").trim();
 
@@ -152,13 +147,6 @@ public class ManitoAdminService {
                     // 비어 있으면 스킵 (원하면 여기서 에러 던져도 됨)
                     continue;
                 }
-
-                // 여기서 PIN 길이 정책은 네가 선택
-                // - 그대로 쓰기
-                // - 숫자만 남기고 4자리 zero padding 하기 등
-                // ex) 숫자만 추출:
-                // pinPlain = pinPlain.replaceAll("\\D", "");
-                // if (pinPlain.length() < 4) { ... }
 
                 String pinHash = passwordEncoder.encode(pinPlain);
 
