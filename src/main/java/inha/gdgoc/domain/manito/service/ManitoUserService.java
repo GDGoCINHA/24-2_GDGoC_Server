@@ -7,9 +7,11 @@ import inha.gdgoc.domain.manito.repository.ManitoSessionRepository;
 import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.GlobalErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ManitoUserService {
@@ -17,12 +19,14 @@ public class ManitoUserService {
     private final ManitoSessionRepository sessionRepository;
     private final ManitoAssignmentRepository assignmentRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ManitoPinPolicy manitoPinPolicy;   // ✅ PIN 정책 주입
+    private final ManitoPinPolicy manitoPinPolicy;
 
     /**
      * pin 검증 후 암호문 반환
      */
     public String verifyAndGetCipher(String sessionCode, String studentId, String pinPlain) {
+
+        log.info("[MANITO] >>> verifyAndGetCipher CALLED (sessionCode={}, studentId={})", sessionCode, studentId);
 
         ManitoSession session = sessionRepository.findByCode(sessionCode)
                 .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND, "세션 코드가 올바르지 않습니다."));
