@@ -2,6 +2,7 @@ package inha.gdgoc.domain.manito.controller;
 
 import inha.gdgoc.domain.manito.dto.request.ManitoVerifyRequest;
 import inha.gdgoc.domain.manito.dto.response.ManitoVerifyResponse;
+import inha.gdgoc.domain.manito.entity.ManitoAssignment;
 import inha.gdgoc.domain.manito.service.ManitoUserService;
 import inha.gdgoc.global.dto.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -21,8 +22,13 @@ public class ManitoVerifyController {
 
     @PostMapping("/verify")
     public ResponseEntity<ApiResponse<ManitoVerifyResponse, Void>> verify(@Valid @RequestBody ManitoVerifyRequest request) {
-        String cipher = manitoUserService.verifyAndGetCipher(request.sessionCode(), request.studentId(), request.pin());
+        ManitoAssignment assignment = manitoUserService.verifyAndGetAssignment(request.sessionCode(), request.studentId(), request.pin());
 
-        return ResponseEntity.ok(ApiResponse.ok("마니또 정보 조회 성공", new ManitoVerifyResponse(cipher)));
+        String cipher = assignment.getEncryptedManitto();
+        String ownerName = assignment.getName();
+
+        ManitoVerifyResponse response = new ManitoVerifyResponse(cipher, ownerName);
+
+        return ResponseEntity.ok(ApiResponse.ok("마니또 정보 조회 성공", response));
     }
 }

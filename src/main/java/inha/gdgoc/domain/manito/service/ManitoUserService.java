@@ -22,13 +22,8 @@ public class ManitoUserService {
     private final PasswordEncoder passwordEncoder;
     private final ManitoPinPolicy manitoPinPolicy;
 
-    /**
-     * pin 검증 후 암호문 반환
-     */
     @Transactional(readOnly = true)
-    public String verifyAndGetCipher(String sessionCode, String studentId, String pinPlain) {
-
-        log.info("[MANITO] >>> verifyAndGetCipher CALLED (sessionCode={}, studentId={})", sessionCode, studentId);
+    public ManitoAssignment verifyAndGetAssignment(String sessionCode, String studentId, String pinPlain) {
 
         ManitoSession session = sessionRepository.findByCode(sessionCode)
                 .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND, "세션 코드가 올바르지 않습니다."));
@@ -48,7 +43,6 @@ public class ManitoUserService {
         if (assignment.getEncryptedManitto() == null || assignment.getEncryptedManitto().isBlank()) {
             throw new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND, "아직 마니또 암호문이 업로드되지 않았습니다. 관리자에게 문의하세요.");
         }
-
-        return assignment.getEncryptedManitto();
+        return assignment;
     }
 }
