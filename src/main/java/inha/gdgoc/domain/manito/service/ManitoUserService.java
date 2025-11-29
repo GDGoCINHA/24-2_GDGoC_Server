@@ -17,6 +17,7 @@ public class ManitoUserService {
     private final ManitoSessionRepository sessionRepository;
     private final ManitoAssignmentRepository assignmentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ManitoPinPolicy manitoPinPolicy;   // ✅ PIN 정책 주입
 
     /**
      * pin 검증 후 암호문 반환
@@ -29,7 +30,14 @@ public class ManitoUserService {
         ManitoAssignment assignment = assignmentRepository.findBySessionAndStudentId(session, studentId)
                 .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND, "해당 학번은 세션에 참여하지 않았습니다."));
 
-        if (!passwordEncoder.matches(pinPlain, assignment.getPinHash())) {
+        // ✅ Admin 쪽과 동일한 규칙으로 PIN 정규화
+        String normalizedPin = manitoPinPolicy.normalize(pinPlain);
+
+        if (normalizedPin.isEmpty()) {
+            throw new BusinessException(GlobalErrorCode.BAD_REQUEST, "PIN 형식이 올바르지 않습니다.");
+        }
+
+        if (!passwordEncoder.matches(normalizedPin, assignment.getPinHash())) {
             throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "PIN이 일치하지 않습니다.");
         }
 
