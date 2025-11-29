@@ -57,4 +57,4 @@ public class ManitoAssignment extends BaseEntity {
     public void changeName(String name) {
         this.name = name;
     }
-}}
+}
