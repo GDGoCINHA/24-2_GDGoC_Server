@@ -1,9 +1,15 @@
 package inha.gdgoc.domain.user.repository;
 
+import inha.gdgoc.domain.user.dto.response.UserSummaryResponse;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.TeamType;
 import inha.gdgoc.domain.user.enums.UserRole;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
@@ -29,4 +35,15 @@ public interface UserRepository extends JpaRepository<User, Long>, UserRepositor
 
     // 필요 시: 특정 팀 전체 멤버(역할 무관)
     List<User> findByTeam(TeamType team);
+
+    @Query("""
+        select new inha.gdgoc.domain.user.dto.response.UserSummaryResponse(
+            u.id, u.name, u.major, u.studentId, u.email, u.userRole, u.team
+        )
+        from User u
+        where (:q is null or :q = '' or u.name like concat('%', :q, '%'))
+        """)
+    Page<UserSummaryResponse> findSummaries(@Param("q") String q, Pageable pageable);
+
+    @NotNull Optional<User> findById(@NotNull Long id);
 }

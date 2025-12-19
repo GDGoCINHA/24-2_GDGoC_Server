@@ -26,11 +26,12 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
     /* 배치 업서트(ON CONFLICT) — meeting_id 기준 */
     @Modifying
     @Query(value = """
-                INSERT INTO public.attendance_records (meeting_id, user_id, present, updated_at)
-                SELECT :meetingId, u, :present, NOW()
-                FROM unnest(:userIds) AS u
-                ON CONFLICT (meeting_id, user_id)
-                DO UPDATE SET present = EXCLUDED.present, updated_at = NOW()
+            INSERT INTO public.attendance_records (meeting_id, user_id, present, updated_at)
+            SELECT :meetingId, uid, :present, NOW()
+            FROM unnest(CAST(:userIds AS bigint[])) AS uid
+            ON CONFLICT (meeting_id, user_id)
+            DO UPDATE SET present = EXCLUDED.present, updated_at = NOW()
             """, nativeQuery = true)
-    int upsertBatchByMeetingId(@Param("meetingId") Long meetingId, @Param("userIds") List<Long> userIds, @Param("present") boolean present);
+    int upsertBatchByMeetingId(@Param("meetingId") Long meetingId, @Param("userIds") Long[] userIds,  // 👈 배열
+                               @Param("present") boolean present);
 }

@@ -30,6 +30,14 @@ public class CoreAttendanceService {
 
     /* ===================== Meetings (dates) ===================== */
 
+    private static String escape(String s) {
+        if (s == null) return "";
+        String needsQuote = ",\"\n";
+        boolean mustQuote = s.chars().anyMatch(ch -> needsQuote.indexOf(ch) >= 0);
+        if (!mustQuote) return s;
+        return "\"" + s.replace("\"", "\"\"") + "\"";
+    }
+
     @Transactional(readOnly = true)
     public List<String> getDates() {
         return meetingRepository.findAll(Sort.by(Sort.Direction.DESC, "meetingDate"))
@@ -45,6 +53,8 @@ public class CoreAttendanceService {
                 .orElseGet(() -> meetingRepository.save(Meeting.builder().meetingDate(d).build()));
     }
 
+    /* ===================== Teams ===================== */
+
     @Transactional
     public void deleteDate(String date) {
         LocalDate d = LocalDate.parse(date);
@@ -53,8 +63,6 @@ public class CoreAttendanceService {
             meetingRepository.deleteById(m.getId());
         });
     }
-
-    /* ===================== Teams ===================== */
 
     @Transactional(readOnly = true)
     public List<TeamResponse> getTeamsForLead(TeamType leadTeam) {
@@ -65,33 +73,32 @@ public class CoreAttendanceService {
 
     @Transactional(readOnly = true)
     public List<TeamResponse> getTeamsForOrganizerOrAdmin() {
-        var roles = List.of(UserRole.CORE, UserRole.LEAD);
+        var roles = List.of(UserRole.CORE, UserRole.LEAD, UserRole.ORGANIZER);
         List<User> users = userRepository.findByUserRoleIn(roles);
         return toTeamResponsesGrouped(users);
     }
+
+    /* ===================== Attendance ===================== */
 
     private List<TeamResponse> toTeamResponsesGrouped(List<User> users) {
         Map<TeamType, List<User>> grouped = users.stream()
                 .filter(u -> u.getTeam() != null)
                 .collect(Collectors.groupingBy(User::getTeam, LinkedHashMap::new, Collectors.toList()));
 
-        return grouped.entrySet().stream()
-                .map(e -> {
-                    TeamType team = e.getKey();
-                    List<MemberResponse> members = e.getValue().stream()
-                            .sorted(Comparator.comparing(User::getName))
-                            .map(u -> new MemberResponse(String.valueOf(u.getId()), u.getName()))
-                            .toList();
-                    return new TeamResponse(team.name(), team.getLabel(), members);
-                })
-                .toList();
+        return grouped.entrySet().stream().map(e -> {
+            TeamType team = e.getKey();
+            List<MemberResponse> members = e.getValue()
+                    .stream()
+                    .sorted(Comparator.comparing(User::getName))
+                    .map(u -> new MemberResponse(String.valueOf(u.getId()), u.getName()))
+                    .toList();
+            return new TeamResponse(team.name(), team.getLabel(), members);
+        }).toList();
     }
 
-    /* ===================== Attendance ===================== */
-
-    public record UserIdValidationResult(List<Long> validIds, List<Long> invalidIds) {}
-
-    /** 주어진 userIds 중 team 소속만 골라냄 */
+    /**
+     * 주어진 userIds 중 team 소속만 골라냄
+     */
     @Transactional(readOnly = true)
     public UserIdValidationResult filterUserIdsNotInTeam(TeamType team, List<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) {
@@ -107,50 +114,50 @@ public class CoreAttendanceService {
         return new UserIdValidationResult(valid, invalid);
     }
 
-    /** 배치로 출석 true/false 반영 (고성능 UPSERT) */
+    /**
+     * 배치로 출석 true/false 반영 (고성능 UPSERT)
+     */
     @Transactional
     public long setAttendance(String date, List<Long> userIds, boolean present) {
         if (userIds == null || userIds.isEmpty()) return 0L;
 
         LocalDate d = LocalDate.parse(date);
         Long meetingId = ensureMeetingAndGetId(d);
-        int affected = attendanceRecordRepository.upsertBatchByMeetingId(meetingId, userIds, present);
+
+        Long[] arr = userIds.toArray(Long[]::new); // ✅ List -> Array
+        int affected = attendanceRecordRepository.upsertBatchByMeetingId(meetingId, arr, present);
         return Math.max(affected, 0);
     }
 
-    /** 특정 날짜에 대해 팀원 + 현재 출석 여부 목록 */
+    /**
+     * 특정 날짜에 대해 팀원 + 현재 출석 여부 목록
+     */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getMembersWithPresence(String date, TeamType teamOrNull) {
         LocalDate d = LocalDate.parse(date);
         Map<Long, Boolean> day = getPresenceMap(d);
 
-        var roles = List.of(UserRole.CORE, UserRole.LEAD);
-        List<User> users = (teamOrNull == null)
-                ? userRepository.findByUserRoleIn(roles)
-                : userRepository.findByTeamAndUserRoleIn(teamOrNull, roles);
+        var roles = List.of(UserRole.CORE, UserRole.LEAD, UserRole.ORGANIZER);
+        List<User> users = (teamOrNull == null) ? userRepository.findByUserRoleIn(roles) : userRepository.findByTeamAndUserRoleIn(teamOrNull, roles);
 
-        return users.stream()
-                .filter(u -> u.getTeam() != null)
-                .sorted(Comparator.comparing(User::getName))
-                .map(u -> {
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    row.put("userId", String.valueOf(u.getId()));
-                    row.put("name", u.getName());
-                    row.put("team", u.getTeam().getLabel());
-                    row.put("present", day.getOrDefault(u.getId(), false));
-                    row.put("lastModifiedAt", null); // 추후 updatedAt/updatedBy 확장 시 채우기
-                    return row;
-                })
-                .toList();
+        return users.stream().filter(u -> u.getTeam() != null).sorted(Comparator.comparing(User::getName)).map(u -> {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("userId", String.valueOf(u.getId()));
+            row.put("name", u.getName());
+            row.put("team", u.getTeam().getLabel());
+            row.put("present", day.getOrDefault(u.getId(), false));
+            row.put("lastModifiedAt", null); // 추후 updatedAt/updatedBy 확장 시 채우기
+            return row;
+        }).toList();
     }
 
-    /** userIds 로부터 단일 팀을 추론 (다르면 empty) */
+    /**
+     * userIds 로부터 단일 팀을 추론 (다르면 empty)
+     */
     @Transactional(readOnly = true)
     public Optional<TeamType> inferTeamFromUserIds(List<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) return Optional.empty();
-        var users = userRepository.findAllById(userIds).stream()
-                .filter(u -> u.getTeam() != null)
-                .toList();
+        var users = userRepository.findAllById(userIds).stream().filter(u -> u.getTeam() != null).toList();
         if (users.isEmpty()) return Optional.empty();
 
         TeamType first = users.get(0).getTeam();
@@ -165,24 +172,19 @@ public class CoreAttendanceService {
         LocalDate d = LocalDate.parse(date);
         Map<Long, Boolean> day = getPresenceMap(d);
 
-        var roles = List.of(UserRole.CORE, UserRole.LEAD);
-        List<User> baseUsers = (teamForLeadOrNull == null)
-                ? userRepository.findByUserRoleIn(roles)
-                : userRepository.findByTeamAndUserRoleIn(teamForLeadOrNull, roles);
+        var roles = List.of(UserRole.CORE, UserRole.LEAD, UserRole.ORGANIZER);
+        List<User> baseUsers = (teamForLeadOrNull == null) ? userRepository.findByUserRoleIn(roles) : userRepository.findByTeamAndUserRoleIn(teamForLeadOrNull, roles);
 
         Map<TeamType, List<User>> byTeam = baseUsers.stream()
                 .filter(u -> u.getTeam() != null)
                 .collect(Collectors.groupingBy(User::getTeam, LinkedHashMap::new, Collectors.toList()));
 
-        var perTeam = byTeam.entrySet().stream()
-                .map(e -> {
-                    TeamType team = e.getKey();
-                    List<User> us = e.getValue();
-                    long p = us.stream().filter(u -> day.getOrDefault(u.getId(), false)).count();
-                    return new DaySummaryResponse.TeamSummary(team.name(), team.getLabel(), p, us.size());
-                })
-                .sorted(Comparator.comparing(DaySummaryResponse.TeamSummary::getTeamName))
-                .toList();
+        var perTeam = byTeam.entrySet().stream().map(e -> {
+            TeamType team = e.getKey();
+            List<User> us = e.getValue();
+            long p = us.stream().filter(u -> day.getOrDefault(u.getId(), false)).count();
+            return new DaySummaryResponse.TeamSummary(team.name(), team.getLabel(), p, us.size());
+        }).sorted(Comparator.comparing(DaySummaryResponse.TeamSummary::getTeamName)).toList();
 
         long present = perTeam.stream().mapToLong(DaySummaryResponse.TeamSummary::getPresent).sum();
         long total = perTeam.stream().mapToLong(DaySummaryResponse.TeamSummary::getTotal).sum();
@@ -190,41 +192,130 @@ public class CoreAttendanceService {
         return new DaySummaryResponse(date, perTeam, present, total);
     }
 
-    /** 요약 CSV 생성 (UTF-8) */
+    /**
+     * 요약 CSV 생성 (UTF-8)
+     */
     @Transactional(readOnly = true)
     public String buildSummaryCsv(String date, TeamType teamOrNull) {
         DaySummaryResponse s = summary(date, teamOrNull);
         StringBuilder sb = new StringBuilder();
         sb.append("date,team_id,team_name,present,total\n");
         for (var t : s.getPerTeam()) {
-            sb.append(escape(date)).append(',')
-                    .append(escape(t.getTeamId())).append(',')
-                    .append(escape(t.getTeamName())).append(',')
-                    .append(t.getPresent()).append(',')
-                    .append(t.getTotal()).append('\n');
+            sb.append(escape(date))
+                    .append(',')
+                    .append(escape(t.getTeamId()))
+                    .append(',')
+                    .append(escape(t.getTeamName()))
+                    .append(',')
+                    .append(t.getPresent())
+                    .append(',')
+                    .append(t.getTotal())
+                    .append('\n');
         }
-        sb.append(escape(date)).append(',')
-                .append("ALL").append(',')
-                .append("전체").append(',')
-                .append(s.getPresent()).append(',')
-                .append(s.getTotal()).append('\n');
+        sb.append(escape(date))
+                .append(',')
+                .append("ALL")
+                .append(',')
+                .append("전체")
+                .append(',')
+                .append(s.getPresent())
+                .append(',')
+                .append(s.getTotal())
+                .append('\n');
+
+        return new String(sb.toString().getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+    }
+
+    @Transactional(readOnly = true)
+    public String buildFullMatrixCsv(TeamType teamOrNull) {
+        // 1) 날짜 목록(오름차순)
+        List<LocalDate> dates = meetingRepository.findAll(Sort.by(Sort.Direction.ASC, "meetingDate"))
+                .stream()
+                .map(Meeting::getMeetingDate)
+                .toList();
+
+        // 날짜가 없으면 헤더만
+        if (dates.isEmpty()) {
+            return "이름,출석률\n";
+        }
+
+        // 2) 대상 사용자: 기존 정책과 동일 (CORE/LEAD/ORGANIZER), 팀 필터 적용
+        var roles = List.of(UserRole.CORE, UserRole.LEAD, UserRole.ORGANIZER);
+        List<User> users = (teamOrNull == null) ? userRepository.findByUserRoleIn(roles) : userRepository.findByTeamAndUserRoleIn(teamOrNull, roles);
+
+        // 팀 없는 사용자 제외 + 이름순 정렬
+        users = users.stream().filter(u -> u.getTeam() != null).sorted(Comparator.comparing(User::getName)).toList();
+
+        // 사용자 없으면 헤더만
+        if (users.isEmpty()) {
+            StringBuilder onlyHeader = new StringBuilder("이름");
+            for (LocalDate d : dates) onlyHeader.append(',').append(d);
+            onlyHeader.append(",출석률\n");
+            return new String(onlyHeader.toString().getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+        }
+
+        // 3) 날짜별 출석 맵 수집 (userId -> present)
+        List<Map<Long, Boolean>> presenceByDate = new ArrayList<>(dates.size());
+        for (LocalDate d : dates) {
+            presenceByDate.add(getPresenceMap(d));
+        }
+
+        int totalSessions = dates.size();
+
+        // 4) CSV 빌드
+        StringBuilder sb = new StringBuilder();
+        // Header
+        sb.append("이름");
+        for (LocalDate d : dates) {
+            sb.append(',').append(d);
+        }
+        sb.append(",출석률\n");
+
+        // Rows
+        for (User u : users) {
+            sb.append(escape(u.getName()));
+            Long uid = u.getId();
+
+            int attended = 0;
+
+            // 날짜별 O/X 채우면서 출석 횟수 카운트
+            for (Map<Long, Boolean> day : presenceByDate) {
+                boolean present = Boolean.TRUE.equals(day.getOrDefault(uid, false));
+                if (present) attended++;
+                sb.append(',').append(present ? 'O' : 'X');
+            }
+
+            // 출석률: 전체 회차 기준 (중간 합류 없음 가정)
+            double rate = attended * 100.0 / totalSessions;
+
+            sb.append(',')
+                    .append(attended)
+                    .append('/')
+                    .append(totalSessions)
+                    .append(" (")
+                    .append(String.format(java.util.Locale.US, "%.1f", rate))
+                    .append("%)")
+                    .append('\n');
+        }
 
         return new String(sb.toString().getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
     }
 
     /* ===================== helpers ===================== */
 
-    /** date로 meeting을 보장하고 meetingId 반환 */
+    /**
+     * date로 meeting을 보장하고 meetingId 반환
+     */
     @Transactional
     protected Long ensureMeetingAndGetId(LocalDate date) {
         return meetingRepository.findByMeetingDate(date)
                 .map(Meeting::getId)
-                .orElseGet(() -> meetingRepository.save(
-                        Meeting.builder().meetingDate(date).build()
-                ).getId());
+                .orElseGet(() -> meetingRepository.save(Meeting.builder().meetingDate(date).build()).getId());
     }
 
-    /** 특정 날짜의 출석 맵(userId → present) */
+    /**
+     * 특정 날짜의 출석 맵(userId → present)
+     */
     @Transactional(readOnly = true)
     protected Map<Long, Boolean> getPresenceMap(LocalDate date) {
         Map<Long, Boolean> map = new HashMap<>();
@@ -240,11 +331,7 @@ public class CoreAttendanceService {
         return map;
     }
 
-    private static String escape(String s) {
-        if (s == null) return "";
-        String needsQuote = ",\"\n";
-        boolean mustQuote = s.chars().anyMatch(ch -> needsQuote.indexOf(ch) >= 0);
-        if (!mustQuote) return s;
-        return "\"" + s.replace("\"", "\"\"") + "\"";
+    public record UserIdValidationResult(List<Long> validIds, List<Long> invalidIds) {
+
     }
 }

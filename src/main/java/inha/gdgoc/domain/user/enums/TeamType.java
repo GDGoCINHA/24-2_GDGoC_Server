@@ -5,6 +5,7 @@ import lombok.Getter;
 
 @Getter
 public enum TeamType {
+    HQ("HQ"),
     HR("HR"),
     PR_DESIGN("PR/DESIGN"),
     TECH("TECH"),
@@ -18,6 +19,7 @@ public enum TeamType {
     public static TeamType from(String raw) {
         if (raw == null) return null;
         return switch (raw) {
+            case "HQ" -> HQ;
             case "HR" -> HR;
             case "TECH" -> TECH;
             case "BD" -> BD;

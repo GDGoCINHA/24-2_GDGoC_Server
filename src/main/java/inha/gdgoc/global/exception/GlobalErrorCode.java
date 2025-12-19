@@ -14,7 +14,7 @@ public enum GlobalErrorCode implements ErrorCode {
 
     // 403 FORBIDDEN
     INVALID_JWT_REQUEST(HttpStatus.FORBIDDEN, "잘못된 JWT 토큰입니다."),
-    FORBIDDEN_USER(HttpStatus.NOT_FOUND, "권한이 부족합니다."),
+    FORBIDDEN_USER(HttpStatus.FORBIDDEN, "권한이 부족합니다."),
 
     // 404 Not Found
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 리소스입니다."),
