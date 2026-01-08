@@ -106,6 +106,7 @@ public class TokenProvider {
     private Claims getClaims(String token) {
         return Jwts.parser()
                 .setSigningKey(Base64.getEncoder().encodeToString(jwtProperties.getSecretKey().getBytes()))
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
     }
