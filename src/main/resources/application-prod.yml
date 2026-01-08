@@ -61,8 +61,7 @@ app:
 logging:
   level:
     org.hibernate.SQL: debug
-    org.hibernate.orm.jdbc.bind: trace
-    org.hibernate.type: trace
+    org.hibernate.type: off
 
 
 google:
