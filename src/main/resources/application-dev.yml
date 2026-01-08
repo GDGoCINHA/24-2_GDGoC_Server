@@ -46,6 +46,18 @@ spring:
           auth: true
           starttls:
             enable: true
+  cloud:
+    aws:
+      credentials:
+        access-key: ${AWS_ACCESS_KEY_ID}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
+      region:
+        static: ${AWS_REGION}
+
+
+app:
+  s3:
+    bucket: ${AWS_TEST_RESOURCE_BUCKET}
 
 logging:
   level:
@@ -62,13 +74,3 @@ jwt:
   googleIssuer: ${GOOGLE_ISSUER}
   selfIssuer: ${SELF_ISSUER}
   secretKey: ${SECRET_KEY}
-
-cloud:
-  aws:
-    credentials:
-      access-key: ${AWS_ACCESS_KEY_ID}
-      secret-key: ${AWS_SECRET_ACCESS_KEY}
-    region:
-      static: ${AWS_REGION}
-    s3:
-      bucket: ${AWS_TEST_RESOURCE_BUCKET}

@@ -1,10 +1,10 @@
 package inha.gdgoc.domain.resource.service;
 
 import inha.gdgoc.domain.resource.enums.S3KeyType;
+import inha.gdgoc.global.config.s3.S3Properties;
 import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -17,16 +17,14 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 public class S3Service {
 
     private final S3Client s3Client;
-
-    @Value("${cloud.aws.s3.bucket}")
-    private String bucketName;
+    private final S3Properties s3Properties;
 
     public String upload(Long userId, S3KeyType s3key, MultipartFile file) throws IOException {
         String fileName = UUID.randomUUID() + "-" + file.getOriginalFilename();
         String key = "user/%d/%s/%s".formatted(userId, s3key.getValue(), fileName);
 
         PutObjectRequest putReq = PutObjectRequest.builder()
-            .bucket(bucketName)
+            .bucket(s3Properties.getBucket())
             .key(key)
             .contentType(file.getContentType())
             .build();
@@ -37,7 +35,7 @@ public class S3Service {
 
     public String getS3FileUrl(String key) {
         return s3Client.utilities()
-            .getUrl(GetUrlRequest.builder().bucket(bucketName).key(key).build())
+            .getUrl(GetUrlRequest.builder().bucket(s3Properties.getBucket()).key(key).build())
             .toExternalForm();
     }
 }

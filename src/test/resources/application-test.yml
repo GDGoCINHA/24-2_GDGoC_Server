@@ -46,6 +46,18 @@ spring:
   main:
     allow-bean-definition-overriding: true
 
+  cloud:
+    aws:
+      credentials:
+        access-key: test
+        secret-key: test
+      region:
+        static: ap-northeast-2
+
+app:
+  s3:
+    bucket: test-bucket
+
 logging:
   level:
     org.hibernate.SQL: warn
@@ -61,12 +73,3 @@ jwt:
   selfIssuer: test-self-issuer
   secretKey: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
 
-cloud:
-  aws:
-    credentials:
-      access-key: test
-      secret-key: test
-    region:
-      static: ap-northeast-2
-    s3:
-      bucket: test-bucket
