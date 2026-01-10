@@ -36,13 +36,13 @@ ext {
     jjwtVersion = '0.13.0'
 }
 
-/* ===== Vulnerability Pins (Mend 경고 제거용) ===== */
+/* ===== Vulnerability Pins (정확한 CVE 기반 대응) ===== */
 configurations.configureEach {
     resolutionStrategy {
-        // CVE-2025-48924 대응
+        // CVE-2024-47554 대응 (commons-compress 체인 영향 → commons-lang3 3.18.0 필요)
         force 'org.apache.commons:commons-lang3:3.18.0'
-        // CVE-2021-47621 대응
-        force 'io.github.classgraph:classgraph:4.8.112'
+        // springdoc transitive classgraph 취약점 대응 버전으로 상향
+        force 'io.github.classgraph:classgraph:4.8.179'
     }
 }
 
@@ -60,10 +60,13 @@ dependencies {
     }
     implementation "org.apache.commons:commons-lang3:3.18.0"
 
-    // --- DB & JPA Utils ---
+    // --- DB & JPA Utils (Boot 관리 버전과 동기화 필요) ---
     implementation "com.vladmihalcea:hibernate-types-60:${hibernateTypes60}"
     implementation "org.postgresql:postgresql:${postgresVersion}"
-    runtimeOnly 'com.h2database:h2'
+    testRuntimeOnly 'com.h2database:h2' // 테스트 환경 전용, 운영 패키지에서는 제외
+
+    // --- Cache / Redis ---
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
     // --- Querydsl (OpenFeign fork) ---
     implementation "io.github.openfeign.querydsl:querydsl-jpa:${querydslVersion}"
@@ -122,5 +125,3 @@ tasks.test {
 tasks.withType(JavaCompile).configureEach {
     options.generatedSourceOutputDirectory.set(file("build/generated/sources/annotationProcessor/java/main"))
 }
-
-
