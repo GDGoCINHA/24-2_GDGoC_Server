@@ -1,20 +1,33 @@
 package inha.gdgoc.global.util;
 
-import inha.gdgoc.domain.recruit.enums.AdmissionSemester;
-
+import inha.gdgoc.domain.recruit.member.enums.AdmissionSemester;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import org.springframework.stereotype.Component;
 
-public final class SemesterCalculator {
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+/**
+ * 현재 날짜를 기반으로 학기를 계산하는 컴포넌트.
+ * env 값 대신 서버 시간이 기준이 되도록 고정.
+ */
+@Component
+public class SemesterCalculator {
 
-    private SemesterCalculator() {}
+    private final Clock clock;
 
-    public static AdmissionSemester currentSemester() {
-        return of(LocalDate.now(KST));
+    public SemesterCalculator() {
+        this(Clock.system(ZoneId.of("Asia/Seoul")));
     }
 
-    public static AdmissionSemester of(LocalDate date) {
+    public SemesterCalculator(Clock clock) {
+        this.clock = clock;
+    }
+
+    public AdmissionSemester currentSemester() {
+        return of(LocalDate.now(clock));
+    }
+
+    public AdmissionSemester of(LocalDate date) {
         int year = date.getYear();
         int month = date.getMonthValue();
 

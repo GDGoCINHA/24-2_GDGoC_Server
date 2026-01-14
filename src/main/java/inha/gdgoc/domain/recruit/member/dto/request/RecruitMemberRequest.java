@@ -1,0 +1,48 @@
+package inha.gdgoc.domain.recruit.member.dto.request;
+
+import inha.gdgoc.domain.recruit.member.entity.RecruitMember;
+import inha.gdgoc.domain.recruit.member.enums.AdmissionSemester;
+import inha.gdgoc.domain.recruit.member.enums.EnrolledClassification;
+import inha.gdgoc.domain.recruit.member.enums.Gender;
+import java.time.LocalDate;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+public class RecruitMemberRequest {
+    private String name;
+    private String grade;
+    private String studentId;
+    private String enrolledClassification;
+    private String phoneNumber;
+    private String nationality;
+    private String email;
+    private String gender;
+    private LocalDate birth;
+    private String major;
+    private String doubleMajor;
+    private Boolean isPayed;
+
+    public RecruitMember toEntity(AdmissionSemester admissionSemester) {
+        return RecruitMember.builder()
+                .name(name)
+                .grade(grade)
+                .studentId(studentId)
+                .enrolledClassification(EnrolledClassification.fromStatus(enrolledClassification))
+                .phoneNumber(phoneNumber)
+                .nationality(nationality)
+                .email(email)
+                .gender(Gender.fromType(gender))
+                .birth(birth)
+                .major(major)
+                .doubleMajor(doubleMajor)
+                .isPayed(false)
+                .admissionSemester(admissionSemester)
+                .build();
+    }
+}
