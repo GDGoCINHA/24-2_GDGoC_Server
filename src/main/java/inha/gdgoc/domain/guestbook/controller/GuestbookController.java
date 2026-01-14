@@ -20,7 +20,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/guestbook")
 @RequiredArgsConstructor
 @PreAuthorize("@accessGuard.check(authentication,"
-        + " T(inha.gdgoc.global.security.AccessGuard.AccessCondition).atLeast("
+        + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
         + "T(inha.gdgoc.domain.user.enums.UserRole).LEAD))")
 public class GuestbookController {
 

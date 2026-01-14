@@ -33,13 +33,13 @@ import java.util.Map;
 @PreAuthorize(CoreAttendanceController.LEAD_OR_HIGHER_RULE)
 public class CoreAttendanceController {
 
-    private static final String LEAD_OR_HIGHER_RULE =
+    public static final String LEAD_OR_HIGHER_RULE =
             "@accessGuard.check(authentication,"
-                    + " T(inha.gdgoc.global.security.AccessGuard.AccessCondition).atLeast("
+                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
                     + "T(inha.gdgoc.domain.user.enums.UserRole).LEAD))";
-    private static final String ORGANIZER_OR_HIGHER_RULE =
+    public static final String ORGANIZER_OR_HIGHER_RULE =
             "@accessGuard.check(authentication,"
-                    + " T(inha.gdgoc.global.security.AccessGuard.AccessCondition).atLeast("
+                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
                     + "T(inha.gdgoc.domain.user.enums.UserRole).ORGANIZER))";
 
     private final CoreAttendanceService service;

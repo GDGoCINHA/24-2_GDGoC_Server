@@ -33,9 +33,9 @@ public class RecruitCoreAdminController {
 
     private static final String ORGANIZER_OR_HR_LEAD_RULE =
             "@accessGuard.check(authentication,"
-                    + " T(inha.gdgoc.global.security.AccessGuard.AccessCondition).atLeast("
+                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
                     + "T(inha.gdgoc.domain.user.enums.UserRole).ORGANIZER),"
-                    + " T(inha.gdgoc.global.security.AccessGuard.AccessCondition).of("
+                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).of("
                     + "T(inha.gdgoc.domain.user.enums.UserRole).LEAD,"
                     + " T(inha.gdgoc.domain.user.enums.TeamType).HR))";
 

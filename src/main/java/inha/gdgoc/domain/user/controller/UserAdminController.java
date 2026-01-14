@@ -26,14 +26,14 @@ public class UserAdminController {
 
     private static final String LEAD_OR_HR_RULE =
             "@accessGuard.check(authentication,"
-                    + " T(inha.gdgoc.global.security.AccessGuard.AccessCondition).atLeast("
+                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
                     + "T(inha.gdgoc.domain.user.enums.UserRole).LEAD),"
-                    + " T(inha.gdgoc.global.security.AccessGuard.AccessCondition).atLeast("
+                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
                     + "T(inha.gdgoc.domain.user.enums.UserRole).CORE,"
                     + " T(inha.gdgoc.domain.user.enums.TeamType).HR))";
     private static final String LEAD_OR_HIGHER_RULE =
             "@accessGuard.check(authentication,"
-                    + " T(inha.gdgoc.global.security.AccessGuard.AccessCondition).atLeast("
+                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
                     + "T(inha.gdgoc.domain.user.enums.UserRole).LEAD))";
 
     private final UserAdminService userAdminService;
