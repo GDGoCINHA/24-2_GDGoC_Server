@@ -2,22 +2,25 @@ server:
   forward-headers-strategy: none
 
 spring:
-  jackson:
-    time-zone: Asia/Seoul
-
+  cloud:
+    aws:
+      credentials:
+        access-key: test
+        secret-key: test
+      region:
+        static: ap-northeast-2
   datasource:
     driver-class-name: org.h2.Driver
+    password:
     url: jdbc:h2:mem:gdgoc-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
     username: sa
-    password:
-
-  servlet:
-    multipart:
-      max-file-size: 10MB
-      max-request-size: 12MB
-
+  flyway:
+    enabled: false
+  jackson:
+    time-zone: Asia/Seoul
   jpa:
     database: h2
+    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop
     properties:
@@ -26,42 +29,28 @@ spring:
         format_sql: true
         show_sql: false
         time_zone: Asia/Seoul
-    database-platform: org.hibernate.dialect.H2Dialect
     show-sql: false
-
-  flyway:
-    enabled: false
-
   mail:
     host: localhost
-    port: 2525
-    username: test
     password: test
+    port: 2525
     properties:
       mail:
         smtp:
           auth: false
           starttls:
             enable: false
+    username: test
   main:
     allow-bean-definition-overriding: true
-
-  cloud:
-    aws:
-      credentials:
-        access-key: test
-        secret-key: test
-      region:
-        static: ap-northeast-2
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
 
 app:
   s3:
     bucket: test-bucket
-
-logging:
-  level:
-    org.hibernate.SQL: warn
-    org.hibernate.type: warn
 
 google:
   client-id: test-client-id
@@ -70,6 +59,10 @@ google:
 
 jwt:
   googleIssuer: test-google-issuer
-  selfIssuer: test-self-issuer
   secretKey: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+  selfIssuer: test-self-issuer
 
+logging:
+  level:
+    org.hibernate.SQL: warn
+    org.hibernate.type: warn

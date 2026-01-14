@@ -1,6 +1,6 @@
 package inha.gdgoc.domain.recruit.core.service;
 
-import inha.gdgoc.domain.recruit.core.config.RecruitCoreProperties;
+import inha.gdgoc.domain.recruit.core.config.RecruitCoreSessionResolver;
 import inha.gdgoc.domain.recruit.core.dto.request.RecruitCoreApplicationCreateRequest;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicantDetailResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicationCreateResponse;
@@ -28,7 +28,7 @@ public class RecruitCoreApplicationService {
 
     private final RecruitCoreApplicationRepository repository;
     private final UserRepository userRepository;
-    private final RecruitCoreProperties recruitCoreProperties;
+    private final RecruitCoreSessionResolver recruitCoreSessionResolver;
 
     @Transactional(readOnly = true)
     public RecruitCoreApplicantDetailResponse getApplicantDetail(Long id) {
@@ -38,7 +38,7 @@ public class RecruitCoreApplicationService {
 
     @Transactional(readOnly = true)
     public RecruitCoreEligibilityResponse checkEligibility(Long userId) {
-        String session = recruitCoreProperties.currentSession();
+        String session = recruitCoreSessionResolver.currentSession();
         return repository.findByUser_IdAndSession(userId, session)
             .map(app -> RecruitCoreEligibilityResponse.ineligible(session, "ALREADY_APPLIED", app.getId()))
             .orElseGet(() -> RecruitCoreEligibilityResponse.eligible(session));
@@ -52,7 +52,7 @@ public class RecruitCoreApplicationService {
 
     @Transactional
     public RecruitCoreApplicationCreateResponse submit(Long userId, RecruitCoreApplicationCreateRequest request) {
-        String session = recruitCoreProperties.currentSession();
+        String session = recruitCoreSessionResolver.currentSession();
         repository.findByUser_IdAndSession(userId, session)
             .ifPresent(existing -> {
                 throw new RecruitCoreAlreadyAppliedException(session, existing.getId());
@@ -85,7 +85,7 @@ public class RecruitCoreApplicationService {
 
     @Transactional(readOnly = true)
     public RecruitCoreMyApplicationResponse getMyApplication(Long userId) {
-        String session = recruitCoreProperties.currentSession();
+        String session = recruitCoreSessionResolver.currentSession();
         RecruitCoreApplication application = repository.findByUser_IdAndSession(userId, session)
             .orElseThrow(RecruitCoreApplicationNotFoundException::new);
         return RecruitCoreMyApplicationResponse.from(application);
