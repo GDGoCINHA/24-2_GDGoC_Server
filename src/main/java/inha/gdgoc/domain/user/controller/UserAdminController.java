@@ -24,11 +24,23 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/admin/users")
 public class UserAdminController {
 
+    private static final String LEAD_OR_HR_RULE =
+            "@accessGuard.check(authentication,"
+                    + " T(inha.gdgoc.global.security.AccessGuard.AccessCondition).atLeast("
+                    + "T(inha.gdgoc.domain.user.enums.UserRole).LEAD),"
+                    + " T(inha.gdgoc.global.security.AccessGuard.AccessCondition).atLeast("
+                    + "T(inha.gdgoc.domain.user.enums.UserRole).CORE,"
+                    + " T(inha.gdgoc.domain.user.enums.TeamType).HR))";
+    private static final String LEAD_OR_HIGHER_RULE =
+            "@accessGuard.check(authentication,"
+                    + " T(inha.gdgoc.global.security.AccessGuard.AccessCondition).atLeast("
+                    + "T(inha.gdgoc.domain.user.enums.UserRole).LEAD))";
+
     private final UserAdminService userAdminService;
 
     // q(검색) + role/team(필터) + pageable
     @Operation(summary = "사용자 요약 목록 조회", security = {@SecurityRequirement(name = "BearerAuth")})
-    @PreAuthorize("hasAnyRole('LEAD','ORGANIZER','ADMIN') or T(inha.gdgoc.domain.user.enums.TeamType).HR == principal.team")
+    @PreAuthorize(LEAD_OR_HR_RULE)
     @GetMapping
     public ResponseEntity<ApiResponse<Page<UserSummaryResponse>, PageMeta>> list(
             @RequestParam(required = false) String q,
@@ -44,7 +56,7 @@ public class UserAdminController {
     }
 
     @Operation(summary = "사용자 역할/팀 수정", security = {@SecurityRequirement(name = "BearerAuth")})
-    @PreAuthorize("hasAnyRole('LEAD','ORGANIZER','ADMIN')")
+    @PreAuthorize(LEAD_OR_HIGHER_RULE)
     @PatchMapping("/{userId}/role-team")
     public ResponseEntity<ApiResponse<Void, Void>> updateRoleTeam(
             @AuthenticationPrincipal CustomUserDetails me,
@@ -56,7 +68,7 @@ public class UserAdminController {
     }
 
     @Operation(summary = "사용자 역할 수정", security = {@SecurityRequirement(name = "BearerAuth")})
-    @PreAuthorize("hasAnyRole('LEAD','ORGANIZER','ADMIN') or T(inha.gdgoc.domain.user.enums.TeamType).HR == principal.team")
+    @PreAuthorize(LEAD_OR_HR_RULE)
     @PatchMapping("/{userId}/role")
     public ResponseEntity<ApiResponse<Void, Void>> updateUserRole(
             @AuthenticationPrincipal CustomUserDetails me,
@@ -68,7 +80,7 @@ public class UserAdminController {
     }
 
     @Operation(summary = "사용자 삭제", security = {@SecurityRequirement(name = "BearerAuth")})
-    @PreAuthorize("hasAnyRole('LEAD','ORGANIZER','ADMIN')")
+    @PreAuthorize(LEAD_OR_HIGHER_RULE)
     @DeleteMapping("/{userId}")
     public ResponseEntity<ApiResponse<Void, Void>> deleteUser(
             @AuthenticationPrincipal CustomUserDetails me,

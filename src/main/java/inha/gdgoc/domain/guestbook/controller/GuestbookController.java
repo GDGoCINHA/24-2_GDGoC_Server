@@ -19,7 +19,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/guestbook")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ORGANIZER','ADMIN')")
+@PreAuthorize("@accessGuard.check(authentication,"
+        + " T(inha.gdgoc.global.security.AccessGuard.AccessCondition).atLeast("
+        + "T(inha.gdgoc.domain.user.enums.UserRole).LEAD))")
 public class GuestbookController {
 
     private final GuestbookService service;
