@@ -1,6 +1,6 @@
-package inha.gdgoc.domain.recruit.dto.response;
+package inha.gdgoc.domain.recruit.member.dto.response;
 
-import inha.gdgoc.domain.recruit.entity.RecruitMember;
+import inha.gdgoc.domain.recruit.member.entity.RecruitMember;
 
 public record RecruitMemberSummaryResponse(
         Long id,

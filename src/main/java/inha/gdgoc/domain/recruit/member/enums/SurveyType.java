@@ -1,4 +1,4 @@
-package inha.gdgoc.domain.recruit.enums;
+package inha.gdgoc.domain.recruit.member.enums;
 
 import lombok.Getter;
 

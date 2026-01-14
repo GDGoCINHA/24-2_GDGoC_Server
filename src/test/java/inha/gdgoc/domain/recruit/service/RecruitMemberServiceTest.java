@@ -1,22 +1,15 @@
 package inha.gdgoc.domain.recruit.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import inha.gdgoc.domain.recruit.dto.request.ApplicationRequest;
-import inha.gdgoc.domain.recruit.dto.request.RecruitMemberRequest;
-import inha.gdgoc.domain.recruit.entity.RecruitMember;
-import inha.gdgoc.domain.recruit.enums.EnrolledClassification;
-import inha.gdgoc.domain.recruit.enums.Gender;
-import inha.gdgoc.domain.recruit.repository.AnswerRepository;
-import inha.gdgoc.domain.recruit.repository.RecruitMemberRepository;
+import inha.gdgoc.domain.recruit.member.dto.request.RecruitMemberRequest;
+import inha.gdgoc.domain.recruit.member.entity.RecruitMember;
+import inha.gdgoc.domain.recruit.member.enums.EnrolledClassification;
+import inha.gdgoc.domain.recruit.member.enums.Gender;
+
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.util.List;
 import java.util.Map;
 

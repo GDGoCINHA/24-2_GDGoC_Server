@@ -1,7 +1,7 @@
-package inha.gdgoc.domain.recruit.entity;
+package inha.gdgoc.domain.recruit.member.entity;
 
-import inha.gdgoc.domain.recruit.enums.InputType;
-import inha.gdgoc.domain.recruit.enums.SurveyType;
+import inha.gdgoc.domain.recruit.member.enums.InputType;
+import inha.gdgoc.domain.recruit.member.enums.SurveyType;
 import inha.gdgoc.global.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -1,4 +1,4 @@
-package inha.gdgoc.domain.recruit.controller.message;
+package inha.gdgoc.domain.recruit.member.controller.message;
 
 public class RecruitMemberMessage {
     public static final String MEMBER_SAVE_SUCCESS = "성공적으로 해당 학기 멤버 가입을 완료했습니다.";

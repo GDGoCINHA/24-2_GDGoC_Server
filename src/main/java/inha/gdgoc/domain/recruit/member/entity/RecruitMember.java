@@ -1,9 +1,9 @@
-package inha.gdgoc.domain.recruit.entity;
+package inha.gdgoc.domain.recruit.member.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import inha.gdgoc.domain.recruit.enums.AdmissionSemester;
-import inha.gdgoc.domain.recruit.enums.EnrolledClassification;
-import inha.gdgoc.domain.recruit.enums.Gender;
+import inha.gdgoc.domain.recruit.member.enums.AdmissionSemester;
+import inha.gdgoc.domain.recruit.member.enums.EnrolledClassification;
+import inha.gdgoc.domain.recruit.member.enums.Gender;
 import inha.gdgoc.global.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

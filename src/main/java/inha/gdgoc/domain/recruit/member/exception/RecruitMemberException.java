@@ -1,4 +1,4 @@
-package inha.gdgoc.domain.recruit.exception;
+package inha.gdgoc.domain.recruit.member.exception;
 
 import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.ErrorCode;

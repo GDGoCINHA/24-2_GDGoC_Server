@@ -1,10 +1,10 @@
-package inha.gdgoc.domain.recruit.dto.response;
+package inha.gdgoc.domain.recruit.member.dto.response;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import inha.gdgoc.domain.recruit.entity.Answer;
-import inha.gdgoc.domain.recruit.enums.InputType;
+import inha.gdgoc.domain.recruit.member.entity.Answer;
+import inha.gdgoc.domain.recruit.member.enums.InputType;
 import java.util.List;
 import java.util.Map;
 

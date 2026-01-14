@@ -1,7 +1,7 @@
-package inha.gdgoc.domain.recruit.dto.response;
+package inha.gdgoc.domain.recruit.member.dto.response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import inha.gdgoc.domain.recruit.entity.Answer;
+import inha.gdgoc.domain.recruit.member.entity.Answer;
 import java.util.List;
 
 public record AnswersResponse(

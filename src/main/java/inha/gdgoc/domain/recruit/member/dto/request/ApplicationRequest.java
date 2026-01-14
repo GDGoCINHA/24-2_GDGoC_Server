@@ -1,4 +1,4 @@
-package inha.gdgoc.domain.recruit.dto.request;
+package inha.gdgoc.domain.recruit.member.dto.request;
 
 import java.util.Map;
 import lombok.AllArgsConstructor;
