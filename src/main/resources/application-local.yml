@@ -2,21 +2,29 @@ server:
   forward-headers-strategy: framework
 
 spring:
-  web:
-    resources:
-      add-mappings: false
+  cloud:
+    aws:
+      credentials:
+        access-key: ${AWS_ACCESS_KEY_ID}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
+      region:
+        static: ${AWS_REGION}
   config:
     import: optional:file:.env[.properties]
-  jackson:
-    time-zone: Asia/Seoul
   datasource:
+    driver-class-name: org.postgresql.Driver
+    password: ${DB_PASSWORD}
     url: ${DB_URL}
     username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-  servlet:
-    multipart:
-      max-file-size: 10MB
-      max-request-size: 12MB
+  flyway:
+    baseline-description: "Baseline existing schema"
+    baseline-on-migrate: false
+    baseline-version: 1
+    enabled: true
+    locations: classpath:db/migration
+    schemas: public
+  jackson:
+    time-zone: Asia/Seoul
   jpa:
     database: postgresql
     hibernate:
@@ -26,32 +34,24 @@ spring:
         default_batch_fetch_size: 100
         jdbc:
           time_zone: UTC
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
-    schemas: public
-    baseline-on-migrate: false
-    baseline-version: 1
-    baseline-description: "Baseline existing schema"
-
   mail:
     host: smtp.gmail.com
-    port: 587
-    username: ${GMAIL}
     password: ${GMAIL_PASSWORD}
+    port: 587
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
-  cloud:
-    aws:
-      credentials:
-        access-key: ${AWS_ACCESS_KEY_ID}
-        secret-key: ${AWS_SECRET_ACCESS_KEY}
-      region:
-        static: ${AWS_REGION}
+    username: ${GMAIL}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+  web:
+    resources:
+      add-mappings: false
 
 app:
   s3:
@@ -62,13 +62,12 @@ google:
   client-secret: ${GOOGLE_CLIENT_SECRET}
   redirect-uri: ${GOOGLE_REDIRECT_URI}
 
+jwt:
+  googleIssuer: ${GOOGLE_ISSUER}
+  secretKey: ${SECRET_KEY}
+  selfIssuer: ${SELF_ISSUER}
+
 logging:
   level:
     org.hibernate.SQL: debug
     org.hibernate.type: trace
-
-jwt:
-  googleIssuer: ${GOOGLE_ISSUER}
-  selfIssuer: ${SELF_ISSUER}
-  secretKey: ${SECRET_KEY}
-

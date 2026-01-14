@@ -30,8 +30,17 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/core-attendance/meetings")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('LEAD','ORGANIZER','ADMIN')")
+@PreAuthorize(CoreAttendanceController.LEAD_OR_HIGHER_RULE)
 public class CoreAttendanceController {
+
+    public static final String LEAD_OR_HIGHER_RULE =
+            "@accessGuard.check(authentication,"
+                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
+                    + "T(inha.gdgoc.domain.user.enums.UserRole).LEAD))";
+    public static final String ORGANIZER_OR_HIGHER_RULE =
+            "@accessGuard.check(authentication,"
+                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
+                    + "T(inha.gdgoc.domain.user.enums.UserRole).ORGANIZER))";
 
     private final CoreAttendanceService service;
 
@@ -51,14 +60,14 @@ public class CoreAttendanceController {
         return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.DATE_LIST_RETRIEVED_SUCCESS, new DateListResponse(service.getDates())));
     }
 
-    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    @PreAuthorize(ORGANIZER_OR_HIGHER_RULE)
     @PostMapping
     public ResponseEntity<ApiResponse<DateListResponse, Void>> createDate(@Valid @RequestBody CreateDateRequest request) {
         service.addDate(request.getDate());
         return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.DATE_CREATED_SUCCESS, new DateListResponse(service.getDates())));
     }
 
-    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    @PreAuthorize(ORGANIZER_OR_HIGHER_RULE)
     @DeleteMapping("/{date}")
     public ResponseEntity<ApiResponse<DateListResponse, Void>> deleteDate(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         service.deleteDate(date.toString());

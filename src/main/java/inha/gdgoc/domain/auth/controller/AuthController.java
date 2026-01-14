@@ -20,6 +20,7 @@ import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.config.jwt.TokenProvider;
 import inha.gdgoc.global.dto.response.ApiResponse;
 import inha.gdgoc.global.exception.GlobalErrorCode;
+import inha.gdgoc.global.security.AccessGuard;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,7 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final MailService mailService;
     private final AuthCodeService authCodeService;
+    private final AccessGuard accessGuard;
 
     @GetMapping("/oauth2/google/callback")
     public ResponseEntity<ApiResponse<Map<String, Object>, Void>> handleGoogleCallback(@RequestParam String code, HttpServletResponse response) {
@@ -166,34 +168,37 @@ public class AuthController {
      * 예) /api/v1/auth/LEAD, /api/v1/auth/ORGANIZER, /api/v1/auth/ADMIN
      */
     @GetMapping("/{role}")
-    public ResponseEntity<ApiResponse<Void, ?>> checkRoleOrTeam(@AuthenticationPrincipal TokenProvider.CustomUserDetails me, @PathVariable UserRole role, @RequestParam(value = "team", required = false) TeamType requiredTeam) {
-        // 1) 인증 체크
+    public ResponseEntity<ApiResponse<Void, ?>> checkRoleOrTeam(
+            @AuthenticationPrincipal TokenProvider.CustomUserDetails me,
+            @PathVariable UserRole role,
+            @RequestParam(value = "team", required = false) TeamType requiredTeam
+    ) {
         if (me == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error(GlobalErrorCode.UNAUTHORIZED_USER.getStatus()
-                            .value(), GlobalErrorCode.UNAUTHORIZED_USER.getMessage(), null));
+                    .body(ApiResponse.error(
+                            GlobalErrorCode.UNAUTHORIZED_USER.getStatus().value(),
+                            GlobalErrorCode.UNAUTHORIZED_USER.getMessage(),
+                            null
+                    ));
         }
 
-        // 2) role check
-        final boolean roleOk = UserRole.hasAtLeast(me.getRole(), role);
+        var conditions = new java.util.ArrayList<AccessGuard.AccessCondition>();
+        conditions.add(AccessGuard.AccessCondition.atLeast(role));
 
-        // 3) team check if team parameter exists
-        boolean teamOk = false;
         if (requiredTeam != null) {
-            if (UserRole.hasAtLeast(me.getRole(), UserRole.ORGANIZER)) {
-                teamOk = true;
-            } else {
-                teamOk = (me.getTeam() != null && me.getTeam() == requiredTeam);
-            }
+            conditions.add(AccessGuard.AccessCondition.atLeast(UserRole.ORGANIZER));
+            conditions.add(AccessGuard.AccessCondition.of(UserRole.GUEST, requiredTeam));
         }
 
-        // 4) OR 조건으로 최종 판정
-        if (roleOk || teamOk) {
+        if (accessGuard.check(me, conditions.toArray(AccessGuard.AccessCondition[]::new))) {
             return ResponseEntity.ok(ApiResponse.ok("ROLE_OR_TEAM_CHECK_PASSED", null));
         }
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error(GlobalErrorCode.FORBIDDEN_USER.getStatus()
-                        .value(), GlobalErrorCode.FORBIDDEN_USER.getMessage(), null));
+                .body(ApiResponse.error(
+                        GlobalErrorCode.FORBIDDEN_USER.getStatus().value(),
+                        GlobalErrorCode.FORBIDDEN_USER.getMessage(),
+                        null
+                ));
     }
 }
