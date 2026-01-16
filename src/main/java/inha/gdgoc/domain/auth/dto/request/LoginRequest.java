@@ -1,3 +1,10 @@
 package inha.gdgoc.domain.auth.dto.request;
+
 import lombok.Data;
-@Data public class LoginRequest { private String idToken; }
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+public class LoginRequest {
+    private String idToken;
+}

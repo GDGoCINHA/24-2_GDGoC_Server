@@ -1,5 +1,12 @@
 package inha.gdgoc.domain.auth.service;
 
+import inha.gdgoc.domain.auth.dto.GoogleUserInfo;
+import inha.gdgoc.domain.auth.dto.request.SignupRequest;
+import inha.gdgoc.domain.auth.dto.response.LoginSuccessResponse;
+import inha.gdgoc.domain.auth.dto.response.SignupNeededResponse;
+import inha.gdgoc.domain.auth.dto.response.TokenDto;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.redis.core.RedisTemplate;
 import inha.gdgoc.domain.auth.dto.response.LoginResponse;
 import inha.gdgoc.domain.auth.enums.LoginType;
 import inha.gdgoc.domain.user.entity.User;

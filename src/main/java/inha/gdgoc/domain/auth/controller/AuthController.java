@@ -7,6 +7,8 @@ import inha.gdgoc.domain.auth.dto.request.UserLoginRequest;
 import inha.gdgoc.domain.auth.dto.response.AccessTokenResponse;
 import inha.gdgoc.domain.auth.dto.response.CodeVerificationResponse;
 import inha.gdgoc.domain.auth.dto.response.LoginResponse;
+import inha.gdgoc.domain.auth.dto.request.LoginRequest;
+import inha.gdgoc.domain.auth.dto.request.SignupRequest;
 import inha.gdgoc.domain.auth.exception.AuthErrorCode;
 import inha.gdgoc.domain.auth.exception.AuthException;
 import inha.gdgoc.domain.auth.service.AuthCodeService;
