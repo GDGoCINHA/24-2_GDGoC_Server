@@ -25,35 +25,49 @@ public class TokenProvider {
 
     private final JwtProperties jwtProperties;
 
-    // 자체 로그인용 토큰 생성
-    public String generateSelfSignupToken(User user, Duration expiredAt) {
+    // Access Token 생성 (JWT)
+    public String createAccessToken(User user){
         Date now = new Date();
-        return makeToken(new Date(now.getTime() + expiredAt.toMillis()), user, LoginType.SELF_SIGNUP);
+        Date validity = new Date(now.getTime() + jwtProperties.getAccessTokenValidity()); // application.properties에서 시간 가져옴
+
+    String teamName = (user.getTeam() != null) ? user.getTeam().name() : null;
+
+    return Jwts.builder()
+                .setHeaderParam(Header.TYPE, Header.JWT_TYPE)
+                .setIssuer(jwtProperties.getGoogleIssuer()) // Issuer는 하나로 통일 (또는 제거 가능)
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .setSubject(user.getEmail())          // sub: 이메일
+                .claim("id", user.getId())            // claim: 유저 PK (DB 조회용)
+                .claim("role", user.getUserRole().name()) // claim: 권한
+                .claim("team", teamName)              // claim: 팀 (없으면 null)
+                .signWith(SignatureAlgorithm.HS256, Base64.getEncoder()
+                        .encodeToString(jwtProperties.getSecretKey().getBytes()))
+                .compact();
     }
 
-    // 구글 로그인용 토큰 생성
-    public String generateGoogleLoginToken(User user, Duration expiredAt) {
-        Date now = new Date();
-        return makeToken(new Date(now.getTime() + expiredAt.toMillis()), user, LoginType.GOOGLE_LOGIN);
+
+    // Refresh Token 생성 (Random UUID)
+    // JWT가 아니라, 단순 랜덤 문자열로 생성하여 Redis 저장용으로 씁니다.
+    public String createRefreshToken() {
+        return UUID.randomUUID().toString();
     }
 
-    public String generateRefreshToken(User user, Duration expiredAt, LoginType loginType) {
-        Date now = new Date();
-        return makeToken(new Date(now.getTime() + expiredAt.toMillis()), user, loginType);
-    }
-
+    // 토큰 유효성 검증
     public Claims validToken(String token) throws ExpiredJwtException, UnsupportedJwtException, MalformedJwtException, SignatureException, IllegalArgumentException {
         return getClaims(token);
     }
 
+    // Authentication 객체 생성 (Spring Security용)
     public Authentication getAuthentication(String token) {
         Claims claims = getClaims(token);
 
+        // ID 추출
         Number idNum = claims.get("id", Number.class);
         if (idNum == null) throw new BusinessException(INVALID_JWT_REQUEST);
         Long userId = idNum.longValue();
 
-        String username = claims.getSubject();
+        String email = claims.getSubject();
 
         // role (필수)
         String roleStr = claims.get("role", String.class);
@@ -76,33 +90,10 @@ public class TokenProvider {
             }
         }
 
-        CustomUserDetails userDetails = new CustomUserDetails(userId, username, "", authorities, userRole, team);
+        CustomUserDetails userDetails = new CustomUserDetails(userId, email, "", authorities, userRole, team);
 
         return new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
     }
-
-    private String makeToken(Date expiry, User user, LoginType loginType) {
-        Date now = new Date();
-        String issuer = (loginType == LoginType.SELF_SIGNUP) ? jwtProperties.getSelfIssuer() : jwtProperties.getGoogleIssuer();
-
-        // team: enum name 저장(예: "PR_DESIGN"), 없으면 null
-        String teamEnumName = (user.getTeam() == null) ? null : user.getTeam().name();
-
-        return Jwts.builder()
-                .setHeaderParam(Header.TYPE, Header.JWT_TYPE)
-                .setIssuer(issuer)
-                .setIssuedAt(now)
-                .setExpiration(expiry)
-                .setSubject(user.getEmail())
-                .claim("id", user.getId())
-                .claim("loginType", loginType.name())
-                .claim("role", user.getUserRole().name())
-                .claim("team", teamEnumName)
-                .signWith(SignatureAlgorithm.HS256, Base64.getEncoder()
-                        .encodeToString(jwtProperties.getSecretKey().getBytes()))
-                .compact();
-    }
-
     private Claims getClaims(String token) {
         return Jwts.parser()
                 .setSigningKey(Base64.getEncoder().encodeToString(jwtProperties.getSecretKey().getBytes()))

@@ -46,6 +46,9 @@ public class User extends BaseEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
+    @Column(name = "oauthSubject", nullable = false, unique = true)
+    private String oauthSubject;
+
     @Column(name = "major", nullable = false)
     private String major;
 
@@ -58,8 +61,8 @@ public class User extends BaseEntity {
     @Column(name = "email", nullable = false)
     private String email;
 
-    @Column(name = "password", nullable = false)
-    private String password;
+    // @Column(name = "password", nullable = false)
+    // private String password;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "user_role", nullable = false)
@@ -69,8 +72,11 @@ public class User extends BaseEntity {
     @Column(name = "team")
     private TeamType team;
 
-    @Column(name = "salt", nullable = false)
-    private byte[] salt;
+    @Enumerated(EnumType.STRING)
+    private MembershipStatus membershipStatus;
+
+    // @Column(name = "salt", nullable = false)
+    // private byte[] salt;
 
     @Column(name = "image")
     private String image;
@@ -91,20 +97,21 @@ public class User extends BaseEntity {
 
     @Builder
     public User(
-            String name, String major, String studentId, String phoneNumber,
-            String email, String password, UserRole userRole,
+            String name, String oauthSubject, String major, String studentId, String phoneNumber,
+            String email, UserRole userRole,
             TeamType team,
-            byte[] salt, String image, SocialUrls social, Careers careers
+            String image, SocialUrls social, Careers careers
     ) {
+        this.oauthSubject = oauthSubject;
         this.name = name;
         this.major = major;
         this.studentId = studentId;
         this.phoneNumber = phoneNumber;
         this.email = email;
-        this.password = password;
+        //this.password = password;
         this.userRole = userRole;
         this.team = team;
-        this.salt = salt;
+        //this.salt = salt;
         this.image = image;
         this.social = (social != null ? social : new SocialUrls());
         this.careers = (careers != null ? careers : new Careers());
@@ -124,10 +131,21 @@ public class User extends BaseEntity {
         }
     }
 
-    public void updatePassword(String password) throws NoSuchAlgorithmException, InvalidKeyException {
-        this.password = EncryptUtil.encrypt(password, this.salt);
-    }
+    // public void updatePassword(String password) throws NoSuchAlgorithmException, InvalidKeyException {
+    //     this.password = EncryptUtil.encrypt(password, this.salt);
+    // }
 
+    public void approve() {
+        this.membershipStatus = MembershipStatus.APPROVED;
+        if (this.userRole == UserRole.GUEST) {
+            this.userRole = UserRole.MEMBER;
+        }
+    }
+    public void reject() {
+        this.membershipStatus = MembershipStatus.REJECTED;
+    }
+    public enum MembershipStatus { PENDING, APPROVED, REJECTED }
+    
     public boolean isGuest() {
         return this.userRole == UserRole.GUEST;
     }
