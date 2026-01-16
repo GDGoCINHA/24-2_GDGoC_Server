@@ -24,11 +24,13 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
+
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static inha.gdgoc.global.util.EncryptUtil.encrypt;
 
@@ -39,7 +41,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final TokenProvider tokenProvider;
-    private final StringRedisTemplate redisTemplate; 
+    private final StringRedisTemplate redisTemplate;
     
 
 
@@ -119,10 +121,19 @@ public class AuthService {
         // Access Token만 새로 발급 (Refresh Token은 그대로 유지하거나, 정책에 따라 재발급 가능)
         return tokenProvider.createAccessToken(user);
     }
+    //로그아웃
     public void logout(String refreshToken) {
         // Redis에서 Refresh Token 삭제
         String redisKey = "RT:" + refreshToken;
         redisTemplate.delete(redisKey);
+    }
+
+    public Long getAuthenticationUserId(Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof TokenProvider.CustomUserDetails user) {
+            return user.getUserId();
+        }
+        throw new IllegalArgumentException("User ID not found in authentication");
     }
 
     
@@ -167,7 +178,7 @@ public class AuthService {
                 throw new IllegalArgumentException("유효하지 않은 토큰입니다.");
             }
         } catch (GeneralSecurityException | IOException e) {
-            log.error("Google Token Verification Failed", e);
+            log.error("Google Token Verification Failed", (Throwable) e);
             throw new IllegalArgumentException("토큰 검증 실패", e);
         }
     }

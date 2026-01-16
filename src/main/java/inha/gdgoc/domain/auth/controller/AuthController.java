@@ -1,5 +1,7 @@
 package inha.gdgoc.domain.auth.controller;
 
+
+
 import inha.gdgoc.domain.auth.dto.request.CodeVerificationRequest;
 import inha.gdgoc.domain.auth.dto.request.PasswordResetRequest;
 import inha.gdgoc.domain.auth.dto.request.SendingCodeRequest;
@@ -40,6 +42,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.Optional;
 
+import inha.gdgoc.domain.auth.exception.AuthErrorCode;
 import static inha.gdgoc.domain.auth.controller.message.AuthMessage.*;
 import static inha.gdgoc.domain.auth.exception.AuthErrorCode.UNAUTHORIZED_USER;
 import static inha.gdgoc.domain.auth.exception.AuthErrorCode.USER_NOT_FOUND;
