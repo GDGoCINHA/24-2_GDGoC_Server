@@ -1,19 +1,14 @@
 package inha.gdgoc.domain.user.service;
 
 import static inha.gdgoc.domain.user.exception.UserErrorCode.USER_NOT_FOUND;
-import static inha.gdgoc.global.util.EncryptUtil.encrypt;
-import static inha.gdgoc.global.util.EncryptUtil.generateSalt;
 
 import inha.gdgoc.domain.auth.dto.request.FindIdRequest;
 import inha.gdgoc.domain.auth.dto.response.FindIdResponse;
 import inha.gdgoc.domain.user.dto.request.CheckDuplicatedEmailRequest;
-import inha.gdgoc.domain.user.dto.request.UserSignupRequest;
 import inha.gdgoc.domain.user.dto.response.CheckDuplicatedEmailResponse;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.exception.UserException;
 import inha.gdgoc.domain.user.repository.UserRepository;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +31,7 @@ public class UserService {
         return userRepository.findByUserId(userId)
                 .orElseThrow(() -> new UserException(USER_NOT_FOUND));
     }
-  
+
     public FindIdResponse findId(FindIdRequest findIdRequest) {
         Optional<User> user = userRepository.findByNameAndMajorAndPhoneNumber(
                 findIdRequest.getName(),
@@ -54,13 +49,6 @@ public class UserService {
         return new FindIdResponse(maskedEmail);
     }
 
-    public void saveUser(UserSignupRequest userSignupRequest) throws NoSuchAlgorithmException, InvalidKeyException {
-        byte[] salt = generateSalt();
-        String hashedPassword = encrypt(userSignupRequest.getPassword(), salt);
-
-        User user = userSignupRequest.toEntity(hashedPassword, salt);
-        userRepository.save(user);
-    }
 
     private String maskEmail(String email) {
         int atIndex = email.indexOf("@");
