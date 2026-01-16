@@ -12,6 +12,8 @@ public enum AuthErrorCode implements ErrorCode {
     INVALID_COOKIE(HttpStatus.FORBIDDEN, "Refresh Token 이 비어있습니다."),
     INVALID_REFRESH_TOKEN(HttpStatus.FORBIDDEN, "잘못된 Refresh Token 값입니다."),
 
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
+
     // 404 Not Found
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다");
 
