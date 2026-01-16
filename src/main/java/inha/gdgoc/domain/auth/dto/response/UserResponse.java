@@ -1,4 +1,4 @@
-package inha.gdgoc.domain.user.dto.response;
+package inha.gdgoc.domain.auth.dto.response;
 
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.UserRole;
