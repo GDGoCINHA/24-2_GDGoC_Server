@@ -34,6 +34,7 @@ ext {
     dotenvVersion = '5.2.2'
     querydslVersion = '6.10.1'
     jjwtVersion = '0.13.0'
+    googleApiClientVersion = '2.6.0'
 }
 
 /* ===== Vulnerability Pins (정확한 CVE 기반 대응) ===== */
@@ -104,7 +105,7 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     //Google API Client
-    implementation 'com.google.api-client:google-api-client:2.2.0'
+    implementation "com.google.api-client:google-api-client:${googleApiClientVersion}"
 }
 
 dependencyManagement {

@@ -6,8 +6,10 @@ import lombok.Getter;
 @Getter
 public class AccessTokenResponse extends BaseEntity {
     private final String access_token;
+    private final AuthUserResponse user;
 
-    public AccessTokenResponse(String accessToken) {
+    public AccessTokenResponse(String accessToken, AuthUserResponse user) {
         this.access_token = accessToken;
+        this.user = user;
     }
 }

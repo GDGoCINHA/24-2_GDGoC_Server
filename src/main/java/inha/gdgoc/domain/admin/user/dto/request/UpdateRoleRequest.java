@@ -1,4 +1,4 @@
-package inha.gdgoc.domain.user.dto.request;
+package inha.gdgoc.domain.admin.user.dto.request;
 
 import inha.gdgoc.domain.user.enums.UserRole;
 import jakarta.validation.constraints.NotNull;

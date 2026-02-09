@@ -8,5 +8,6 @@ import org.springframework.data.domain.Pageable;
 public interface RecruitMemberRepository extends JpaRepository<RecruitMember, Long> {
     boolean existsByStudentId(String studentId);
     boolean existsByPhoneNumber(String phoneNumber);
+    boolean existsByEmail(String email);
     Page<RecruitMember> findByNameContainingIgnoreCase(String name, Pageable pageable);
 }

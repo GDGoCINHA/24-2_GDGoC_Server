@@ -1,7 +1,7 @@
-package inha.gdgoc.domain.user.service;
+package inha.gdgoc.domain.admin.user.service;
 
-import inha.gdgoc.domain.user.dto.request.UpdateUserRoleTeamRequest;
-import inha.gdgoc.domain.user.dto.response.UserSummaryResponse;
+import inha.gdgoc.domain.admin.user.dto.request.UpdateUserRoleTeamRequest;
+import inha.gdgoc.domain.admin.user.dto.response.UserSummaryResponse;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.TeamType;
 import inha.gdgoc.domain.user.enums.UserRole;
@@ -26,8 +26,6 @@ public class UserAdminService {
 
     private final UserRepository userRepository;
 
-    /* ======================= 목록 ======================= */
-
     @Transactional(readOnly = true)
     public Page<UserSummaryResponse> listUsers(String q, Pageable pageable) {
         Pageable fixed = rewriteSort(pageable);
@@ -36,7 +34,9 @@ public class UserAdminService {
 
     private Pageable rewriteSort(Pageable pageable) {
         Sort original = pageable.getSort();
-        if (original.isUnsorted()) return pageable;
+        if (original.isUnsorted()) {
+            return pageable;
+        }
 
         Sort composed = Sort.unsorted();
         boolean hasUserRoleOrder = false;
@@ -50,6 +50,7 @@ public class UserAdminService {
                         " WHEN u.userRole = 'ORGANIZER' THEN 4 " +
                         " WHEN u.userRole = 'ADMIN'     THEN 5 " +
                         " ELSE -1 END)";
+
         for (Sort.Order o : original) {
             String prop = o.getProperty();
             Sort.Direction dir = o.getDirection();
@@ -73,10 +74,9 @@ public class UserAdminService {
             composed = composed.and(JpaSort.unsafe(Sort.Direction.DESC, roleRankCase));
             composed = composed.and(Sort.by("name").ascending());
         }
+
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), composed);
     }
-
-    /* ======================= 수정 ======================= */
 
     @Transactional
     public void updateRoleAndTeam(CustomUserDetails editor, Long targetUserId, UpdateUserRoleTeamRequest req) {
@@ -90,10 +90,8 @@ public class UserAdminService {
         UserRole newRole = (req.role() != null ? req.role() : targetCurrentRole);
         TeamType requestedTeam = (req.team() != null ? req.team() : target.getTeam());
 
-        // 팀 보유 가능한 역할만 팀 허용 (CORE, LEAD)
         TeamType newTeam = isTeamAssignableRole(newRole) ? requestedTeam : null;
 
-        // 공통: 에디터는 대상의 현재/신규 role보다 엄격히 높아야 함
         if (!(editorRole.rank() > targetCurrentRole.rank())) {
             throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "동급/상위 사용자의 정보는 변경할 수 없습니다.");
         }
@@ -124,7 +122,6 @@ public class UserAdminService {
                 }
 
                 if (editor.getTeam() == TeamType.HR) {
-                    // HR-LEAD: 본인 제외 타인지원 팀 변경 가능
                     if (editorUser.getId().equals(target.getId())) {
                         if (req.team() != null && !Objects.equals(req.team(), target.getTeam())) {
                             throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "HR-LEAD도 자기 자신의 팀은 변경할 수 없습니다.");
@@ -159,12 +156,13 @@ public class UserAdminService {
 
         UserRole current = target.getUserRole();
 
-        // HR-CORE 특례: GUEST -> MEMBER
         boolean isHrCore = (meRole == UserRole.CORE) && (meTeam == TeamType.HR);
         if (isHrCore) {
             if (current == UserRole.GUEST && newRole == UserRole.MEMBER) {
                 target.changeRole(UserRole.MEMBER);
-                if (!isTeamAssignableRole(UserRole.MEMBER)) target.changeTeam(null);
+                if (!isTeamAssignableRole(UserRole.MEMBER)) {
+                    target.changeTeam(null);
+                }
                 userRepository.save(target);
                 return;
             }
@@ -178,7 +176,9 @@ public class UserAdminService {
         }
 
         target.changeRole(newRole);
-        if (!isTeamAssignableRole(newRole)) target.changeTeam(null);
+        if (!isTeamAssignableRole(newRole)) {
+            target.changeTeam(null);
+        }
         userRepository.save(target);
     }
 
@@ -203,18 +203,22 @@ public class UserAdminService {
         }
 
         switch (editorRole) {
-            case ADMIN -> {}
+            case ADMIN -> {
+            }
             case ORGANIZER -> {
                 if (targetRole == UserRole.ADMIN) {
                     throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "ADMIN 사용자는 삭제할 수 없습니다.");
                 }
             }
             case LEAD -> {
+                if (editorTeam == null) {
+                    throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "LEAD 토큰에 팀 정보가 없습니다.");
+                }
                 if (!(targetRole == UserRole.MEMBER || targetRole == UserRole.CORE)) {
                     throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "LEAD는 MEMBER/CORE만 삭제할 수 있습니다.");
                 }
                 if (editorTeam != TeamType.HR) {
-                    if (editorTeam == null || targetTeam != editorTeam) {
+                    if (targetTeam != editorTeam) {
                         throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "다른 팀 사용자는 삭제할 수 없습니다.");
                     }
                 }
@@ -225,16 +229,18 @@ public class UserAdminService {
         userRepository.delete(target);
     }
 
-    private void targetChange(User target, UserRole newRole, TeamType newTeam) {
-        target.changeRole(newRole);
-        if (!isTeamAssignableRole(newRole)) newTeam = null;
-        target.changeTeam(newTeam);
-        userRepository.save(target);
-    }
-
     private User getEditor(CustomUserDetails editor) {
         return userRepository.findById(editor.getUserId())
                 .orElseThrow(() -> new BusinessException(GlobalErrorCode.UNAUTHORIZED_USER));
+    }
+
+    private void targetChange(User target, UserRole newRole, TeamType newTeam) {
+        target.changeRole(newRole);
+        if (!isTeamAssignableRole(newRole)) {
+            newTeam = null;
+        }
+        target.changeTeam(newTeam);
+        userRepository.save(target);
     }
 
     private boolean isTeamAssignableRole(UserRole role) {

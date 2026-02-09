@@ -1,192 +1,288 @@
 package inha.gdgoc.domain.auth.service;
 
-import inha.gdgoc.domain.auth.dto.GoogleUserInfo;
-import inha.gdgoc.domain.auth.dto.request.SignupRequest;
-import inha.gdgoc.domain.auth.dto.response.LoginSuccessResponse;
-import inha.gdgoc.domain.auth.dto.response.SignupNeededResponse;
-import inha.gdgoc.domain.auth.dto.response.TokenDto;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.data.redis.core.RedisTemplate;
-import inha.gdgoc.domain.auth.dto.response.LoginResponse;
-import inha.gdgoc.domain.auth.enums.LoginType;
-import inha.gdgoc.domain.user.entity.User;
-import inha.gdgoc.domain.user.repository.UserRepository;
-import inha.gdgoc.global.config.jwt.TokenProvider;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
-import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
-import java.util.Collections;
-import java.security.GeneralSecurityException; 
-import java.io.IOException; 
-
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import inha.gdgoc.domain.auth.dto.GoogleUserInfo;
+import inha.gdgoc.domain.auth.dto.request.SignupRequest;
+import inha.gdgoc.domain.auth.dto.response.AuthUserResponse;
+import inha.gdgoc.domain.auth.dto.response.CheckPhoneNumberResponse;
+import inha.gdgoc.domain.auth.dto.response.CheckStudentIdResponse;
+import inha.gdgoc.domain.auth.dto.response.LoginSuccessResponse;
+import inha.gdgoc.domain.auth.dto.response.SignupNeededResponse;
+import inha.gdgoc.domain.auth.dto.response.TokenDto;
+import inha.gdgoc.domain.user.entity.User;
+import inha.gdgoc.domain.user.repository.UserRepository;
+import inha.gdgoc.global.config.jwt.TokenProvider;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.time.Duration;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-
-import static inha.gdgoc.global.util.EncryptUtil.encrypt;
+import java.util.Collections;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository userRepository;
-    private final TokenProvider tokenProvider;
-    private final StringRedisTemplate redisTemplate;
-    
+  public static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(14);
+  private static final String REFRESH_TOKEN_PREFIX = "RT:";
+  private static final String SESSION_VALUE_DELIMITER = "::";
 
+  private final UserRepository userRepository;
+  private final TokenProvider tokenProvider;
+  private final StringRedisTemplate redisTemplate;
 
-    @Value("${app.google.client-id}")
-    private String googleClientId;
+  @Value("${google.client-id}")
+  private String googleClientId;
 
-    //로그인
-    @Transactional
-    public Object login(String idToken) {
-        //  Google ID Token 검증
-        GoogleUserInfo googleUser = verifyGoogleToken(idToken);
+  // 로그인
+  @Transactional
+  public Object login(String idToken) {
+    //  Google ID Token 검증
+    GoogleUserInfo googleUser = verifyGoogleToken(idToken);
 
-        // 도메인 검증 (인하대 메일만 허용)
-        if (!googleUser.getEmail().endsWith("@inha.edu")) {
-            throw new IllegalArgumentException("인하대학교(@inha.edu) 계정만 이용 가능합니다.");
-        }
+    // 도메인 검증 (인하대 메일만 허용)
+    if (!googleUser.getEmail().endsWith("@inha.edu")) {
+      throw new IllegalArgumentException("인하대학교(@inha.edu) 계정만 이용 가능합니다.");
+    }
 
-        //  DB에서 유저 조회 (OAuth Subject 기준)
-        User user = userRepository.findByOauthSubject(googleUser.getSub()).orElse(null);
+    //  DB에서 유저 조회 (OAuth Subject 기준)
+    User user = userRepository.findByOauthSubject(googleUser.getSub()).orElse(null);
 
-        // 신규 유저 -> 회원가입 필요 응답 (202 or 200 with isNewUser=true)
+    // 신규 유저 -> 회원가입 필요 응답 (202 or 200 with isNewUser=true)
         if (user == null) {
-            return SignupNeededResponse.builder()
-                    .isNewUser(true)
-                    .oauthSubject(googleUser.getSub())
-                    .email(googleUser.getEmail())
-                    .name(googleUser.getName())
-                    .build();
-        }
-
-        // 기존 유저 -> 토큰 발급 및 로그인 성공 응답
-        TokenDto tokens = generateTokens(user);
-        return LoginSuccessResponse.of(user, tokens);
+      String preferredName =
+          hasText(googleUser.getFamilyName()) ? googleUser.getFamilyName() : googleUser.getName();
+      return SignupNeededResponse.builder()
+          .isNewUser(true)
+          .oauthSubject(googleUser.getSub())
+          .email(googleUser.getEmail())
+          .name(preferredName)
+          .build();
     }
 
-    //회원가입
-    @Transactional
-    public LoginSuccessResponse signup(SignupRequest request) {
-        // 학번 중복 체크
-        if (userRepository.existsByStudentId(request.getStudentId())) {
-            throw new IllegalArgumentException("이미 존재하는 학번입니다.");
-        }
+    // 기존 유저 -> 토큰 발급 및 로그인 성공 응답
+    TokenDto tokens = generateTokens(user);
+    return LoginSuccessResponse.of(tokens, AuthUserResponse.from(user));
+  }
 
-        // 전화번호 정규화 (숫자만 남김)
-        String cleanPhone = request.getPhoneNumber().replaceAll("[^0-9]", "");
-
-        // 유저 엔티티 생성 및 저장
-        User newUser = User.builder()
-                .oauthSubject(request.getOauthSubject()) // 구글 sub
-                .email(request.getEmail())
-                .name(request.getName())
-                .studentId(request.getStudentId())
-                .major(request.getMajor())
-                .phoneNumber(cleanPhone)
-                // Role(GUEST), Status(PENDING) 등은 User 엔티티 생성자에서 기본값 처리됨
-                .build();
-
-        userRepository.save(newUser);
-
-        // 토큰 발급
-        TokenDto tokens = generateTokens(newUser);
-        return LoginSuccessResponse.of(newUser, tokens);
-    }
-    public String refresh(String refreshToken) {
-        // Redis에서 Refresh Token 확인
-        String redisKey = "RT:" + refreshToken;
-        String subject = redisTemplate.opsForValue().get(redisKey);
-
-        if (subject == null) {
-            throw new IllegalArgumentException("유효하지 않거나 만료된 리프레시 토큰입니다.");
-        }
-
-        // DB에서 유저 조회 (권한 변경 등이 있었을 수 있으므로 다시 조회)
-        User user = userRepository.findByOauthSubject(subject)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
-
-        // Access Token만 새로 발급 (Refresh Token은 그대로 유지하거나, 정책에 따라 재발급 가능)
-        return tokenProvider.createAccessToken(user);
-    }
-    //로그아웃
-    public void logout(String refreshToken) {
-        // Redis에서 Refresh Token 삭제
-        String redisKey = "RT:" + refreshToken;
-        redisTemplate.delete(redisKey);
+  // 회원가입
+  @Transactional
+  public LoginSuccessResponse signup(SignupRequest request) {
+    // 학번 중복 체크
+    if (userRepository.existsByStudentId(request.getStudentId())) {
+      throw new IllegalArgumentException("이미 존재하는 학번입니다.");
     }
 
-    public Long getAuthenticationUserId(Authentication authentication) {
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof TokenProvider.CustomUserDetails user) {
-            return user.getUserId();
-        }
-        throw new IllegalArgumentException("User ID not found in authentication");
+    // 전화번호 정규화 (숫자만 남김)
+    String cleanPhone = request.getPhoneNumber().replaceAll("[^0-9]", "");
+
+    // 유저 엔티티 생성 및 저장
+    User newUser =
+        User.builder()
+            .oauthSubject(request.getOauthSubject()) // 구글 sub
+            .email(request.getEmail())
+            .name(request.getName())
+            .studentId(request.getStudentId())
+            .major(request.getMajor())
+            .phoneNumber(cleanPhone)
+            // Role(GUEST), Status(PENDING) 등은 User 엔티티 생성자에서 기본값 처리됨
+            .build();
+
+    userRepository.save(newUser);
+
+    // 토큰 발급
+    TokenDto tokens = generateTokens(newUser);
+    return LoginSuccessResponse.of(tokens, AuthUserResponse.from(newUser));
+  }
+
+  @Transactional(readOnly = true)
+  public CheckStudentIdResponse isRegisteredStudentId(String studentId) {
+    boolean exists = userRepository.existsByStudentId(studentId);
+    return new CheckStudentIdResponse(exists);
+  }
+
+  @Transactional(readOnly = true)
+  public CheckPhoneNumberResponse isRegisteredPhoneNumber(String phoneNumber) {
+    String cleanPhone = phoneNumber.replaceAll("[^0-9]", "");
+    boolean exists = userRepository.existsByPhoneNumber(cleanPhone);
+    return new CheckPhoneNumberResponse(exists);
+  }
+
+  public RefreshResult refresh(String refreshToken) {
+    RefreshSession session = resolveRefreshSession(refreshToken);
+
+    User user =
+        userRepository
+            .findById(session.userId())
+            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+    // Access Token만 새로 발급 (Refresh Token은 그대로 유지하거나, 정책에 따라 재발급 가능)
+    String accessToken = tokenProvider.createAccessToken(user, session.sessionId());
+    return new RefreshResult(accessToken, user);
+  }
+
+  // 로그아웃
+  public void logout(String refreshToken) {
+    // Redis에서 Refresh Token 삭제
+    String redisKey = refreshTokenKey(refreshToken);
+    redisTemplate.delete(redisKey);
+  }
+
+  public Long getAuthenticationUserId(Authentication authentication) {
+    Object principal = authentication.getPrincipal();
+    if (principal instanceof TokenProvider.CustomUserDetails user) {
+      return user.getUserId();
+    }
+    throw new IllegalArgumentException("User ID not found in authentication");
+  }
+
+  // 토큰 발급 및 Redis 저장
+
+  private TokenDto generateTokens(User user) {
+    String sessionId = UUID.randomUUID().toString();
+    // Access Token 생성 (JWT)
+    String accessToken = tokenProvider.createAccessToken(user, sessionId);
+
+    // Refresh Token 생성 (Random UUID)
+    String refreshToken = tokenProvider.createRefreshToken();
+
+    storeRefreshSession(refreshToken, new RefreshSession(sessionId, user.getId()));
+
+    return new TokenDto(accessToken, refreshToken);
+  }
+
+  // Google ID Token 검증
+  private GoogleUserInfo verifyGoogleToken(String idTokenString) {
+    try {
+      GoogleIdTokenVerifier verifier =
+          new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+              .setAudience(Collections.singletonList(googleClientId))
+              .build();
+
+      GoogleIdToken idToken = verifier.verify(idTokenString);
+
+      if (idToken != null) {
+        GoogleIdToken.Payload payload = idToken.getPayload();
+        return buildGoogleUserInfo(payload);
+      } else {
+        throw new IllegalArgumentException("유효하지 않은 토큰입니다.");
+      }
+    } catch (GeneralSecurityException | IOException e) {
+      log.error("Google Token Verification Failed", e);
+      throw new IllegalArgumentException("토큰 검증 실패", e);
+    }
+  }
+
+  private void storeRefreshSession(String refreshToken, RefreshSession session) {
+    redisTemplate
+        .opsForValue()
+        .set(refreshTokenKey(refreshToken), encodeSessionValue(session), REFRESH_TOKEN_TTL);
+  }
+
+  private RefreshSession resolveRefreshSession(String refreshToken) {
+    String redisKey = refreshTokenKey(refreshToken);
+    String storedValue = redisTemplate.opsForValue().get(redisKey);
+
+    if (storedValue == null) {
+      throw new IllegalArgumentException("유효하지 않거나 만료된 리프레시 토큰입니다.");
     }
 
-    
-     //토큰 발급 및 Redis 저장
-     
-    private TokenDto generateTokens(User user) {
-        // Access Token 생성 (JWT)
-        String accessToken = tokenProvider.createAccessToken(user);
-        
-        // Refresh Token 생성 (Random UUID)
-        String refreshToken = tokenProvider.createRefreshToken();
-
-        // Redis 저장 (Key: "RT:{refreshToken}", Value: oauthSubject, 유효기간: 14일)
-        redisTemplate.opsForValue().set(
-                "RT:" + refreshToken,
-                user.getOauthSubject(),
-                14,
-                TimeUnit.DAYS
-        );
-
-        return new TokenDto(accessToken, refreshToken);
+    if (storedValue.contains(SESSION_VALUE_DELIMITER)) {
+      return decodeSessionValue(storedValue);
     }
 
-    
-    // Google ID Token 검증
-    private GoogleUserInfo verifyGoogleToken(String idTokenString) {
-        try {
-            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
-                    .setAudience(Collections.singletonList(googleClientId))
-                    .build();
+    // 레거시 포맷(oauthSubject만 저장) 호환 처리
+    User user =
+        userRepository
+            .findByOauthSubject(storedValue)
+            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-            GoogleIdToken idToken = verifier.verify(idTokenString);
-            
-            if (idToken != null) {
-                GoogleIdToken.Payload payload = idToken.getPayload();
-                return new GoogleUserInfo(
-                        payload.getSubject(),        // sub
-                        payload.getEmail(),          // email
-                        (String) payload.get("name") // name
-                );
-            } else {
-                throw new IllegalArgumentException("유효하지 않은 토큰입니다.");
-            }
-        } catch (GeneralSecurityException | IOException e) {
-            log.error("Google Token Verification Failed", (Throwable) e);
-            throw new IllegalArgumentException("토큰 검증 실패", e);
-        }
+    RefreshSession upgraded = new RefreshSession(UUID.randomUUID().toString(), user.getId());
+    storeRefreshSession(refreshToken, upgraded);
+    return upgraded;
+  }
+
+  private RefreshSession decodeSessionValue(String storedValue) {
+    String[] parts = storedValue.split(SESSION_VALUE_DELIMITER, 2);
+    if (parts.length != 2) {
+      throw new IllegalArgumentException("잘못된 세션 정보입니다.");
     }
+    try {
+      Long userId = Long.parseLong(parts[1]);
+      return new RefreshSession(parts[0], userId);
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException("잘못된 세션 정보입니다.", e);
+    }
+  }
+
+  private String encodeSessionValue(RefreshSession session) {
+    return session.sessionId() + SESSION_VALUE_DELIMITER + session.userId();
+  }
+
+  private String refreshTokenKey(String refreshToken) {
+    return REFRESH_TOKEN_PREFIX + refreshToken;
+  }
+
+  private record RefreshSession(String sessionId, Long userId) {}
+
+  public record RefreshResult(String accessToken, User user) {}
+
+  private GoogleUserInfo buildGoogleUserInfo(GoogleIdToken.Payload payload) {
+    String fullName = (String) payload.get("name");
+    String givenName = (String) payload.get("given_name");
+    String familyName = (String) payload.get("family_name");
+
+    NameParts parts = deriveNameParts(fullName);
+
+    String resolvedGiven = hasText(givenName) ? givenName : parts.givenName();
+    String resolvedFamily = hasText(familyName) ? familyName : parts.familyName();
+
+    return GoogleUserInfo.builder()
+        .sub(payload.getSubject())
+        .email(payload.getEmail())
+        .name(fullName)
+        .givenName(resolvedGiven)
+        .familyName(resolvedFamily)
+        .build();
+  }
+
+  private NameParts deriveNameParts(String rawName) {
+    if (!hasText(rawName)) {
+      return new NameParts("", "");
+    }
+    String trimmed = rawName.trim();
+
+    if (trimmed.contains(" ")) {
+      String[] tokens = trimmed.split("\\s+");
+      if (tokens.length == 1) {
+        return new NameParts("", tokens[0]);
+      }
+      String given = tokens[tokens.length - 1];
+      String family = String.join(" ", java.util.Arrays.copyOf(tokens, tokens.length - 1)).trim();
+      return new NameParts(family, given);
+    }
+
+    if (trimmed.length() >= 2) {
+      return new NameParts(trimmed.substring(0, 1), trimmed.substring(1));
+    }
+
+    return new NameParts(trimmed, "");
+  }
+
+  private boolean hasText(String value) {
+    return value != null && !value.trim().isEmpty();
+  }
+
+  private record NameParts(String familyName, String givenName) {}
 }
-

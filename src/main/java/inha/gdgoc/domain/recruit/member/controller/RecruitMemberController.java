@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.recruit.member.controller;
 
+import static inha.gdgoc.domain.recruit.member.controller.message.RecruitMemberMessage.EMAIL_DUPLICATION_CHECK_SUCCESS;
 import static inha.gdgoc.domain.recruit.member.controller.message.RecruitMemberMessage.MEMBER_LIST_RETRIEVED_SUCCESS;
 import static inha.gdgoc.domain.recruit.member.controller.message.RecruitMemberMessage.MEMBER_RETRIEVED_SUCCESS;
 import static inha.gdgoc.domain.recruit.member.controller.message.RecruitMemberMessage.MEMBER_SAVE_SUCCESS;
@@ -10,6 +11,7 @@ import static inha.gdgoc.domain.recruit.member.controller.message.RecruitMemberM
 
 import inha.gdgoc.domain.recruit.member.dto.request.ApplicationRequest;
 import inha.gdgoc.domain.recruit.member.dto.request.PaymentUpdateRequest;
+import inha.gdgoc.domain.recruit.member.dto.response.CheckEmailResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckPhoneNumberResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckStudentIdResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.RecruitMemberSummaryResponse;
@@ -31,6 +33,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,10 +43,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "Recruit - Members", description = "리크루팅 지원자 관리 API")
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/recruit/member")
 @RequiredArgsConstructor
 @RestController
 public class RecruitMemberController {
@@ -52,15 +57,25 @@ public class RecruitMemberController {
             "@accessGuard.check(authentication,"
                     + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
                     + "T(inha.gdgoc.domain.user.enums.UserRole).LEAD),"
-                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
+                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).of("
                     + "T(inha.gdgoc.domain.user.enums.UserRole).CORE,"
                     + " T(inha.gdgoc.domain.user.enums.TeamType).HR))";
 
     private final RecruitMemberService recruitMemberService;
 
-    @PostMapping("/apply")
+    @PostMapping(value = "/apply", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Void, Void>> recruitMemberAdd(
             @RequestBody ApplicationRequest applicationRequest
+    ) {
+        recruitMemberService.addRecruitMember(applicationRequest);
+
+        return ResponseEntity.ok(ApiResponse.ok(MEMBER_SAVE_SUCCESS));
+    }
+
+    @PostMapping(value = "/apply", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<Void, Void>> recruitMemberAddMultipart(
+            @RequestPart("request") ApplicationRequest applicationRequest,
+            @RequestPart(value = "file", required = false) MultipartFile file
     ) {
         recruitMemberService.addRecruitMember(applicationRequest);
 
@@ -92,9 +107,21 @@ public class RecruitMemberController {
         return ResponseEntity.ok(ApiResponse.ok(PHONE_NUMBER_DUPLICATION_CHECK_SUCCESS, response));
     }
 
+    @GetMapping("/check/email")
+    public ResponseEntity<ApiResponse<CheckEmailResponse, Void>> duplicatedEmailDetails(
+            @RequestParam
+            @NotBlank(message = "이메일은 필수 입력 값입니다.")
+            @Pattern(regexp = "^[a-zA-Z0-9+-\\_.]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$", message = "유효하지 않은 이메일 형식입니다.")
+            String email
+    ) {
+        CheckEmailResponse response = recruitMemberService.isRegisteredEmail(email);
+
+        return ResponseEntity.ok(ApiResponse.ok(EMAIL_DUPLICATION_CHECK_SUCCESS, response));
+    }
+
     @Operation(summary = "특정 멤버 가입 신청서 조회", security = {@SecurityRequirement(name = "BearerAuth")})
     @PreAuthorize(LEAD_OR_HR_RULE)
-    @GetMapping("/recruit/members/{memberId}")
+    @GetMapping("/{memberId}")
     public ResponseEntity<ApiResponse<SpecifiedMemberResponse, Void>> getSpecifiedMember(
             @PathVariable Long memberId
     ) {
@@ -109,7 +136,7 @@ public class RecruitMemberController {
             security = { @SecurityRequirement(name = "BearerAuth") }
     )
     @PreAuthorize(LEAD_OR_HR_RULE)
-    @PatchMapping("/recruit/members/{memberId}/payment")
+    @PatchMapping("/{memberId}/payment")
     public ResponseEntity<ApiResponse<Void, Void>> updatePayment(
             @PathVariable Long memberId,
             @RequestBody PaymentUpdateRequest paymentUpdateRequest
@@ -131,7 +158,7 @@ public class RecruitMemberController {
             security = { @SecurityRequirement(name = "BearerAuth") }
     )
     @PreAuthorize(LEAD_OR_HR_RULE)
-    @GetMapping("/recruit/members")
+    @GetMapping("")
     public ResponseEntity<ApiResponse<List<RecruitMemberSummaryResponse>, PageMeta>> getMembers(
             @Parameter(description = "검색어(이름 부분 일치). 없으면 전체 조회", example = "소연")
             @RequestParam(required = false) String question,
