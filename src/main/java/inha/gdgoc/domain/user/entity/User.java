@@ -24,6 +24,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Builder.Default;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -46,7 +47,7 @@ public class User extends BaseEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "oauthSubject", nullable = false, unique = true)
+    @Column(name = "oauth_subject", nullable = false, unique = true)
     private String oauthSubject;
 
     @Column(name = "major", nullable = false)
@@ -66,14 +67,17 @@ public class User extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "user_role", nullable = false)
-    private UserRole userRole;
+    @Default
+    private UserRole userRole = UserRole.GUEST;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "team")
     private TeamType team;
 
     @Enumerated(EnumType.STRING)
-    private MembershipStatus membershipStatus;
+    @Column(name = "membership_status", nullable = false)
+    @Default
+    private MembershipStatus membershipStatus = MembershipStatus.PENDING;
 
     // @Column(name = "salt", nullable = false)
     // private byte[] salt;

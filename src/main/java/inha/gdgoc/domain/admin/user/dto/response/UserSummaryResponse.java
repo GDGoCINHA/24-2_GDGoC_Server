@@ -1,4 +1,4 @@
-package inha.gdgoc.domain.user.dto.response;
+package inha.gdgoc.domain.admin.user.dto.response;
 
 import inha.gdgoc.domain.user.enums.TeamType;
 import inha.gdgoc.domain.user.enums.UserRole;

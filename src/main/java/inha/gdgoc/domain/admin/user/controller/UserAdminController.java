@@ -1,11 +1,9 @@
-package inha.gdgoc.domain.user.controller;
+package inha.gdgoc.domain.admin.user.controller;
 
-import inha.gdgoc.domain.user.dto.request.UpdateRoleRequest;
-import inha.gdgoc.domain.user.dto.request.UpdateUserRoleTeamRequest;
-import inha.gdgoc.domain.user.dto.response.UserSummaryResponse;
-import inha.gdgoc.domain.user.enums.TeamType;
-import inha.gdgoc.domain.user.enums.UserRole;
-import inha.gdgoc.domain.user.service.UserAdminService;
+import inha.gdgoc.domain.admin.user.dto.request.UpdateRoleRequest;
+import inha.gdgoc.domain.admin.user.dto.request.UpdateUserRoleTeamRequest;
+import inha.gdgoc.domain.admin.user.dto.response.UserSummaryResponse;
+import inha.gdgoc.domain.admin.user.service.UserAdminService;
 import inha.gdgoc.global.config.jwt.TokenProvider.CustomUserDetails;
 import inha.gdgoc.global.dto.response.ApiResponse;
 import inha.gdgoc.global.dto.response.PageMeta;
@@ -13,11 +11,21 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
 @RestController
@@ -28,7 +36,7 @@ public class UserAdminController {
             "@accessGuard.check(authentication,"
                     + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
                     + "T(inha.gdgoc.domain.user.enums.UserRole).LEAD),"
-                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
+                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).of("
                     + "T(inha.gdgoc.domain.user.enums.UserRole).CORE,"
                     + " T(inha.gdgoc.domain.user.enums.TeamType).HR))";
     private static final String LEAD_OR_HIGHER_RULE =
@@ -38,7 +46,6 @@ public class UserAdminController {
 
     private final UserAdminService userAdminService;
 
-    // q(검색) + role/team(필터) + pageable
     @Operation(summary = "사용자 요약 목록 조회", security = {@SecurityRequirement(name = "BearerAuth")})
     @PreAuthorize(LEAD_OR_HR_RULE)
     @GetMapping

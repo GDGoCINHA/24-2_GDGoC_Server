@@ -35,7 +35,14 @@ jobs:
           gradle-home-cache-cleanup: true
 
       - name: Create dummy .env for CI
-        run: echo "# ci dummy" > .env
+        env:
+          AUDIENCE_SECRET: ${{ secrets.JWT_AUDIENCE }}
+        run: |
+          AUDIENCE_VALUE="${AUDIENCE_SECRET:-ci-audience}"
+          cat > .env <<EOF
+          # ci dummy
+          JWT_AUDIENCE=${AUDIENCE_VALUE}
+          EOF
 
       - name: Gradle build (skip tests)
         id: assemble

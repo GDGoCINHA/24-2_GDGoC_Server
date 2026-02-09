@@ -14,4 +14,5 @@ public class JwtProperties {
     private long accessTokenValidity;
     private String googleIssuer;
     private String selfIssuer;
+    private String audience;
 }

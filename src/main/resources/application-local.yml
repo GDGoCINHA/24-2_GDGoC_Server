@@ -56,16 +56,27 @@ spring:
 app:
   s3:
     bucket: ${AWS_TEST_RESOURCE_BUCKET}
+  auth:
+    refresh-cookie:
+      secure: ${REFRESH_COOKIE_SECURE:false}
+      same-site: ${REFRESH_COOKIE_SAME_SITE:Lax}
+      domain: ${REFRESH_COOKIE_DOMAIN:}
+      path: /
+    access-cookie:
+      secure: ${ACCESS_COOKIE_SECURE:false}
+      same-site: ${ACCESS_COOKIE_SAME_SITE:Lax}
+      domain: ${ACCESS_COOKIE_DOMAIN:}
+      path: /
 
 google:
   client-id: ${GOOGLE_CLIENT_ID}
-  client-secret: ${GOOGLE_CLIENT_SECRET}
-  redirect-uri: ${GOOGLE_REDIRECT_URI}
 
 jwt:
   googleIssuer: ${GOOGLE_ISSUER}
   secretKey: ${SECRET_KEY}
   selfIssuer: ${SELF_ISSUER}
+  audience: ${JWT_AUDIENCE}
+  accessTokenValidity: ${JWT_ACCESS_TOKEN_VALIDITY:3600000}
 
 logging:
   level:

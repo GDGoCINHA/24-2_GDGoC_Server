@@ -4,6 +4,7 @@ import static inha.gdgoc.domain.recruit.member.exception.RecruitMemberErrorCode.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import inha.gdgoc.domain.recruit.member.dto.request.ApplicationRequest;
+import inha.gdgoc.domain.recruit.member.dto.response.CheckEmailResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckPhoneNumberResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckStudentIdResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.SpecifiedMemberResponse;
@@ -62,6 +63,12 @@ public class RecruitMemberService {
         boolean exists = recruitMemberRepository.existsByPhoneNumber(phoneNumber);
 
         return new CheckPhoneNumberResponse(exists);
+    }
+
+    public CheckEmailResponse isRegisteredEmail(String email) {
+        boolean exists = recruitMemberRepository.existsByEmail(email);
+
+        return new CheckEmailResponse(exists);
     }
 
     public SpecifiedMemberResponse findSpecifiedMember(Long id) {
