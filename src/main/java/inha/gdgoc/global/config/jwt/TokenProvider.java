@@ -76,13 +76,17 @@ public class TokenProvider {
         Long userId = extractUserId(claims);
         String sessionId = claims.get(CLAIM_SESSION_ID, String.class);
         if (sessionId == null || sessionId.isBlank()) {
+            log.warn("JWT 검증 실패: sessionId(sid) 클레임이 누락되었습니다.");
             throw new BusinessException(INVALID_JWT_REQUEST);
         }
 
         validateAudienceClaim(claims.get(Claims.AUDIENCE));
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(INVALID_JWT_REQUEST));
+                .orElseThrow(() -> {
+                    log.warn("JWT 검증 실패: ID가 {}인 유저를 찾을 수 없습니다.", userId);
+                    return new BusinessException(INVALID_JWT_REQUEST);
+                });
 
         UserRole userRole = user.getUserRole();
         Set<SimpleGrantedAuthority> authorities = new HashSet<>();
@@ -100,12 +104,29 @@ public class TokenProvider {
     }
 
     private Claims getClaims(String token) {
-        return Jwts.parser()
-                .clockSkewSeconds(ALLOWED_CLOCK_SKEW_SECONDS)
-                .verifyWith(signingKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        try {
+            return Jwts.parser()
+                    .clockSkewSeconds(ALLOWED_CLOCK_SKEW_SECONDS)
+                    .verifyWith(signingKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (ExpiredJwtException e) {
+            log.warn("JWT 검증 실패: 만료된 토큰입니다.");
+            throw e;
+        } catch (UnsupportedJwtException e) {
+            log.warn("JWT 검증 실패: 지원되지 않는 토큰 형식입니다.");
+            throw e;
+        } catch (MalformedJwtException e) {
+            log.warn("JWT 검증 실패: 잘못된 구조의 토큰입니다.");
+            throw e;
+        } catch (SignatureException e) {
+            log.warn("JWT 검증 실패: 서명이 일치하지 않습니다.");
+            throw e;
+        } catch (Exception e) {
+            log.warn("JWT 검증 실패: 알 수 없는 오류 발생 - {}", e.getMessage());
+            throw e;
+        }
     }
 
     private SecretKey signingKey() {
@@ -134,6 +155,7 @@ public class TokenProvider {
     private Long extractUserId(Claims claims) {
         Number idNum = claims.get(CLAIM_USER_ID, Number.class);
         if (idNum == null) {
+            log.warn("JWT 검증 실패: userId(uid) 클레임이 누락되었습니다.");
             throw new BusinessException(INVALID_JWT_REQUEST);
         }
         return idNum.longValue();
@@ -141,21 +163,25 @@ public class TokenProvider {
 
     private void validateAudienceClaim(Object audienceClaim) {
         if (audienceClaim == null) {
+            log.warn("JWT 검증 실패: audience(aud) 클레임이 누락되었습니다.");
             throw new BusinessException(INVALID_JWT_REQUEST);
         }
 
+        String expectedAudience = jwtProperties.getAudience();
         if (audienceClaim instanceof Collection<?> collection) {
             boolean matches = collection.stream()
                     .filter(Objects::nonNull)
                     .map(Object::toString)
-                    .anyMatch(jwtProperties.getAudience()::equals);
+                    .anyMatch(expectedAudience::equals);
             if (!matches) {
+                log.warn("JWT 검증 실패: audience 불일치. (기대값: {}, 실제값: {})", expectedAudience, collection);
                 throw new BusinessException(INVALID_JWT_REQUEST);
             }
             return;
         }
 
-        if (!jwtProperties.getAudience().equals(audienceClaim.toString())) {
+        if (!expectedAudience.equals(audienceClaim.toString())) {
+            log.warn("JWT 검증 실패: audience 불일치. (기대값: {}, 실제값: {})", expectedAudience, audienceClaim);
             throw new BusinessException(INVALID_JWT_REQUEST);
         }
     }
