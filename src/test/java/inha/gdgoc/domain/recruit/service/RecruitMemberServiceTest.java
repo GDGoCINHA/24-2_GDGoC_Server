@@ -22,7 +22,7 @@ class RecruitMemberServiceTest {
                 .name("김소연")
                 .grade("4")
                 .studentId("122123388")
-                .enrolledClassification("정등록")
+                .enrolledClassification("재학")
                 .phoneNumber("010-1111-2332")
                 .nationality("대한민국")
                 .email("abc@gmail.com")

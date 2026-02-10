@@ -4,8 +4,9 @@ import lombok.Getter;
 
 @Getter
 public enum EnrolledClassification {
-    FULL_REGISTRATION("정등록"),
+    FULL_REGISTRATION("재학"),
     LEAVE_OF_ABSENCE("휴학"),
+    MILITARY_LEAVE("군휴학"),
     GRADUATION("졸업"),
     PARTIAL_REGISTRATION("부분등록"),
     COMPLETION("수료");
