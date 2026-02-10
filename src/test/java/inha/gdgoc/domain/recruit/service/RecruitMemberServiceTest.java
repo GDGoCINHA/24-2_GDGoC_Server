@@ -26,7 +26,7 @@ class RecruitMemberServiceTest {
                 .phoneNumber("010-1111-2332")
                 .nationality("대한민국")
                 .email("abc@gmail.com")
-                .gender("여자")
+                .gender("여성")
                 .birth(LocalDate.of(2002, 8, 18))
                 .major("컴퓨터공학과")
                 .doubleMajor("복수전공 인공지능공학과")
