@@ -62,9 +62,6 @@ public class User extends BaseEntity {
     @Column(name = "email", nullable = false)
     private String email;
 
-    // @Column(name = "password", nullable = false)
-    // private String password;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "user_role", nullable = false)
     @Default
@@ -78,9 +75,6 @@ public class User extends BaseEntity {
     @Column(name = "membership_status", nullable = false)
     @Default
     private MembershipStatus membershipStatus = MembershipStatus.PENDING;
-
-    // @Column(name = "salt", nullable = false)
-    // private byte[] salt;
 
     @Column(name = "image")
     private String image;
@@ -112,10 +106,8 @@ public class User extends BaseEntity {
         this.studentId = studentId;
         this.phoneNumber = phoneNumber;
         this.email = email;
-        //this.password = password;
         this.userRole = userRole;
         this.team = team;
-        //this.salt = salt;
         this.image = image;
         this.social = (social != null ? social : new SocialUrls());
         this.careers = (careers != null ? careers : new Careers());
@@ -134,10 +126,6 @@ public class User extends BaseEntity {
             studyAttendee.setUser(this);
         }
     }
-
-    // public void updatePassword(String password) throws NoSuchAlgorithmException, InvalidKeyException {
-    //     this.password = EncryptUtil.encrypt(password, this.salt);
-    // }
 
     public void approve() {
         this.membershipStatus = MembershipStatus.APPROVED;
