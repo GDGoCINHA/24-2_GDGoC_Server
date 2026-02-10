@@ -17,7 +17,7 @@ spring:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
   flyway:
-    baseline-on-migrate: false
+    baseline-on-migrate: true
     clean-disabled: true
     enabled: true
     locations: classpath:db/migration
