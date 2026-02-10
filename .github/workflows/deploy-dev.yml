@@ -36,6 +36,9 @@ jobs:
           DB_NAME_DEV=${{ secrets.DB_NAME_DEV }}
           DB_USERNAME=${{ secrets.DB_USERNAME }}
           DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          REDIS_HOST=${{ secrets.REDIS_HOST || 'localhost' }}
+          REDIS_PORT=${{ secrets.REDIS_PORT || '6379' }}
+          REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_ISSUER=${{ secrets.GOOGLE_ISSUER }}
           SELF_ISSUER=${{ secrets.SELF_ISSUER }}
