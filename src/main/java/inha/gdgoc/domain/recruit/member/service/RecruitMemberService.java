@@ -60,7 +60,8 @@ public class RecruitMemberService {
     }
 
     public CheckPhoneNumberResponse isRegisteredPhoneNumber(String phoneNumber) {
-        boolean exists = recruitMemberRepository.existsByPhoneNumber(phoneNumber);
+        String cleanPhone = phoneNumber.replaceAll("[^0-9]", "");
+        boolean exists = recruitMemberRepository.existsByPhoneNumber(cleanPhone);
 
         return new CheckPhoneNumberResponse(exists);
     }
