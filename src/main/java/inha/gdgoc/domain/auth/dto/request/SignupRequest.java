@@ -19,4 +19,5 @@ public class SignupRequest {
     private String phoneNumber;
     @NotBlank
     private String major;
+    private String image;
 }

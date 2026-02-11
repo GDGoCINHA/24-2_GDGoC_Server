@@ -12,4 +12,5 @@ public class SignupNeededResponse {
     private String oauthSubject;
     private String email;
     private String name;
+    private String picture;
 }

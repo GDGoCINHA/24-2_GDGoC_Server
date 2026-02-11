@@ -46,36 +46,41 @@ public class AuthService {
   private String googleClientId;
 
   // 로그인
-  @Transactional
-  public Object login(String idToken) {
-    //  Google ID Token 검증
-    GoogleUserInfo googleUser = verifyGoogleToken(idToken);
-
-    // 도메인 검증 (인하대 메일만 허용)
-    if (!googleUser.getEmail().endsWith("@inha.edu")) {
-      throw new IllegalArgumentException("인하대학교(@inha.edu) 계정만 이용 가능합니다.");
+    @Transactional
+    public Object login(String idToken) {
+      log.info("로그인 시도 - ID Token 존재 여부: {}", (idToken != null && !idToken.isBlank()));
+      //  Google ID Token 검증
+      GoogleUserInfo googleUser = verifyGoogleToken(idToken);
+      log.info("Google 토큰 검증 성공 - Email: {}, Sub: {}", googleUser.getEmail(), googleUser.getSub());
+  
+      // 도메인 검증 (인하대 메일만 허용)
+      if (!googleUser.getEmail().endsWith("@inha.edu")) {
+        log.warn("허용되지 않은 도메인 로그인 시도: {}", googleUser.getEmail());
+        throw new IllegalArgumentException("인하대학교(@inha.edu) 계정만 이용 가능합니다.");
+      }
+  
+      //  DB에서 유저 조회 (OAuth Subject 기준)
+      User user = userRepository.findByOauthSubject(googleUser.getSub()).orElse(null);
+  
+      // 신규 유저 -> 회원가입 필요 응답 (202 or 200 with isNewUser=true)
+      if (user == null) {
+        log.info("신규 유저 감지 - Email: {}", googleUser.getEmail());
+        String preferredName =
+            hasText(googleUser.getFamilyName()) ? googleUser.getFamilyName() : googleUser.getName();
+        return SignupNeededResponse.builder()
+            .isNewUser(true)
+            .oauthSubject(googleUser.getSub())
+            .email(googleUser.getEmail())
+            .name(preferredName)
+            .picture(googleUser.getPicture())
+            .build();
+      }
+  
+      log.info("기존 유저 로그인 - UserID: {}, Email: {}", user.getId(), user.getEmail());
+      // 기존 유저 -> 토큰 발급 및 로그인 성공 응답
+      TokenDto tokens = generateTokens(user);
+      return LoginSuccessResponse.of(tokens, AuthUserResponse.from(user));
     }
-
-    //  DB에서 유저 조회 (OAuth Subject 기준)
-    User user = userRepository.findByOauthSubject(googleUser.getSub()).orElse(null);
-
-    // 신규 유저 -> 회원가입 필요 응답 (202 or 200 with isNewUser=true)
-        if (user == null) {
-      String preferredName =
-          hasText(googleUser.getFamilyName()) ? googleUser.getFamilyName() : googleUser.getName();
-      return SignupNeededResponse.builder()
-          .isNewUser(true)
-          .oauthSubject(googleUser.getSub())
-          .email(googleUser.getEmail())
-          .name(preferredName)
-          .build();
-    }
-
-    // 기존 유저 -> 토큰 발급 및 로그인 성공 응답
-    TokenDto tokens = generateTokens(user);
-    return LoginSuccessResponse.of(tokens, AuthUserResponse.from(user));
-  }
-
   // 회원가입
   @Transactional
   public LoginSuccessResponse signup(SignupRequest request) {
@@ -96,6 +101,7 @@ public class AuthService {
             .studentId(request.getStudentId())
             .major(request.getMajor())
             .phoneNumber(cleanPhone)
+            .image(request.getImage())
             // Role(GUEST), Status(PENDING) 등은 User 엔티티 생성자에서 기본값 처리됨
             .build();
 
@@ -168,6 +174,7 @@ public class AuthService {
       GoogleIdTokenVerifier verifier =
           new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
               .setAudience(Collections.singletonList(googleClientId))
+              .setIssuers(java.util.Arrays.asList("https://accounts.google.com", "accounts.google.com"))
               .build();
 
       GoogleIdToken idToken = verifier.verify(idTokenString);
@@ -254,6 +261,7 @@ public class AuthService {
         .name(fullName)
         .givenName(resolvedGiven)
         .familyName(resolvedFamily)
+        .picture((String) payload.get("picture"))
         .build();
   }
 

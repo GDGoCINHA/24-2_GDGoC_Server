@@ -10,6 +10,7 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -25,6 +26,7 @@ import javax.crypto.SecretKey;
 
 import static inha.gdgoc.global.exception.GlobalErrorCode.INVALID_JWT_REQUEST;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class TokenProvider {
@@ -107,6 +109,7 @@ public class TokenProvider {
         try {
             return Jwts.parser()
                     .clockSkewSeconds(ALLOWED_CLOCK_SKEW_SECONDS)
+                    .requireIssuer(jwtProperties.getSelfIssuer())
                     .verifyWith(signingKey())
                     .build()
                     .parseSignedClaims(token)
