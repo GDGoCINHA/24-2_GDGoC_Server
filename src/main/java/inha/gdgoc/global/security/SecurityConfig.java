@@ -102,8 +102,8 @@ public class SecurityConfig {
                 "https://*.gdgocinha.com"
         ));
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
-        config.setAllowedHeaders(List.of("Origin","X-Requested-With","Content-Type","Accept"));
-        config.setExposedHeaders(List.of("Set-Cookie")); // 필요시 노출
+        config.setAllowedHeaders(List.of("Origin","X-Requested-With","Content-Type","Accept","Authorization"));
+        config.setExposedHeaders(List.of()); // 필요시 노출
         config.setAllowCredentials(true);
         config.setMaxAge(3600L); // 프리플라이트 캐시
 
