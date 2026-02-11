@@ -111,9 +111,12 @@ public class AuthController {
     // 4. 로그아웃
     @PostMapping("/logout")
     public ResponseEntity<?> logout(@RequestBody(required = false) TokenRefreshRequest request) {
-        if (request != null && StringUtils.hasText(request.getRefreshToken())) {
-            authService.logout(request.getRefreshToken());
+        if (request == null || !StringUtils.hasText(request.getRefreshToken())) {
+            log.warn("로그아웃 실패: 요청 바디에 리프레시 토큰이 누락되었습니다.");
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), "리프레시 토큰은 필수입니다.", null));
         }
+        authService.logout(request.getRefreshToken());
         return ResponseEntity.ok().body(ApiResponse.ok(LOGOUT_SUCCESS));
     }
 
