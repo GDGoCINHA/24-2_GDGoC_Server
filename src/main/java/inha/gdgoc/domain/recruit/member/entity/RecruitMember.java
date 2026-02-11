@@ -61,7 +61,7 @@ public class RecruitMember extends BaseEntity {
     @Column(name = "gender", nullable = false)
     private Gender gender;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy.MM.dd")
     @Column(name = "birth", nullable = false)
     private LocalDate birth;
 
