@@ -31,12 +31,13 @@ public class RecruitMemberRequest {
     private Boolean isPayed;
 
     public RecruitMember toEntity(AdmissionSemester admissionSemester) {
+        String cleanPhone = phoneNumber.replaceAll("[^0-9]", "");
         return RecruitMember.builder()
                 .name(name)
                 .grade(grade)
                 .studentId(studentId)
                 .enrolledClassification(EnrolledClassification.fromStatus(enrolledClassification))
-                .phoneNumber(phoneNumber)
+                .phoneNumber(cleanPhone)
                 .nationality(nationality)
                 .email(email)
                 .gender(Gender.fromType(gender))
