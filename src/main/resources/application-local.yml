@@ -23,7 +23,7 @@ spring:
     enabled: true
     locations: classpath:db/migration
     schemas: public
-    ignore-migration-patterns:
+    ignore-migration-patterns: future
   jackson:
     time-zone: Asia/Seoul
   jpa:
