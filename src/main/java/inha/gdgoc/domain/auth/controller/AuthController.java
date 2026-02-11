@@ -85,7 +85,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<CheckPhoneNumberResponse, Void>> duplicatedPhoneNumberDetails(
             @RequestParam
             @NotBlank(message = "전화번호는 필수 입력 값입니다.")
-            @Pattern(regexp = "^010-\\d{4}-\\d{4}$", message = "전화번호 형식은 010-XXXX-XXXX 이어야 합니다.")
+            @Pattern(regexp = "^010-?\\d{4}-?\\d{4}$", message = "전화번호 형식은 010-XXXX-XXXX 또는 010XXXXXXXX 이어야 합니다.")
             String phoneNumber
     ) {
         CheckPhoneNumberResponse response = authService.isRegisteredPhoneNumber(phoneNumber);
