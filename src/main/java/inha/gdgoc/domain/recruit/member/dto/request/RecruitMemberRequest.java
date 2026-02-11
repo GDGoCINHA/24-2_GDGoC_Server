@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.recruit.member.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import inha.gdgoc.domain.recruit.member.entity.RecruitMember;
 import inha.gdgoc.domain.recruit.member.enums.AdmissionSemester;
 import inha.gdgoc.domain.recruit.member.enums.EnrolledClassification;
@@ -23,6 +24,7 @@ public class RecruitMemberRequest {
     private String nationality;
     private String email;
     private String gender;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy.MM.dd")
     private LocalDate birth;
     private String major;
     private String doubleMajor;

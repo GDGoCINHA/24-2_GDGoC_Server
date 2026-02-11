@@ -46,6 +46,12 @@ public class RecruitCoreApplicationService {
 
     @Transactional(readOnly = true)
     public RecruitCorePrefillResponse prefill(Long userId) {
+        String session = recruitCoreSessionResolver.currentSession();
+        repository.findByUser_IdAndSession(userId, session)
+            .ifPresent(existing -> {
+                throw new RecruitCoreAlreadyAppliedException(session, existing.getId());
+            });
+
         User user = getUser(userId);
         return RecruitCorePrefillResponse.from(user);
     }
