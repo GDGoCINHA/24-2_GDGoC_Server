@@ -59,13 +59,13 @@ app:
     bucket: ${AWS_RESOURCE_BUCKET}
   auth:
     refresh-cookie:
-      secure: ${REFRESH_COOKIE_SECURE:false}
-      same-site: ${REFRESH_COOKIE_SAME_SITE:Lax}
+      secure: ${REFRESH_COOKIE_SECURE:true}
+      same-site: ${REFRESH_COOKIE_SAME_SITE:None}
       domain: ${REFRESH_COOKIE_DOMAIN:}
       path: /
     access-cookie:
-      secure: ${ACCESS_COOKIE_SECURE:false}
-      same-site: ${ACCESS_COOKIE_SAME_SITE:Lax}
+      secure: ${ACCESS_COOKIE_SECURE:true}
+      same-site: ${ACCESS_COOKIE_SAME_SITE:None}
       domain: ${ACCESS_COOKIE_DOMAIN:}
       path: /
 
