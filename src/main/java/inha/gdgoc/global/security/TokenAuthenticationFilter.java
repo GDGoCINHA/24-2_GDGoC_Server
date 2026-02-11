@@ -76,9 +76,9 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         final String HEADER_AUTHORIZATION = "Authorization";
         final String TOKEN_PREFIX = "Bearer ";
 
-        String cookieToken = readCookieToken(request, "access_token");
-        if (cookieToken != null) {
-            return sanitizeToken(cookieToken.trim());
+        String authorizationHeader = request.getHeader(HEADER_AUTHORIZATION);
+        if (authorizationHeader != null && authorizationHeader.startsWith(TOKEN_PREFIX)) {
+            return sanitizeToken(authorizationHeader.substring(TOKEN_PREFIX.length()).trim());
         }
 
         return null;

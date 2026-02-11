@@ -12,7 +12,6 @@ public class LoginSuccessResponse {
     private boolean isNewUser;
     private String accessToken;
     private AuthUserResponse user;
-    @JsonIgnore
     private String refreshToken;
 
     public static LoginSuccessResponse of(TokenDto tokens, AuthUserResponse user) {
