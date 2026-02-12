@@ -59,7 +59,7 @@ class RecruitCoreApplicationServiceTest {
 
     @Test
     void checkEligibility_whenNoApplication_returnsEligible() {
-        when(repository.findByUser_IdAndSession(1L, SESSION)).thenReturn(Optional.empty());
+        when(repository.findByUserIdAndSession(1L, SESSION)).thenReturn(Optional.empty());
 
         RecruitCoreEligibilityResponse response = service.checkEligibility(1L);
 
@@ -71,7 +71,7 @@ class RecruitCoreApplicationServiceTest {
     @Test
     void checkEligibility_whenApplicationExists_returnsIneligible() {
         RecruitCoreApplication existing = createApplication(10L, createUser(1L), SESSION);
-        when(repository.findByUser_IdAndSession(1L, SESSION)).thenReturn(Optional.of(existing));
+        when(repository.findByUserIdAndSession(1L, SESSION)).thenReturn(Optional.of(existing));
 
         RecruitCoreEligibilityResponse response = service.checkEligibility(1L);
 
@@ -85,7 +85,7 @@ class RecruitCoreApplicationServiceTest {
         RecruitCoreApplicationCreateRequest request = sampleRequest();
         User user = createUser(1L);
         RecruitCoreApplication saved = createApplication(55L, user, SESSION);
-        when(repository.findByUser_IdAndSession(1L, SESSION)).thenReturn(Optional.empty());
+        when(repository.findByUserIdAndSession(1L, SESSION)).thenReturn(Optional.empty());
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(repository.save(any())).thenReturn(saved);
 
@@ -109,7 +109,7 @@ class RecruitCoreApplicationServiceTest {
     @Test
     void submit_whenAlreadyApplied_throwsException() {
         RecruitCoreApplication existing = createApplication(77L, createUser(1L), SESSION);
-        when(repository.findByUser_IdAndSession(1L, SESSION)).thenReturn(Optional.of(existing));
+        when(repository.findByUserIdAndSession(1L, SESSION)).thenReturn(Optional.of(existing));
 
         assertThatThrownBy(() -> service.submit(1L, sampleRequest()))
             .isInstanceOf(RecruitCoreAlreadyAppliedException.class);
@@ -118,7 +118,7 @@ class RecruitCoreApplicationServiceTest {
     @Test
     void getMyApplication_whenExists_returnsResponse() {
         RecruitCoreApplication existing = createApplication(33L, createUser(1L), SESSION);
-        when(repository.findByUser_IdAndSession(1L, SESSION)).thenReturn(Optional.of(existing));
+        when(repository.findByUserIdAndSession(1L, SESSION)).thenReturn(Optional.of(existing));
 
         RecruitCoreMyApplicationResponse response = service.getMyApplication(1L);
 
@@ -129,7 +129,7 @@ class RecruitCoreApplicationServiceTest {
 
     @Test
     void getMyApplication_whenMissing_throwsException() {
-        when(repository.findByUser_IdAndSession(1L, SESSION)).thenReturn(Optional.empty());
+        when(repository.findByUserIdAndSession(1L, SESSION)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getMyApplication(1L))
             .isInstanceOf(RecruitCoreApplicationNotFoundException.class);
@@ -187,10 +187,8 @@ class RecruitCoreApplicationServiceTest {
             .studentId("12201234")
             .phoneNumber("01012345678")
             .email("hong@inha.edu")
-            .password("encoded")
             .userRole(UserRole.GUEST)
             .team(null)
-            .salt(new byte[]{1})
             .image(null)
             .social(null)
             .careers(null)

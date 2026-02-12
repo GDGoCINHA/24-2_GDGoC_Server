@@ -29,7 +29,6 @@ class RecruitMemberServiceTest {
                 .gender("여성")
                 .birth(LocalDate.of(2002, 8, 18))
                 .major("컴퓨터공학과")
-                .doubleMajor("복수전공 인공지능공학과")
                 .isPayed(true)
                 .build();
 
@@ -57,7 +56,6 @@ class RecruitMemberServiceTest {
                 .gender(Gender.FEMALE)
                 .birth(LocalDate.of(2002, 8, 18))
                 .major("컴퓨터공학과")
-                .doubleMajor("복수전공 인공지능공학과")
                 .isPayed(true)
                 .build();
 

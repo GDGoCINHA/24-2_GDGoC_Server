@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_users_student_id ON users(student_id);
+CREATE INDEX IF NOT EXISTS idx_users_phone_number ON users(phone_number);
+CREATE INDEX IF NOT EXISTS idx_users_email_lower ON users((lower(email)));
 
 -- 2. 리크루팅 멤버 (recruit_member)
 CREATE TABLE IF NOT EXISTS recruit_member (
@@ -33,12 +36,14 @@ CREATE TABLE IF NOT EXISTS recruit_member (
     gender VARCHAR(20) NOT NULL,
     birth DATE NOT NULL,
     major VARCHAR(255) NOT NULL,
-    double_major VARCHAR(255),
     is_payed BOOLEAN NOT NULL DEFAULT FALSE,
     admission_semester VARCHAR(10) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_recruit_member_email_lower ON recruit_member((lower(email)));
+CREATE INDEX IF NOT EXISTS idx_recruit_member_created_at ON recruit_member(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_recruit_member_name_lower ON recruit_member((lower(name)));
 
 -- 3. 답변 (answer) - recruit_member와 1:N
 CREATE TABLE IF NOT EXISTS answer (
@@ -50,6 +55,8 @@ CREATE TABLE IF NOT EXISTS answer (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_answer_recruit_member_survey_type
+    ON answer(recruit_member, survey_type);
 
 -- 4. 코어 멤버 지원 (core_recruit_applications)
 CREATE TABLE IF NOT EXISTS core_recruit_applications (
@@ -74,6 +81,10 @@ CREATE TABLE IF NOT EXISTS core_recruit_applications (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_core_recruit_user_session
+    ON core_recruit_applications(user_id, session);
+CREATE INDEX IF NOT EXISTS idx_core_recruit_session_status_team_created
+    ON core_recruit_applications(session, result_status, team, created_at DESC);
 
 -- 5. 스터디 (study)
 CREATE TABLE IF NOT EXISTS study (

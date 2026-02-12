@@ -1,5 +1,9 @@
 package inha.gdgoc.domain.auth.controller;
 
+import static inha.gdgoc.domain.auth.controller.message.AuthMessage.*;
+
+import inha.gdgoc.domain.auth.dto.request.CheckPhoneNumberRequest;
+import inha.gdgoc.domain.auth.dto.request.CheckStudentIdRequest;
 import inha.gdgoc.domain.auth.dto.request.LoginRequest;
 import inha.gdgoc.domain.auth.dto.request.SignupRequest;
 import inha.gdgoc.domain.auth.dto.request.TokenRefreshRequest;
@@ -7,34 +11,22 @@ import inha.gdgoc.domain.auth.dto.response.AccessTokenResponse;
 import inha.gdgoc.domain.auth.dto.response.AuthUserResponse;
 import inha.gdgoc.domain.auth.dto.response.CheckPhoneNumberResponse;
 import inha.gdgoc.domain.auth.dto.response.CheckStudentIdResponse;
-import inha.gdgoc.domain.auth.dto.response.LoginSuccessResponse;
 import inha.gdgoc.domain.auth.exception.AuthErrorCode;
 import inha.gdgoc.domain.auth.exception.AuthException;
 import inha.gdgoc.domain.auth.service.AuthService;
 import inha.gdgoc.domain.user.enums.TeamType;
 import inha.gdgoc.domain.user.enums.UserRole;
-import inha.gdgoc.global.config.jwt.JwtProperties;
 import inha.gdgoc.global.config.jwt.TokenProvider;
 import inha.gdgoc.global.dto.response.ApiResponse;
 import inha.gdgoc.global.exception.GlobalErrorCode;
-import inha.gdgoc.global.security.AccessGuard;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.util.StringUtils;
-
-import java.time.Duration;
-
-import static inha.gdgoc.domain.auth.controller.message.AuthMessage.*;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RequestMapping("/api/v1/auth")
@@ -43,8 +35,6 @@ import static inha.gdgoc.domain.auth.controller.message.AuthMessage.*;
 public class AuthController {
 
     private final AuthService authService;
-    private final AccessGuard accessGuard;
-    private final JwtProperties jwtProperties;
 
     // 1. 구글 로그인 (ID Token 검증)
     @PostMapping("/login")
@@ -70,25 +60,19 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/check/student-id")
+    @PostMapping("/check/student-id")
     public ResponseEntity<ApiResponse<CheckStudentIdResponse, Void>> duplicatedStudentIdDetails(
-            @RequestParam
-            @NotBlank(message = "학번은 필수 입력 값입니다.")
-            @Pattern(regexp = "^12[0-9]{6}$", message = "유효하지 않은 학번 값입니다.")
-            String studentId
+            @Valid @RequestBody CheckStudentIdRequest request
     ) {
-        CheckStudentIdResponse response = authService.isRegisteredStudentId(studentId);
+        CheckStudentIdResponse response = authService.isRegisteredStudentId(request.getStudentId());
         return ResponseEntity.ok(ApiResponse.ok(STUDENT_ID_DUPLICATION_CHECK_SUCCESS, response));
     }
 
-    @GetMapping("/check/phone-number")
+    @PostMapping("/check/phone-number")
     public ResponseEntity<ApiResponse<CheckPhoneNumberResponse, Void>> duplicatedPhoneNumberDetails(
-            @RequestParam
-            @NotBlank(message = "전화번호는 필수 입력 값입니다.")
-            @Pattern(regexp = "^010-?\\d{4}-?\\d{4}$", message = "전화번호 형식은 010-XXXX-XXXX 또는 010XXXXXXXX 이어야 합니다.")
-            String phoneNumber
+            @Valid @RequestBody CheckPhoneNumberRequest request
     ) {
-        CheckPhoneNumberResponse response = authService.isRegisteredPhoneNumber(phoneNumber);
+        CheckPhoneNumberResponse response = authService.isRegisteredPhoneNumber(request.getPhoneNumber());
         return ResponseEntity.ok(ApiResponse.ok(PHONE_NUMBER_DUPLICATION_CHECK_SUCCESS, response));
     }
 
@@ -135,16 +119,7 @@ public class AuthController {
                             null
                     ));
         }
-
-        var conditions = new java.util.ArrayList<AccessGuard.AccessCondition>();
-        conditions.add(AccessGuard.AccessCondition.atLeast(role));
-
-        if (requiredTeam != null) {
-            conditions.add(AccessGuard.AccessCondition.atLeast(UserRole.ORGANIZER));
-            conditions.add(AccessGuard.AccessCondition.of(UserRole.GUEST, requiredTeam));
-        }
-
-        if (accessGuard.check(me, conditions.toArray(AccessGuard.AccessCondition[]::new))) {
+        if (authService.hasRequiredAccess(me, role, requiredTeam)) {
             return ResponseEntity.ok(ApiResponse.ok("ROLE_OR_TEAM_CHECK_PASSED", null));
         }
 
@@ -154,5 +129,5 @@ public class AuthController {
                         GlobalErrorCode.FORBIDDEN_USER.getMessage(),
                         null
                 ));
-}
+    }
 }

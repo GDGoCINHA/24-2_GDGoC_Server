@@ -27,7 +27,6 @@ public class RecruitMemberRequest {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy.MM.dd")
     private LocalDate birth;
     private String major;
-    private String doubleMajor;
     private Boolean isPayed;
 
     public RecruitMember toEntity(AdmissionSemester admissionSemester) {
@@ -43,7 +42,6 @@ public class RecruitMemberRequest {
                 .gender(Gender.fromType(gender))
                 .birth(birth)
                 .major(major)
-                .doubleMajor(doubleMajor)
                 .isPayed(false)
                 .admissionSemester(admissionSemester)
                 .build();

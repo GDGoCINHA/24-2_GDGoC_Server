@@ -67,7 +67,7 @@ public class RecruitMemberService {
     }
 
     public CheckEmailResponse isRegisteredEmail(String email) {
-        boolean exists = recruitMemberRepository.existsByEmail(email);
+        boolean exists = recruitMemberRepository.existsByEmailIgnoreCase(email.trim());
 
         return new CheckEmailResponse(exists);
     }
