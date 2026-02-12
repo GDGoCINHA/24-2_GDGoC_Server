@@ -10,6 +10,9 @@ import static inha.gdgoc.domain.recruit.member.controller.message.RecruitMemberM
 import static inha.gdgoc.domain.recruit.member.controller.message.RecruitMemberMessage.STUDENT_ID_DUPLICATION_CHECK_SUCCESS;
 
 import inha.gdgoc.domain.recruit.member.dto.request.ApplicationRequest;
+import inha.gdgoc.domain.recruit.member.dto.request.CheckEmailRequest;
+import inha.gdgoc.domain.recruit.member.dto.request.CheckPhoneNumberRequest;
+import inha.gdgoc.domain.recruit.member.dto.request.CheckStudentIdRequest;
 import inha.gdgoc.domain.recruit.member.dto.request.PaymentUpdateRequest;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckEmailResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckPhoneNumberResponse;
@@ -24,8 +27,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -82,39 +84,30 @@ public class RecruitMemberController {
         return ResponseEntity.ok(ApiResponse.ok(MEMBER_SAVE_SUCCESS));
     }
 
-    @GetMapping("/check/student-id")
+    @PostMapping("/check/student-id")
     public ResponseEntity<ApiResponse<CheckStudentIdResponse, Void>> duplicatedStudentIdDetails(
-            @RequestParam
-            @NotBlank(message = "학번은 필수 입력 값입니다.")
-            @Pattern(regexp = "^12[0-9]{6}$", message = "유효하지 않은 학번 값입니다.")
-            String studentId
+            @Valid @RequestBody CheckStudentIdRequest request
     ) {
-        CheckStudentIdResponse response = recruitMemberService.isRegisteredStudentId(studentId);
+        CheckStudentIdResponse response = recruitMemberService.isRegisteredStudentId(request.getStudentId());
 
         return ResponseEntity.ok(ApiResponse.ok(STUDENT_ID_DUPLICATION_CHECK_SUCCESS, response));
     }
 
-    @GetMapping("/check/phone-number")
+    @PostMapping("/check/phone-number")
     public ResponseEntity<ApiResponse<CheckPhoneNumberResponse, Void>> duplicatedPhoneNumberDetails(
-            @RequestParam
-            @NotBlank(message = "전화번호는 필수 입력 값입니다.")
-            @Pattern(regexp = "^010-?\\d{4}-?\\d{4}$", message = "전화번호 형식은 010-XXXX-XXXX 또는 010XXXXXXXX 이어야 합니다.")
-            String phoneNumber
+            @Valid @RequestBody CheckPhoneNumberRequest request
     ) {
         CheckPhoneNumberResponse response = recruitMemberService
-                .isRegisteredPhoneNumber(phoneNumber);
+                .isRegisteredPhoneNumber(request.getPhoneNumber());
 
         return ResponseEntity.ok(ApiResponse.ok(PHONE_NUMBER_DUPLICATION_CHECK_SUCCESS, response));
     }
 
-    @GetMapping("/check/email")
+    @PostMapping("/check/email")
     public ResponseEntity<ApiResponse<CheckEmailResponse, Void>> duplicatedEmailDetails(
-            @RequestParam
-            @NotBlank(message = "이메일은 필수 입력 값입니다.")
-            @Pattern(regexp = "^[a-zA-Z0-9+-\\_.]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$", message = "유효하지 않은 이메일 형식입니다.")
-            String email
+            @Valid @RequestBody CheckEmailRequest request
     ) {
-        CheckEmailResponse response = recruitMemberService.isRegisteredEmail(email);
+        CheckEmailResponse response = recruitMemberService.isRegisteredEmail(request.getEmail());
 
         return ResponseEntity.ok(ApiResponse.ok(EMAIL_DUPLICATION_CHECK_SUCCESS, response));
     }

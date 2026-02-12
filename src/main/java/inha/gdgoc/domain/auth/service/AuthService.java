@@ -13,8 +13,12 @@ import inha.gdgoc.domain.auth.dto.response.LoginSuccessResponse;
 import inha.gdgoc.domain.auth.dto.response.SignupNeededResponse;
 import inha.gdgoc.domain.auth.dto.response.TokenDto;
 import inha.gdgoc.domain.user.entity.User;
+import inha.gdgoc.domain.user.enums.TeamType;
+import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.config.jwt.TokenProvider;
+import inha.gdgoc.global.config.jwt.TokenProvider.CustomUserDetails;
+import inha.gdgoc.global.security.AccessGuard;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
@@ -41,6 +45,7 @@ public class AuthService {
   private final UserRepository userRepository;
   private final TokenProvider tokenProvider;
   private final StringRedisTemplate redisTemplate;
+  private final AccessGuard accessGuard;
 
   @Value("${google.client-id}")
   private String googleClientId;
@@ -91,6 +96,9 @@ public class AuthService {
 
     // 전화번호 정규화 (숫자만 남김)
     String cleanPhone = request.getPhoneNumber().replaceAll("[^0-9]", "");
+    if (userRepository.existsByPhoneNumber(cleanPhone)) {
+      throw new IllegalArgumentException("이미 존재하는 전화번호입니다.");
+    }
 
     // 유저 엔티티 생성 및 저장
     User newUser =
@@ -123,6 +131,18 @@ public class AuthService {
     String cleanPhone = phoneNumber.replaceAll("[^0-9]", "");
     boolean exists = userRepository.existsByPhoneNumber(cleanPhone);
     return new CheckPhoneNumberResponse(exists);
+  }
+
+  public boolean hasRequiredAccess(CustomUserDetails me, UserRole role, TeamType requiredTeam) {
+    var conditions = new java.util.ArrayList<AccessGuard.AccessCondition>();
+    conditions.add(AccessGuard.AccessCondition.atLeast(role));
+
+    if (requiredTeam != null) {
+      conditions.add(AccessGuard.AccessCondition.atLeast(UserRole.ORGANIZER));
+      conditions.add(AccessGuard.AccessCondition.of(UserRole.GUEST, requiredTeam));
+    }
+
+    return accessGuard.check(me, conditions.toArray(AccessGuard.AccessCondition[]::new));
   }
 
   public RefreshResult refresh(String refreshToken) {
