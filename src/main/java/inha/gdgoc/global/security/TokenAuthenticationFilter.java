@@ -3,6 +3,7 @@ package inha.gdgoc.global.security;
 import inha.gdgoc.global.config.jwt.TokenProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -65,7 +66,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                 log.warn("JWT 인증 실패: {}", e.getMessage());
             }
         } else {
-            log.info("Authorization 헤더 없음 → 인증 시도 안함");
+            log.info("access token 없음 → 인증 시도 안함");
         }
 
         filterChain.doFilter(request, response);
@@ -75,23 +76,34 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         final String HEADER_AUTHORIZATION = "Authorization";
         final String TOKEN_PREFIX = "Bearer ";
 
-        String bearerToken = request.getHeader(HEADER_AUTHORIZATION);
-
-        if (bearerToken == null || !bearerToken.startsWith(TOKEN_PREFIX)) {
-            return null;
+        String authorizationHeader = request.getHeader(HEADER_AUTHORIZATION);
+        if (authorizationHeader != null && authorizationHeader.startsWith(TOKEN_PREFIX)) {
+            return sanitizeToken(authorizationHeader.substring(TOKEN_PREFIX.length()).trim());
         }
 
-        String token = bearerToken.substring(TOKEN_PREFIX.length());
+        return null;
+    }
 
-        token = token.trim();
+    private String readCookieToken(HttpServletRequest request, String name) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return null;
+        }
+        for (Cookie cookie : cookies) {
+            if (name.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
+    }
 
+    private String sanitizeToken(String token) {
         for (char c : token.toCharArray()) {
             if (c < 32) {
                 log.info("토큰에 유효하지 않은 제어 문자가 포함되어 있습니다.");
                 throw new IllegalArgumentException("토큰에 유효하지 않은 제어 문자가 포함되어 있습니다.");
             }
         }
-
         return token;
     }
 

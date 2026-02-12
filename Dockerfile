@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # --- Build stage ---
-FROM gradle:8.11.1-jdk17 AS build
+FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 
 # 루트 프로젝트 전체 복사
@@ -18,7 +18,7 @@ RUN ./gradlew clean bootJar -x test --no-daemon
 RUN cp "$(ls build/libs/*.jar | head -n 1)" build/libs/app.jar
 
 # --- Runtime stage ---
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 
 COPY --from=build /app/build/libs/app.jar app.jar

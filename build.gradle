@@ -1,32 +1,52 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.3.6'
+    id 'org.springframework.boot' version '3.5.9'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.diffplug.spotless' version '6.25.0'
 }
 
 group = 'inha'
 version = '0.0.1-SNAPSHOT'
 
-/* ===== Java Toolchain ===== */
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
-/* ===== Configurations ===== */
 configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
 }
 
-/* ===== Repositories ===== */
 repositories {
     mavenCentral()
 }
 
-/* ===== Dependencies ===== */
+/* ===== Version Pins (필요한 것만) ===== */
+ext {
+    awspringBomVersion = '3.4.2'
+    springdocVersion = '2.8.15'
+    flywayVersion = '11.19.0'
+    postgresVersion = '42.7.3'
+    hibernateTypes60 = '2.21.1'
+    dotenvVersion = '5.2.2'
+    querydslVersion = '6.10.1'
+    jjwtVersion = '0.13.0'
+    googleApiClientVersion = '2.6.0'
+}
+
+/* ===== Vulnerability Pins (정확한 CVE 기반 대응) ===== */
+configurations.configureEach {
+    resolutionStrategy {
+        // CVE-2024-47554 대응 (commons-compress 체인 영향 → commons-lang3 3.18.0 필요)
+        force 'org.apache.commons:commons-lang3:3.18.0'
+        // springdoc transitive classgraph 취약점 대응 버전으로 상향
+        force 'io.github.classgraph:classgraph:4.8.179'
+    }
+}
+
 dependencies {
     // --- Spring Boot Starters ---
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -35,32 +55,46 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
 
-    // --- DB & JPA Utils ---
-    implementation 'com.vladmihalcea:hibernate-types-60:2.21.1'
-    implementation 'org.postgresql:postgresql:42.7.3'
-    runtimeOnly  'com.h2database:h2'   // 테스트/로컬용 인메모리 DB
+    // --- Swagger / OpenAPI (springdoc) ---
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}") {
+        exclude group: "org.apache.commons", module: "commons-lang3"
+    }
+    implementation "org.apache.commons:commons-lang3:3.18.0"
 
-    // --- QueryDSL ---
-    implementation       'com.querydsl:querydsl-jpa:5.0.0:jakarta'
-    annotationProcessor  'com.querydsl:querydsl-apt:5.0.0:jakarta'
-    annotationProcessor  'jakarta.annotation:jakarta.annotation-api'
-    annotationProcessor  'jakarta.persistence:jakarta.persistence-api'
+    // --- DB & JPA Utils (Boot 관리 버전과 동기화 필요) ---
+    implementation "com.vladmihalcea:hibernate-types-60:${hibernateTypes60}"
+    implementation "org.postgresql:postgresql:${postgresVersion}"
+    testRuntimeOnly 'com.h2database:h2' // 테스트 환경 전용, 운영 패키지에서는 제외
 
-    // --- JWT (JJWT 0.9.x, 레거시 패키지) ---
-    implementation 'io.jsonwebtoken:jjwt:0.9.1'
+    // --- Cache / Redis ---
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    // --- Querydsl (OpenFeign fork) ---
+    implementation "io.github.openfeign.querydsl:querydsl-jpa:${querydslVersion}"
+    annotationProcessor "io.github.openfeign.querydsl:querydsl-apt:${querydslVersion}:jakarta"
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+
+    // Querydsl APT helper APIs (컴파일 타임만)
+    compileOnly 'jakarta.annotation:jakarta.annotation-api'
+    compileOnly 'jakarta.persistence:jakarta.persistence-api'
+
+    // --- JWT ---
+    implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+    runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
+    runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
 
     // --- AWS (S3) ---
     implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3'
 
-    // --- Flyway (DB Migration) ---
-    implementation "org.flywaydb:flyway-core:10.21.0"
-    implementation "org.flywaydb:flyway-database-postgresql:10.21.0"
+    // --- Flyway ---
+    implementation "org.flywaydb:flyway-core:${flywayVersion}"
+    implementation "org.flywaydb:flyway-database-postgresql:${flywayVersion}"
 
     // --- 환경변수(.env) ---
-    implementation 'io.github.cdimascio:java-dotenv:5.2.2'
+    implementation "io.github.cdimascio:java-dotenv:${dotenvVersion}"
 
     // --- Lombok ---
-    compileOnly        'org.projectlombok:lombok'
+    compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
     // --- Test ---
@@ -68,29 +102,30 @@ dependencies {
     testImplementation 'org.mockito:mockito-core:5.6.0'
     testImplementation 'org.mockito:mockito-junit-jupiter:5.6.0'
     testImplementation 'org.assertj:assertj-core:3.24.2'
-    testRuntimeOnly   'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    // swagger
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+    //Google API Client
+    implementation "com.google.api-client:google-api-client:${googleApiClientVersion}"
 }
 
 dependencyManagement {
     imports {
-        mavenBom "io.awspring.cloud:spring-cloud-aws-dependencies:3.1.1"
-        // ↑ 3.x 대 사용 (프로젝트에 맞는 최신 3.x 가능)
+        mavenBom "io.awspring.cloud:spring-cloud-aws-dependencies:${awspringBomVersion}"
     }
 }
 
-/* ===== Tasks ===== */
+spotless {
+    java {
+        googleJavaFormat('1.22.0')
+        target 'src/**/*.java'
+    }
+}
 
-// 테스트: 프로필과 JUnit 플랫폼 한 곳에서 설정
 tasks.test {
     useJUnitPlatform()
     systemProperty "spring.profiles.active", "test"
 }
 
-// QueryDSL 생성물 경로 고정
 tasks.withType(JavaCompile).configureEach {
-    options.annotationProcessorGeneratedSourcesDirectory = file("build/generated/sources/annotationProcessor/java/main")
+    options.generatedSourceOutputDirectory.set(file("build/generated/sources/annotationProcessor/java/main"))
 }
-

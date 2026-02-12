@@ -39,7 +39,7 @@ public class SecurityConfig {
             .httpBasic(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/v1/auth/logout").authenticated()
+                .requestMatchers("/api/v1/auth/logout").permitAll()
                 .requestMatchers(
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
@@ -47,9 +47,8 @@ public class SecurityConfig {
                     "/api/v1/auth/**",
                     "/api/v1/test/**",
                     "/api/v1/game/**",
-                    "/api/v1/apply/**",
-                    "/api/v1/check/**",
-                    "/api/v1/core-recruit",
+                    "/api/v1/recruit/member/apply/**",
+                    "/api/v1/recruit/member/check/**",
                     "/api/v1/fileupload",
                     "/api/v1/manito/verify")
                 .permitAll()
@@ -104,7 +103,7 @@ public class SecurityConfig {
         ));
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
         config.setAllowedHeaders(List.of("Origin","X-Requested-With","Content-Type","Accept","Authorization"));
-        config.setExposedHeaders(List.of("Authorization","Set-Cookie")); // 필요시 노출
+        config.setExposedHeaders(List.of()); // 필요시 노출
         config.setAllowCredentials(true);
         config.setMaxAge(3600L); // 프리플라이트 캐시
 
@@ -118,4 +117,3 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
-

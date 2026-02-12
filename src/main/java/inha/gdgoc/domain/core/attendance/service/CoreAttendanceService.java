@@ -78,6 +78,14 @@ public class CoreAttendanceService {
         return toTeamResponsesGrouped(users);
     }
 
+    public boolean isLeadScoped(UserRole role, TeamType team) {
+        return role == UserRole.LEAD && team != TeamType.HR;
+    }
+
+    public TeamType resolveEffectiveTeam(UserRole role, TeamType principalTeam, TeamType requestedTeam) {
+        return isLeadScoped(role, principalTeam) ? requireTeam(principalTeam) : requestedTeam;
+    }
+
     /* ===================== Attendance ===================== */
 
     private List<TeamResponse> toTeamResponsesGrouped(List<User> users) {
@@ -127,6 +135,28 @@ public class CoreAttendanceService {
         Long[] arr = userIds.toArray(Long[]::new); // ✅ List -> Array
         int affected = attendanceRecordRepository.upsertBatchByMeetingId(meetingId, arr, present);
         return Math.max(affected, 0);
+    }
+
+    @Transactional
+    public AttendanceUpdateResult saveAttendanceSnapshot(
+            String date,
+            List<Long> userIds,
+            boolean present,
+            UserRole role,
+            TeamType principalTeam
+    ) {
+        if (isLeadScoped(role, principalTeam)) {
+            TeamType myTeam = requireTeam(principalTeam);
+            UserIdValidationResult validation = filterUserIdsNotInTeam(myTeam, userIds);
+            if (validation.validIds().isEmpty()) {
+                return new AttendanceUpdateResult(0L, validation.invalidIds());
+            }
+            long updated = setAttendance(date, validation.validIds(), present);
+            return new AttendanceUpdateResult(updated, validation.invalidIds());
+        }
+
+        long updated = setAttendance(date, userIds, present);
+        return new AttendanceUpdateResult(updated, List.of());
     }
 
     /**
@@ -333,5 +363,16 @@ public class CoreAttendanceService {
 
     public record UserIdValidationResult(List<Long> validIds, List<Long> invalidIds) {
 
+    }
+
+    public record AttendanceUpdateResult(long updatedCount, List<Long> ignoredUserIds) {
+
+    }
+
+    private TeamType requireTeam(TeamType team) {
+        if (team == null) {
+            throw new IllegalArgumentException("LEAD 권한 토큰에 team 정보가 없습니다.");
+        }
+        return team;
     }
 }

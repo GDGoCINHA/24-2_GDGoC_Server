@@ -6,7 +6,8 @@ import org.springframework.http.HttpStatus;
 public enum ResourceErrorCode implements ErrorCode {
 
     // 413
-    INVALID_BIG_FILE(HttpStatus.PAYLOAD_TOO_LARGE, "파일 크기는 10Mb를 넘을 수 없습니다.");
+    INVALID_BIG_FILE(HttpStatus.PAYLOAD_TOO_LARGE, "파일 크기는 10Mb를 넘을 수 없습니다."),
+    RESOURCE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다.");
 
     private final HttpStatus status;
     private final String message;

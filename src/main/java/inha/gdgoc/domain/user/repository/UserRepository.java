@@ -1,6 +1,6 @@
 package inha.gdgoc.domain.user.repository;
 
-import inha.gdgoc.domain.user.dto.response.UserSummaryResponse;
+import inha.gdgoc.domain.admin.user.dto.response.UserSummaryResponse;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.TeamType;
 import inha.gdgoc.domain.user.enums.UserRole;
@@ -19,6 +19,10 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long>, UserRepositoryCustom {
 
+    Optional<User> findByOauthSubject(String oauthSubject);
+    
+    boolean existsByStudentId(String studentId);
+    boolean existsByPhoneNumber(String phoneNumber);
     boolean existsByNameAndEmail(String name, String email);
     boolean existsByEmail(String email);
 
@@ -37,7 +41,7 @@ public interface UserRepository extends JpaRepository<User, Long>, UserRepositor
     List<User> findByTeam(TeamType team);
 
     @Query("""
-        select new inha.gdgoc.domain.user.dto.response.UserSummaryResponse(
+        select new inha.gdgoc.domain.admin.user.dto.response.UserSummaryResponse(
             u.id, u.name, u.major, u.studentId, u.email, u.userRole, u.team
         )
         from User u
