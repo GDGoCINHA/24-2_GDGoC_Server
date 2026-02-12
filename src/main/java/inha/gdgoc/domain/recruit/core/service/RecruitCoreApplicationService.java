@@ -39,7 +39,7 @@ public class RecruitCoreApplicationService {
     @Transactional(readOnly = true)
     public RecruitCoreEligibilityResponse checkEligibility(Long userId) {
         String session = recruitCoreSessionResolver.currentSession();
-        return repository.findByUser_IdAndSession(userId, session)
+        return repository.findByUserIdAndSession(userId, session)
             .map(app -> RecruitCoreEligibilityResponse.ineligible(session, "ALREADY_APPLIED", app.getId()))
             .orElseGet(() -> RecruitCoreEligibilityResponse.eligible(session));
     }
@@ -47,7 +47,7 @@ public class RecruitCoreApplicationService {
     @Transactional(readOnly = true)
     public RecruitCorePrefillResponse prefill(Long userId) {
         String session = recruitCoreSessionResolver.currentSession();
-        repository.findByUser_IdAndSession(userId, session)
+        repository.findByUserIdAndSession(userId, session)
             .ifPresent(existing -> {
                 throw new RecruitCoreAlreadyAppliedException(session, existing.getId());
             });
@@ -59,7 +59,7 @@ public class RecruitCoreApplicationService {
     @Transactional
     public RecruitCoreApplicationCreateResponse submit(Long userId, RecruitCoreApplicationCreateRequest request) {
         String session = recruitCoreSessionResolver.currentSession();
-        repository.findByUser_IdAndSession(userId, session)
+        repository.findByUserIdAndSession(userId, session)
             .ifPresent(existing -> {
                 throw new RecruitCoreAlreadyAppliedException(session, existing.getId());
             });
@@ -68,12 +68,13 @@ public class RecruitCoreApplicationService {
         List<String> fileUrls = request.fileUrls() == null
             ? List.of()
             : List.copyOf(request.fileUrls());
+        String cleanPhone = request.snapshot().phone().replaceAll("[^0-9]", "");
         RecruitCoreApplication application = RecruitCoreApplication.builder()
             .user(user)
             .session(session)
             .name(request.snapshot().name())
             .studentId(request.snapshot().studentId())
-            .phone(request.snapshot().phone())
+            .phone(cleanPhone)
             .major(request.snapshot().major())
             .email(request.snapshot().email())
             .team(request.team())
@@ -92,7 +93,7 @@ public class RecruitCoreApplicationService {
     @Transactional(readOnly = true)
     public RecruitCoreMyApplicationResponse getMyApplication(Long userId) {
         String session = recruitCoreSessionResolver.currentSession();
-        RecruitCoreApplication application = repository.findByUser_IdAndSession(userId, session)
+        RecruitCoreApplication application = repository.findByUserIdAndSession(userId, session)
             .orElseThrow(RecruitCoreApplicationNotFoundException::new);
         return RecruitCoreMyApplicationResponse.from(application);
     }

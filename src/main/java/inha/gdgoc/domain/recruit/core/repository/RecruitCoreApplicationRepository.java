@@ -11,7 +11,7 @@ public interface RecruitCoreApplicationRepository extends JpaRepository<RecruitC
     JpaSpecificationExecutor<RecruitCoreApplication> {
     Page<RecruitCoreApplication> findByNameContainingIgnoreCase(String name, Pageable pageable);
 
-    java.util.Optional<RecruitCoreApplication> findByUser_IdAndSession(Long userId, String session);
+    java.util.Optional<RecruitCoreApplication> findByUserIdAndSession(Long userId, String session);
 
-    java.util.Optional<RecruitCoreApplication> findByIdAndUser_Id(Long id, Long userId);
+    java.util.Optional<RecruitCoreApplication> findByIdAndUserId(Long id, Long userId);
 }
