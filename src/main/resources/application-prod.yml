@@ -19,7 +19,7 @@ spring:
   flyway:
     baseline-on-migrate: false
     clean-disabled: true
-    enabled: true
+    enabled: false
     locations: classpath:db/migration
     validate-migration-naming: true
   jackson:
