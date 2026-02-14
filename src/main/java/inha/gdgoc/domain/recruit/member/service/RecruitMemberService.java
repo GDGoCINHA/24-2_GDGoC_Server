@@ -60,7 +60,10 @@ public class RecruitMemberService {
     @Transactional
     public void addRecruitMemberMemo(RecruitMemberMemoRequest recruitMemberMemoRequest) {
         String cleanPhone = normalizePhoneNumber(recruitMemberMemoRequest.getPhoneNumber());
-        if (recruitMemberRepository.existsByPhoneNumber(cleanPhone)) {
+        boolean alreadyApplied = recruitMemberRepository.existsByPhoneNumber(cleanPhone);
+        boolean alreadyMemoRequested = recruitMemberMemoRepository.existsByPhoneNumber(cleanPhone);
+
+        if (alreadyApplied || alreadyMemoRequested) {
             throw new RecruitMemberException(RECRUIT_MEMBER_ALREADY_APPLIED);
         }
 
