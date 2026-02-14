@@ -71,7 +71,7 @@ public class RecruitMemberController {
     public ResponseEntity<ApiResponse<Void, Void>> recruitMemberAdd(
             @RequestBody Map<String, Object> applicationRequest
     ) {
-        recruitMemberService.addRecruitMember(applicationRequest);
+        recruitMemberService.addRecruitMember(applicationRequest, null);
 
         return ResponseEntity.ok(ApiResponse.ok(MEMBER_SAVE_SUCCESS));
     }
@@ -81,7 +81,7 @@ public class RecruitMemberController {
             @RequestPart("request") Map<String, Object> applicationRequest,
             @RequestPart(value = "file", required = false) MultipartFile file
     ) {
-        recruitMemberService.addRecruitMember(applicationRequest);
+        recruitMemberService.addRecruitMember(applicationRequest, file);
 
         return ResponseEntity.ok(ApiResponse.ok(MEMBER_SAVE_SUCCESS));
     }
