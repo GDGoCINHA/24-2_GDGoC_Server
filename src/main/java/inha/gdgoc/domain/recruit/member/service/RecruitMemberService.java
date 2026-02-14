@@ -59,7 +59,7 @@ public class RecruitMemberService {
 
     @Transactional
     public void addRecruitMemberMemo(RecruitMemberMemoRequest recruitMemberMemoRequest) {
-        String cleanPhone = recruitMemberMemoRequest.getPhoneNumber().replaceAll("[^0-9]", "");
+        String cleanPhone = normalizePhoneNumber(recruitMemberMemoRequest.getPhoneNumber());
         if (recruitMemberRepository.existsByPhoneNumber(cleanPhone)) {
             throw new RecruitMemberException(RECRUIT_MEMBER_ALREADY_APPLIED);
         }
@@ -74,7 +74,7 @@ public class RecruitMemberService {
     }
 
     public CheckPhoneNumberResponse isRegisteredPhoneNumber(String phoneNumber) {
-        String cleanPhone = phoneNumber.replaceAll("[^0-9]", "");
+        String cleanPhone = normalizePhoneNumber(phoneNumber);
         boolean exists = recruitMemberRepository.existsByPhoneNumber(cleanPhone);
 
         return new CheckPhoneNumberResponse(exists);
@@ -114,6 +114,10 @@ public class RecruitMemberService {
     @Transactional(readOnly = true)
     public Page<RecruitMember> searchMembersByNamePage(String name, Pageable pageable) {
         return recruitMemberRepository.findByNameContainingIgnoreCase(name, pageable);
+    }
+
+    private String normalizePhoneNumber(String phoneNumber) {
+        return phoneNumber.replaceAll("[^0-9]", "");
     }
 
 }
