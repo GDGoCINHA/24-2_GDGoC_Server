@@ -10,7 +10,6 @@ import static inha.gdgoc.domain.recruit.member.controller.message.RecruitMemberM
 import static inha.gdgoc.domain.recruit.member.controller.message.RecruitMemberMessage.PHONE_NUMBER_DUPLICATION_CHECK_SUCCESS;
 import static inha.gdgoc.domain.recruit.member.controller.message.RecruitMemberMessage.STUDENT_ID_DUPLICATION_CHECK_SUCCESS;
 
-import inha.gdgoc.domain.recruit.member.dto.request.ApplicationRequest;
 import inha.gdgoc.domain.recruit.member.dto.request.CheckEmailRequest;
 import inha.gdgoc.domain.recruit.member.dto.request.CheckPhoneNumberRequest;
 import inha.gdgoc.domain.recruit.member.dto.request.CheckStudentIdRequest;
@@ -50,6 +49,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.Map;
 
 @Tag(name = "Recruit - Members", description = "리크루팅 지원자 관리 API")
 @RequestMapping("/api/v1/recruit/member")
@@ -69,7 +69,7 @@ public class RecruitMemberController {
 
     @PostMapping(value = "/apply", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Void, Void>> recruitMemberAdd(
-            @RequestBody ApplicationRequest applicationRequest
+            @RequestBody Map<String, Object> applicationRequest
     ) {
         recruitMemberService.addRecruitMember(applicationRequest);
 
@@ -78,7 +78,7 @@ public class RecruitMemberController {
 
     @PostMapping(value = "/apply", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<Void, Void>> recruitMemberAddMultipart(
-            @RequestPart("request") ApplicationRequest applicationRequest,
+            @RequestPart("request") Map<String, Object> applicationRequest,
             @RequestPart(value = "file", required = false) MultipartFile file
     ) {
         recruitMemberService.addRecruitMember(applicationRequest);
