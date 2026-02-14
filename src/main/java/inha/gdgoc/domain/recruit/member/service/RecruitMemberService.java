@@ -1,6 +1,7 @@
 package inha.gdgoc.domain.recruit.member.service;
 
 import static inha.gdgoc.domain.recruit.member.exception.RecruitMemberErrorCode.RECRUIT_MEMBER_NOT_FOUND;
+import static inha.gdgoc.domain.recruit.member.exception.RecruitMemberErrorCode.RECRUIT_MEMBER_ALREADY_APPLIED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import inha.gdgoc.domain.recruit.member.dto.request.ApplicationRequest;
@@ -58,6 +59,11 @@ public class RecruitMemberService {
 
     @Transactional
     public void addRecruitMemberMemo(RecruitMemberMemoRequest recruitMemberMemoRequest) {
+        String cleanPhone = recruitMemberMemoRequest.getPhoneNumber().replaceAll("[^0-9]", "");
+        if (recruitMemberRepository.existsByPhoneNumber(cleanPhone)) {
+            throw new RecruitMemberException(RECRUIT_MEMBER_ALREADY_APPLIED);
+        }
+
         recruitMemberMemoRepository.save(recruitMemberMemoRequest.toEntity());
     }
 

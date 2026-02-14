@@ -7,6 +7,9 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum RecruitMemberErrorCode implements ErrorCode {
 
+    // 409 CONFLICT
+    RECRUIT_MEMBER_ALREADY_APPLIED(HttpStatus.CONFLICT, "이미 지원을 완료하였습니다."),
+
     // 404 NOT FOUND
     RECRUIT_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 멤버를 찾을 수 없습니다.");
 
