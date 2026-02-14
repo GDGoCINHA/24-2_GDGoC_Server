@@ -38,9 +38,6 @@ public class RecruitMember extends BaseEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "grade", nullable = false)
-    private String grade;
-
     @Column(name = "student_id", nullable = false, unique = true)
     private String studentId;
 
@@ -50,9 +47,6 @@ public class RecruitMember extends BaseEntity {
 
     @Column(name = "phone_number", nullable = false, unique = true)
     private String phoneNumber;
-
-    @Column(name = "nationality", nullable = false)
-    private String nationality;
 
     @Column(name = "email", nullable = false)
     private String email;
