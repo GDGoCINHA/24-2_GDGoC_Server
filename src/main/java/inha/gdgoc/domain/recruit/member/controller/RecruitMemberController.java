@@ -2,6 +2,7 @@ package inha.gdgoc.domain.recruit.member.controller;
 
 import static inha.gdgoc.domain.recruit.member.controller.message.RecruitMemberMessage.EMAIL_DUPLICATION_CHECK_SUCCESS;
 import static inha.gdgoc.domain.recruit.member.controller.message.RecruitMemberMessage.MEMBER_LIST_RETRIEVED_SUCCESS;
+import static inha.gdgoc.domain.recruit.member.controller.message.RecruitMemberMessage.MEMBER_MEMO_SAVE_SUCCESS;
 import static inha.gdgoc.domain.recruit.member.controller.message.RecruitMemberMessage.MEMBER_RETRIEVED_SUCCESS;
 import static inha.gdgoc.domain.recruit.member.controller.message.RecruitMemberMessage.MEMBER_SAVE_SUCCESS;
 import static inha.gdgoc.domain.recruit.member.controller.message.RecruitMemberMessage.PAYMENT_MARKED_COMPLETE_SUCCESS;
@@ -14,6 +15,7 @@ import inha.gdgoc.domain.recruit.member.dto.request.CheckEmailRequest;
 import inha.gdgoc.domain.recruit.member.dto.request.CheckPhoneNumberRequest;
 import inha.gdgoc.domain.recruit.member.dto.request.CheckStudentIdRequest;
 import inha.gdgoc.domain.recruit.member.dto.request.PaymentUpdateRequest;
+import inha.gdgoc.domain.recruit.member.dto.request.RecruitMemberMemoRequest;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckEmailResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckPhoneNumberResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckStudentIdResponse;
@@ -82,6 +84,14 @@ public class RecruitMemberController {
         recruitMemberService.addRecruitMember(applicationRequest);
 
         return ResponseEntity.ok(ApiResponse.ok(MEMBER_SAVE_SUCCESS));
+    }
+
+    @PostMapping("/memo")
+    public ResponseEntity<ApiResponse<Void, Void>> recruitMemberMemoAdd(
+            @Valid @RequestBody RecruitMemberMemoRequest recruitMemberMemoRequest
+    ) {
+        recruitMemberService.addRecruitMemberMemo(recruitMemberMemoRequest);
+        return ResponseEntity.ok(ApiResponse.ok(MEMBER_MEMO_SAVE_SUCCESS));
     }
 
     @PostMapping("/check/student-id")

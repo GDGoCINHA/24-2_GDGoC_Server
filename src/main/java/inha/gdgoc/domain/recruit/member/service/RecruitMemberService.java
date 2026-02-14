@@ -4,6 +4,7 @@ import static inha.gdgoc.domain.recruit.member.exception.RecruitMemberErrorCode.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import inha.gdgoc.domain.recruit.member.dto.request.ApplicationRequest;
+import inha.gdgoc.domain.recruit.member.dto.request.RecruitMemberMemoRequest;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckEmailResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckPhoneNumberResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckStudentIdResponse;
@@ -14,6 +15,7 @@ import inha.gdgoc.domain.recruit.member.enums.InputType;
 import inha.gdgoc.domain.recruit.member.enums.SurveyType;
 import inha.gdgoc.domain.recruit.member.exception.RecruitMemberException;
 import inha.gdgoc.domain.recruit.member.repository.AnswerRepository;
+import inha.gdgoc.domain.recruit.member.repository.RecruitMemberMemoRepository;
 import inha.gdgoc.domain.recruit.member.repository.RecruitMemberRepository;
 import inha.gdgoc.global.util.SemesterCalculator;
 import java.util.List;
@@ -27,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RecruitMemberService {
     private final RecruitMemberRepository recruitMemberRepository;
+    private final RecruitMemberMemoRepository recruitMemberMemoRepository;
     private final AnswerRepository answerRepository;
     private final ObjectMapper objectMapper;
     private final SemesterCalculator semesterCalculator;
@@ -51,6 +54,11 @@ public class RecruitMemberService {
                 .toList();
 
         answerRepository.saveAll(answers);
+    }
+
+    @Transactional
+    public void addRecruitMemberMemo(RecruitMemberMemoRequest recruitMemberMemoRequest) {
+        recruitMemberMemoRepository.save(recruitMemberMemoRequest.toEntity());
     }
 
     public CheckStudentIdResponse isRegisteredStudentId(String studentId) {
