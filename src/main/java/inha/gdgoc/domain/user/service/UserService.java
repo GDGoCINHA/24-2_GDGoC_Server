@@ -68,4 +68,5 @@ public class UserService {
                 + localPart.substring(localPart.length() - endLen)
                 + domainPart;
     }
+
 }

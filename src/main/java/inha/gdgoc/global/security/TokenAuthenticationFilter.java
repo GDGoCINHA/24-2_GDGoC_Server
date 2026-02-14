@@ -44,7 +44,8 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             || uri.startsWith("/api/v1/test/")
             || uri.startsWith("/api/v1/game/")
             || uri.startsWith("/api/v1/apply/")
-            || uri.startsWith("/api/v1/check/");
+            || uri.startsWith("/api/v1/check/")
+            || uri.startsWith("/api/v1/recruit/member/memo");
     }
 
     @Override

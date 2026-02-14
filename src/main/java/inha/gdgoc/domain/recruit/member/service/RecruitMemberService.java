@@ -1,9 +1,11 @@
 package inha.gdgoc.domain.recruit.member.service;
 
 import static inha.gdgoc.domain.recruit.member.exception.RecruitMemberErrorCode.RECRUIT_MEMBER_NOT_FOUND;
+import static inha.gdgoc.domain.recruit.member.exception.RecruitMemberErrorCode.RECRUIT_MEMBER_ALREADY_APPLIED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import inha.gdgoc.domain.recruit.member.dto.request.ApplicationRequest;
+import inha.gdgoc.domain.recruit.member.dto.request.RecruitMemberMemoRequest;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckEmailResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckPhoneNumberResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckStudentIdResponse;
@@ -14,6 +16,7 @@ import inha.gdgoc.domain.recruit.member.enums.InputType;
 import inha.gdgoc.domain.recruit.member.enums.SurveyType;
 import inha.gdgoc.domain.recruit.member.exception.RecruitMemberException;
 import inha.gdgoc.domain.recruit.member.repository.AnswerRepository;
+import inha.gdgoc.domain.recruit.member.repository.RecruitMemberMemoRepository;
 import inha.gdgoc.domain.recruit.member.repository.RecruitMemberRepository;
 import inha.gdgoc.global.util.SemesterCalculator;
 import java.util.List;
@@ -27,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RecruitMemberService {
     private final RecruitMemberRepository recruitMemberRepository;
+    private final RecruitMemberMemoRepository recruitMemberMemoRepository;
     private final AnswerRepository answerRepository;
     private final ObjectMapper objectMapper;
     private final SemesterCalculator semesterCalculator;
@@ -53,6 +57,19 @@ public class RecruitMemberService {
         answerRepository.saveAll(answers);
     }
 
+    @Transactional
+    public void addRecruitMemberMemo(RecruitMemberMemoRequest recruitMemberMemoRequest) {
+        String cleanPhone = normalizePhoneNumber(recruitMemberMemoRequest.getPhoneNumber());
+        boolean alreadyApplied = recruitMemberRepository.existsByPhoneNumber(cleanPhone);
+        boolean alreadyMemoRequested = recruitMemberMemoRepository.existsByPhoneNumber(cleanPhone);
+
+        if (alreadyApplied || alreadyMemoRequested) {
+            throw new RecruitMemberException(RECRUIT_MEMBER_ALREADY_APPLIED);
+        }
+
+        recruitMemberMemoRepository.save(recruitMemberMemoRequest.toEntity());
+    }
+
     public CheckStudentIdResponse isRegisteredStudentId(String studentId) {
         boolean exists = recruitMemberRepository.existsByStudentId(studentId);
 
@@ -60,7 +77,7 @@ public class RecruitMemberService {
     }
 
     public CheckPhoneNumberResponse isRegisteredPhoneNumber(String phoneNumber) {
-        String cleanPhone = phoneNumber.replaceAll("[^0-9]", "");
+        String cleanPhone = normalizePhoneNumber(phoneNumber);
         boolean exists = recruitMemberRepository.existsByPhoneNumber(cleanPhone);
 
         return new CheckPhoneNumberResponse(exists);
@@ -100,6 +117,10 @@ public class RecruitMemberService {
     @Transactional(readOnly = true)
     public Page<RecruitMember> searchMembersByNamePage(String name, Pageable pageable) {
         return recruitMemberRepository.findByNameContainingIgnoreCase(name, pageable);
+    }
+
+    private String normalizePhoneNumber(String phoneNumber) {
+        return phoneNumber.replaceAll("[^0-9]", "");
     }
 
 }
