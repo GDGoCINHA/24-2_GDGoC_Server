@@ -4,6 +4,8 @@ import static inha.gdgoc.domain.recruit.member.exception.RecruitMemberErrorCode.
 import static inha.gdgoc.domain.recruit.member.exception.RecruitMemberErrorCode.RECRUIT_MEMBER_ALREADY_APPLIED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import inha.gdgoc.domain.resource.enums.S3KeyType;
+import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.recruit.member.dto.request.ApplicationRequest;
 import inha.gdgoc.domain.recruit.member.dto.request.RecruitMemberMemoRequest;
 import inha.gdgoc.domain.recruit.member.dto.request.RecruitMemberRequest;
@@ -28,6 +30,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @RequiredArgsConstructor
 @Service
@@ -37,9 +40,10 @@ public class RecruitMemberService {
     private final AnswerRepository answerRepository;
     private final ObjectMapper objectMapper;
     private final SemesterCalculator semesterCalculator;
+    private final S3Service s3Service;
 
     @Transactional
-    public void addRecruitMember(Map<String, Object> requestPayload) {
+    public void addRecruitMember(Map<String, Object> requestPayload, MultipartFile file) {
         RecruitMemberRequest memberRequest;
         Map<String, Object> answers;
 
@@ -50,6 +54,12 @@ public class RecruitMemberService {
         } else {
             memberRequest = buildMemberFromNumberedPayload(requestPayload);
             answers = buildAnswersFromNumberedPayload(requestPayload);
+        }
+
+        if (file != null && !file.isEmpty()) {
+            String key = uploadProofFile(file);
+            String proofFileUrl = s3Service.getS3FileUrl(key);
+            answers.put("proofFileUrl", proofFileUrl);
         }
 
         RecruitMember member = memberRequest
@@ -70,6 +80,14 @@ public class RecruitMemberService {
                 .toList();
 
         answerRepository.saveAll(answerEntities);
+    }
+
+    private String uploadProofFile(MultipartFile file) {
+        try {
+            return s3Service.upload(0L, S3KeyType.study, file);
+        } catch (Exception e) {
+            throw new RuntimeException("증빙 파일 업로드 중 오류가 발생했습니다.", e);
+        }
     }
 
     @Transactional
@@ -144,7 +162,7 @@ public class RecruitMemberService {
         Map<String, Object> step3 = asMap(payload.get("3"));
         Map<String, Object> step4 = asMap(payload.get("4"));
         Map<String, Object> step5 = asMap(payload.get("5"));
-        Map<String, Object> step11 = asMap(payload.get("11"));
+        Map<String, Object> step6 = asMap(payload.get("6"));
 
         Map<String, Object> member = new HashMap<>();
         member.put("name", step2.get("name"));
@@ -155,20 +173,18 @@ public class RecruitMemberService {
         member.put("gender", step4.get("gender"));
         member.put("birth", step4.get("birth"));
         member.put("major", step5.get("major"));
-        member.put("isPayed", step11.getOrDefault("isPayed", false));
+        member.put("isPayed", step6.getOrDefault("isPayed", false));
 
         return objectMapper.convertValue(member, RecruitMemberRequest.class);
     }
 
     private Map<String, Object> buildAnswersFromNumberedPayload(Map<String, Object> payload) {
-        Map<String, Object> step8 = asMap(payload.get("8"));
-        Map<String, Object> step9 = asMap(payload.get("9"));
-        Map<String, Object> step10 = asMap(payload.get("10"));
+        Map<String, Object> step6 = asMap(payload.get("6"));
 
         Map<String, Object> answers = new HashMap<>();
-        putIfPresent(answers, "gdgInterest", step8.get("gdgInterest"));
-        putIfPresent(answers, "gdgWish", step9.get("gdgWish"));
-        putIfPresent(answers, "gdgFeedback", step10.get("gdgFeedback"));
+        putIfPresent(answers, "gdgInterest", step6.get("gdgInterest"));
+        putIfPresent(answers, "gdgWish", step6.get("gdgWish"));
+        putIfPresent(answers, "gdgFeedback", step6.get("gdgFeedback"));
 
         return answers;
     }
