@@ -36,6 +36,9 @@ public class TokenProvider {
     private final JwtProperties jwtProperties;
     private final UserRepository userRepository;
     private static final String CLAIM_USER_ID = "uid";
+    private static final String CLAIM_ADMIN_ID = "aid";
+    private static final String CLAIM_ROLE = "role";
+    private static final String CLAIM_TEAM = "team";
     private static final String CLAIM_SESSION_ID = "sid";
     private SecretKey cachedSigningKey;
 
@@ -64,6 +67,26 @@ public class TokenProvider {
                 .compact();
     }
 
+    public String createAdminAccessToken(Long adminCredentialId, String loginId, String sessionId) {
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + jwtProperties.getAccessTokenValidity());
+
+        var builder = Jwts.builder()
+                .issuer(jwtProperties.getSelfIssuer())
+                .audience().add(jwtProperties.getAudience()).and()
+                .issuedAt(now)
+                .expiration(validity)
+                .subject("admin:" + loginId)
+                .id(UUID.randomUUID().toString())
+                .claim(CLAIM_ADMIN_ID, adminCredentialId)
+                .claim(CLAIM_ROLE, UserRole.ADMIN.name())
+                .claim(CLAIM_SESSION_ID, sessionId);
+
+        return builder
+                .signWith(signingKey())
+                .compact();
+    }
+
 
     // Refresh Token 생성 (Random UUID)
     // JWT가 아니라, 단순 랜덤 문자열로 생성하여 Redis 저장용으로 씁니다.
@@ -75,7 +98,6 @@ public class TokenProvider {
     public Authentication getAuthentication(String token) {
         Claims claims = getClaims(token);
 
-        Long userId = extractUserId(claims);
         String sessionId = claims.get(CLAIM_SESSION_ID, String.class);
         if (sessionId == null || sessionId.isBlank()) {
             log.warn("JWT 검증 실패: sessionId(sid) 클레임이 누락되었습니다.");
@@ -84,23 +106,47 @@ public class TokenProvider {
 
         validateAudienceClaim(claims.get(Claims.AUDIENCE));
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> {
-                    log.warn("JWT 검증 실패: ID가 {}인 유저를 찾을 수 없습니다.", userId);
-                    return new BusinessException(INVALID_JWT_REQUEST);
-                });
+        Number userIdNumber = claims.get(CLAIM_USER_ID, Number.class);
+        Number adminIdNumber = claims.get(CLAIM_ADMIN_ID, Number.class);
 
-        UserRole userRole = user.getUserRole();
+        Long userId = null;
+        String username;
+        UserRole userRole;
+        TeamType team = null;
+
+        if (userIdNumber != null) {
+            userId = userIdNumber.longValue();
+            final Long resolvedUserId = userId;
+            User user = userRepository.findById(resolvedUserId)
+                    .orElseThrow(() -> {
+                        log.warn("JWT 검증 실패: ID가 {}인 유저를 찾을 수 없습니다.", resolvedUserId);
+                        return new BusinessException(INVALID_JWT_REQUEST);
+                    });
+            username = user.getEmail();
+            userRole = user.getUserRole();
+            team = user.getTeam();
+        } else if (adminIdNumber != null) {
+            String roleRaw = claims.get(CLAIM_ROLE, String.class);
+            userRole = roleRaw != null ? UserRole.valueOf(roleRaw) : UserRole.ADMIN;
+            String teamRaw = claims.get(CLAIM_TEAM, String.class);
+            if (teamRaw != null && !teamRaw.isBlank()) {
+                team = TeamType.valueOf(teamRaw);
+            }
+            username = claims.getSubject();
+        } else {
+            log.warn("JWT 검증 실패: uid/aid 클레임이 모두 누락되었습니다.");
+            throw new BusinessException(INVALID_JWT_REQUEST);
+        }
+
         Set<SimpleGrantedAuthority> authorities = new HashSet<>();
         authorities.add(new SimpleGrantedAuthority("ROLE_" + userRole.name()));
 
-        TeamType team = user.getTeam();
         if (team != null) {
             authorities.add(new SimpleGrantedAuthority("TEAM_" + team.name()));
         }
 
         CustomUserDetails userDetails =
-                new CustomUserDetails(userId, user.getEmail(), sessionId, authorities, userRole, team);
+                new CustomUserDetails(userId, username, sessionId, authorities, userRole, team);
 
         return new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
     }
@@ -153,15 +199,6 @@ public class TokenProvider {
         }
 
         return Keys.hmacShaKeyFor(candidateKey);
-    }
-
-    private Long extractUserId(Claims claims) {
-        Number idNum = claims.get(CLAIM_USER_ID, Number.class);
-        if (idNum == null) {
-            log.warn("JWT 검증 실패: userId(uid) 클레임이 누락되었습니다.");
-            throw new BusinessException(INVALID_JWT_REQUEST);
-        }
-        return idNum.longValue();
     }
 
     private void validateAudienceClaim(Object audienceClaim) {

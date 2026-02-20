@@ -32,4 +32,17 @@ public class MailService {
 
         return code;
     }
+
+    public void sendPlainMail(String toEmail, String subject, String text) {
+        sendPlainMail(toEmail, subject, text, sender);
+    }
+
+    public void sendPlainMail(String toEmail, String subject, String text, String from) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setFrom(from);
+        message.setSubject(subject);
+        message.setText(text);
+        mailSender.send(message);
+    }
 }

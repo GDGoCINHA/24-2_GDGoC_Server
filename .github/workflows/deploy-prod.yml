@@ -57,6 +57,9 @@ jobs:
           AWS_TEST_RESOURCE_BUCKET=${{ secrets.AWS_TEST_RESOURCE_BUCKET }}
           GMAIL=${{ secrets.GMAIL }}
           GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}
+          ADMIN_LOGIN_ID=${{ secrets.ADMIN_LOGIN_ID }}
+          ADMIN_LOGIN_PASSWORD=${{ secrets.ADMIN_LOGIN_PASSWORD }}
+          APP_MAIL_RECRUIT_FROM=${{ secrets.APP_MAIL_RECRUIT_FROM }}
           DOZZLE_USERNAME=${{ secrets.DOZZLE_USERNAME }}
           DOZZLE_PASSWORD=${{ secrets.DOZZLE_PASSWORD }}
           EOF

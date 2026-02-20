@@ -80,11 +80,28 @@ public class UserAdminService {
 
     @Transactional
     public void updateRoleAndTeam(CustomUserDetails editor, Long targetUserId, UpdateUserRoleTeamRequest req) {
-        User editorUser = getEditor(editor);
+        Long editorUserId = editor.getUserId();
+        UserRole editorRole;
+        TeamType editorTeam;
+
+        if (editorUserId == null) {
+            editorRole = editor.getRole();
+            editorTeam = editor.getTeam();
+            if (editorRole != UserRole.ADMIN) {
+                throw new BusinessException(GlobalErrorCode.UNAUTHORIZED_USER);
+            }
+        } else {
+            User editorUser = getEditor(editor);
+            editorRole = editorUser.getUserRole();
+            editorTeam = editorUser.getTeam();
+        }
+
         User target = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
 
-        UserRole editorRole = editorUser.getUserRole();
+        if (editorUserId != null && Objects.equals(editorUserId, target.getId())) {
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "자기 자신의 정보는 수정할 수 없습니다.");
+        }
         UserRole targetCurrentRole = target.getUserRole();
 
         UserRole newRole = (req.role() != null ? req.role() : targetCurrentRole);
@@ -101,41 +118,13 @@ public class UserAdminService {
 
         switch (editorRole) {
             case ADMIN -> {
-                if (editorUser.getId().equals(target.getId()) && newRole.rank() < UserRole.ADMIN.rank()) {
-                    throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "자기 자신을 강등할 수 없습니다.");
-                }
             }
             case ORGANIZER -> {
                 if (targetCurrentRole == UserRole.ADMIN) {
                     throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "ADMIN 사용자는 수정할 수 없습니다.");
                 }
             }
-            case LEAD -> {
-                if (editor.getTeam() == null) {
-                    throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "LEAD 토큰에 팀 정보가 없습니다.");
-                }
-                if (!(targetCurrentRole == UserRole.MEMBER || targetCurrentRole == UserRole.CORE)) {
-                    throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "LEAD는 MEMBER/CORE만 수정할 수 있습니다.");
-                }
-                if (!(newRole == UserRole.MEMBER || newRole == UserRole.CORE)) {
-                    throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "LEAD는 MEMBER/CORE로만 변경할 수 있습니다.");
-                }
-
-                if (editor.getTeam() == TeamType.HR) {
-                    if (editorUser.getId().equals(target.getId())) {
-                        if (req.team() != null && !Objects.equals(req.team(), target.getTeam())) {
-                            throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "HR-LEAD도 자기 자신의 팀은 변경할 수 없습니다.");
-                        }
-                    }
-                } else {
-                    if (target.getTeam() != editor.getTeam()) {
-                        throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "다른 팀 사용자는 수정할 수 없습니다.");
-                    }
-                    if (req.team() != null && !Objects.equals(req.team(), editor.getTeam())) {
-                        throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "LEAD는 팀을 변경할 수 없습니다.");
-                    }
-                }
-            }
+            case LEAD, CORE -> validateLeadAndCorePolicy(editorRole, editorTeam, target, req, targetCurrentRole, newRole);
             default -> throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER);
         }
 
@@ -232,6 +221,48 @@ public class UserAdminService {
     private User getEditor(CustomUserDetails editor) {
         return userRepository.findById(editor.getUserId())
                 .orElseThrow(() -> new BusinessException(GlobalErrorCode.UNAUTHORIZED_USER));
+    }
+
+    private void validateLeadAndCorePolicy(
+            UserRole editorRole,
+            TeamType editorTeam,
+            User target,
+            UpdateUserRoleTeamRequest req,
+            UserRole targetCurrentRole,
+            UserRole newRole
+    ) {
+        if (editorTeam == null) {
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, editorRole + " 토큰에 팀 정보가 없습니다.");
+        }
+
+        if (editorRole == UserRole.LEAD) {
+            if (!(targetCurrentRole == UserRole.MEMBER || targetCurrentRole == UserRole.CORE)) {
+                throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "LEAD는 MEMBER/CORE만 수정할 수 있습니다.");
+            }
+            if (!(newRole == UserRole.MEMBER || newRole == UserRole.CORE)) {
+                throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "LEAD는 MEMBER/CORE로만 변경할 수 있습니다.");
+            }
+        }
+
+        if (editorRole == UserRole.CORE) {
+            if (!(targetCurrentRole == UserRole.GUEST || targetCurrentRole == UserRole.MEMBER)) {
+                throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "CORE는 GUEST/MEMBER만 수정할 수 있습니다.");
+            }
+            if (!(newRole == UserRole.GUEST || newRole == UserRole.MEMBER)) {
+                throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "CORE는 GUEST/MEMBER로만 변경할 수 있습니다.");
+            }
+        }
+
+        if (editorTeam == TeamType.HR) {
+            return;
+        }
+
+        if (!Objects.equals(target.getTeam(), editorTeam)) {
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "다른 팀 사용자는 수정할 수 없습니다.");
+        }
+        if (req.team() != null && !Objects.equals(req.team(), editorTeam)) {
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, editorRole + "는 팀을 변경할 수 없습니다.");
+        }
     }
 
     private void targetChange(User target, UserRole newRole, TeamType newTeam) {
