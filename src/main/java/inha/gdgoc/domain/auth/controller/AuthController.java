@@ -8,7 +8,6 @@ import inha.gdgoc.domain.auth.dto.request.LoginRequest;
 import inha.gdgoc.domain.auth.dto.request.SignupRequest;
 import inha.gdgoc.domain.auth.dto.request.TokenRefreshRequest;
 import inha.gdgoc.domain.auth.dto.response.AccessTokenResponse;
-import inha.gdgoc.domain.auth.dto.response.AuthUserResponse;
 import inha.gdgoc.domain.auth.dto.response.CheckPhoneNumberResponse;
 import inha.gdgoc.domain.auth.dto.response.CheckStudentIdResponse;
 import inha.gdgoc.domain.auth.exception.AuthErrorCode;
@@ -44,6 +43,17 @@ public class AuthController {
             return ResponseEntity.ok().body(ApiResponse.ok(LOGIN_SUCCESS, response));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(AuthErrorCode.INVALID_TOKEN.getStatus().value(), e.getMessage(), null));
+        }
+    }
+
+    @PostMapping("/admin/login")
+    public ResponseEntity<?> adminLogin(@RequestBody LoginRequest request) {
+        try {
+            Object response = authService.adminLogin(request.getAdminId(), request.getPassword());
+            return ResponseEntity.ok().body(ApiResponse.ok(LOGIN_SUCCESS, response));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error(AuthErrorCode.INVALID_TOKEN.getStatus().value(), e.getMessage(), null));
         }
     }
@@ -84,7 +94,7 @@ public class AuthController {
             return ResponseEntity.ok()
                     .body(ApiResponse.ok(
                             ACCESS_TOKEN_REFRESH_SUCCESS,
-                            new AccessTokenResponse(result.accessToken(), AuthUserResponse.from(result.user()))
+                            new AccessTokenResponse(result.accessToken(), result.user())
                     ));
         } catch (Exception e) {
             log.error("Token refresh failed", e);

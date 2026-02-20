@@ -7,7 +7,7 @@ import lombok.Getter;
 public enum TeamType {
     HQ("HQ"),
     HR("HR"),
-    PR_DESIGN("PR/DESIGN"),
+    PR_DESIGN("PR_DESIGN"),
     TECH("TECH"),
     BD("BD");
 
@@ -23,8 +23,8 @@ public enum TeamType {
             case "HR" -> HR;
             case "TECH" -> TECH;
             case "BD" -> BD;
-            case "PR/DESIGN" -> PR_DESIGN;
-            default -> throw new IllegalArgumentException("Unknown team: " + raw);
+            case "PR_DESIGN" -> PR_DESIGN;
+                        default -> throw new IllegalArgumentException("Unknown team: " + raw);
         };
     }
 }

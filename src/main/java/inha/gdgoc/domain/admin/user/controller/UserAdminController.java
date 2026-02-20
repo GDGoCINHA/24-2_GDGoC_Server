@@ -43,6 +43,10 @@ public class UserAdminController {
             "@accessGuard.check(authentication,"
                     + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
                     + "T(inha.gdgoc.domain.user.enums.UserRole).LEAD))";
+    private static final String CORE_OR_HIGHER_RULE =
+            "@accessGuard.check(authentication,"
+                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
+                    + "T(inha.gdgoc.domain.user.enums.UserRole).CORE))";
 
     private final UserAdminService userAdminService;
 
@@ -63,7 +67,7 @@ public class UserAdminController {
     }
 
     @Operation(summary = "사용자 역할/팀 수정", security = {@SecurityRequirement(name = "BearerAuth")})
-    @PreAuthorize(LEAD_OR_HIGHER_RULE)
+    @PreAuthorize(CORE_OR_HIGHER_RULE)
     @PatchMapping("/{userId}/role-team")
     public ResponseEntity<ApiResponse<Void, Void>> updateRoleTeam(
             @AuthenticationPrincipal CustomUserDetails me,
