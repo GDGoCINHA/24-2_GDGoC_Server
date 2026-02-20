@@ -31,4 +31,16 @@ public class AuthUserResponse {
                 .image(user.getImage())
                 .build();
     }
+
+    public static AuthUserResponse admin(String loginId) {
+        return AuthUserResponse.builder()
+                .id(null)
+                .name(loginId)
+                .email(null)
+                .userRole(UserRole.ADMIN)
+                .team(null)
+                .membershipStatus(null)
+                .image(null)
+                .build();
+    }
 }

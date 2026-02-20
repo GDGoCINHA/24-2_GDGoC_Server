@@ -12,6 +12,8 @@ import inha.gdgoc.domain.auth.dto.response.CheckStudentIdResponse;
 import inha.gdgoc.domain.auth.dto.response.LoginSuccessResponse;
 import inha.gdgoc.domain.auth.dto.response.SignupNeededResponse;
 import inha.gdgoc.domain.auth.dto.response.TokenDto;
+import inha.gdgoc.domain.auth.entity.AdminCredential;
+import inha.gdgoc.domain.auth.repository.AdminCredentialRepository;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.TeamType;
 import inha.gdgoc.domain.user.enums.UserRole;
@@ -29,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,9 +46,11 @@ public class AuthService {
   private static final String SESSION_VALUE_DELIMITER = "::";
 
   private final UserRepository userRepository;
+  private final AdminCredentialRepository adminCredentialRepository;
   private final TokenProvider tokenProvider;
   private final StringRedisTemplate redisTemplate;
   private final AccessGuard accessGuard;
+  private final PasswordEncoder passwordEncoder;
 
   @Value("${google.client-id}")
   private String googleClientId;
@@ -147,15 +152,27 @@ public class AuthService {
 
   public RefreshResult refresh(String refreshToken) {
     RefreshSession session = resolveRefreshSession(refreshToken);
+    if (session.principalType() == PrincipalType.ADMIN) {
+      AdminCredential credential = adminCredentialRepository
+              .findById(session.principalId())
+              .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 관리자 계정입니다."));
+      if (!credential.isEnabled()) {
+        throw new IllegalArgumentException("비활성화된 관리자 계정입니다.");
+      }
+      String accessToken = tokenProvider.createAdminAccessToken(
+              credential.getId(),
+              credential.getLoginId(),
+              session.sessionId()
+      );
+      return new RefreshResult(accessToken, AuthUserResponse.admin(credential.getLoginId()));
+    }
 
-    User user =
-        userRepository
-            .findById(session.userId())
+    User user = userRepository
+            .findById(session.principalId())
             .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-    // Access Token만 새로 발급 (Refresh Token은 그대로 유지하거나, 정책에 따라 재발급 가능)
     String accessToken = tokenProvider.createAccessToken(user, session.sessionId());
-    return new RefreshResult(accessToken, user);
+    return new RefreshResult(accessToken, AuthUserResponse.from(user));
   }
 
   // 로그아웃
@@ -177,14 +194,25 @@ public class AuthService {
 
   private TokenDto generateTokens(User user) {
     String sessionId = UUID.randomUUID().toString();
-    // Access Token 생성 (JWT)
     String accessToken = tokenProvider.createAccessToken(user, sessionId);
-
-    // Refresh Token 생성 (Random UUID)
     String refreshToken = tokenProvider.createRefreshToken();
+    storeRefreshSession(refreshToken, new RefreshSession(sessionId, PrincipalType.USER, user.getId()));
 
-    storeRefreshSession(refreshToken, new RefreshSession(sessionId, user.getId()));
+    return new TokenDto(accessToken, refreshToken);
+  }
 
+  private TokenDto generateAdminTokens(AdminCredential credential) {
+    String sessionId = UUID.randomUUID().toString();
+    String accessToken = tokenProvider.createAdminAccessToken(
+            credential.getId(),
+            credential.getLoginId(),
+            sessionId
+    );
+    String refreshToken = tokenProvider.createRefreshToken();
+    storeRefreshSession(
+            refreshToken,
+            new RefreshSession(sessionId, PrincipalType.ADMIN, credential.getId())
+    );
     return new TokenDto(accessToken, refreshToken);
   }
 
@@ -235,35 +263,52 @@ public class AuthService {
             .findByOauthSubject(storedValue)
             .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-    RefreshSession upgraded = new RefreshSession(UUID.randomUUID().toString(), user.getId());
+    RefreshSession upgraded = new RefreshSession(UUID.randomUUID().toString(), PrincipalType.USER, user.getId());
     storeRefreshSession(refreshToken, upgraded);
     return upgraded;
   }
 
   private RefreshSession decodeSessionValue(String storedValue) {
-    String[] parts = storedValue.split(SESSION_VALUE_DELIMITER, 2);
-    if (parts.length != 2) {
+    String[] parts = storedValue.split(SESSION_VALUE_DELIMITER);
+    if (parts.length < 2) {
       throw new IllegalArgumentException("잘못된 세션 정보입니다.");
     }
     try {
-      Long userId = Long.parseLong(parts[1]);
-      return new RefreshSession(parts[0], userId);
+      if (parts.length == 2) {
+        Long userId = Long.parseLong(parts[1]);
+        return new RefreshSession(parts[0], PrincipalType.USER, userId);
+      }
+
+      PrincipalType type = PrincipalType.valueOf(parts[1]);
+      Long principalId = Long.parseLong(parts[2]);
+      return new RefreshSession(parts[0], type, principalId);
     } catch (NumberFormatException e) {
       throw new IllegalArgumentException("잘못된 세션 정보입니다.", e);
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException("잘못된 세션 타입 정보입니다.", e);
     }
   }
 
   private String encodeSessionValue(RefreshSession session) {
-    return session.sessionId() + SESSION_VALUE_DELIMITER + session.userId();
+    return session.sessionId()
+            + SESSION_VALUE_DELIMITER
+            + session.principalType().name()
+            + SESSION_VALUE_DELIMITER
+            + session.principalId();
   }
 
   private String refreshTokenKey(String refreshToken) {
     return REFRESH_TOKEN_PREFIX + refreshToken;
   }
 
-  private record RefreshSession(String sessionId, Long userId) {}
+  private enum PrincipalType {
+    USER,
+    ADMIN
+  }
 
-  public record RefreshResult(String accessToken, User user) {}
+  private record RefreshSession(String sessionId, PrincipalType principalType, Long principalId) {}
+
+  public record RefreshResult(String accessToken, AuthUserResponse user) {}
 
   private GoogleUserInfo buildGoogleUserInfo(GoogleIdToken.Payload payload) {
     String fullName = (String) payload.get("name");
@@ -313,4 +358,25 @@ public class AuthService {
   }
 
   private record NameParts(String familyName, String givenName) {}
+
+  @Transactional(readOnly = true)
+  public LoginSuccessResponse adminLogin(String adminId, String password) {
+    if (!hasText(adminId) || !hasText(password)) {
+      throw new IllegalArgumentException("관리자 아이디/비밀번호를 입력해 주세요.");
+    }
+
+    var credential = adminCredentialRepository.findByLoginId(adminId.trim())
+            .orElseThrow(() -> new IllegalArgumentException("관리자 계정을 찾을 수 없습니다."));
+
+    if (!credential.isEnabled()) {
+      throw new IllegalArgumentException("비활성화된 관리자 계정입니다.");
+    }
+
+    if (!passwordEncoder.matches(password, credential.getPasswordHash())) {
+      throw new IllegalArgumentException("관리자 아이디 또는 비밀번호가 올바르지 않습니다.");
+    }
+
+    TokenDto tokens = generateAdminTokens(credential);
+    return LoginSuccessResponse.of(tokens, AuthUserResponse.admin(credential.getLoginId()));
+  }
 }
