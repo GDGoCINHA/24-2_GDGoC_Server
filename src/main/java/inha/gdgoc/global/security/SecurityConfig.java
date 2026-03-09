@@ -90,6 +90,13 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * 애플리케이션 전체 경로에 대한 CORS 설정을 생성하여 등록한다.
+     *
+     * 생성된 CORS 구성은 지정된 출처 목록, 허용 HTTP 메서드, 허용/노출 헤더, 자격증명 허용 및 프리플라이트 캐시(maxAge)를 포함한다.
+     *
+     * @return 모든 경로("/**")에 등록된 CorsConfiguration을 제공하는 CorsConfigurationSource 객체
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
@@ -100,7 +107,8 @@ public class SecurityConfig {
                 "https://www.gdgocinha.com",
                 "https://typing-game-alpha-umber.vercel.app",
                 "https://api.gdgocinha.com",
-                "https://*.gdgocinha.com"
+                "https://*.gdgocinha.com",
+                "https://smpringles24.github.io"
         ));
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
         config.setAllowedHeaders(List.of("Origin","X-Requested-With","Content-Type","Accept","Authorization"));
