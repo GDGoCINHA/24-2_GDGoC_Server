@@ -100,7 +100,8 @@ public class SecurityConfig {
                 "https://www.gdgocinha.com",
                 "https://typing-game-alpha-umber.vercel.app",
                 "https://api.gdgocinha.com",
-                "https://*.gdgocinha.com"
+                "https://*.gdgocinha.com",
+                "https://smpringles24.github.io"
         ));
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
         config.setAllowedHeaders(List.of("Origin","X-Requested-With","Content-Type","Accept","Authorization"));
