@@ -2,10 +2,16 @@ package inha.gdgoc.domain.game.controller;
 
 import static inha.gdgoc.domain.game.controller.message.GameUserMessage.GAME_RANK_RETRIEVED_SUCCESS;
 import static inha.gdgoc.domain.game.controller.message.GameUserMessage.GAME_RANK_SAVE_SUCCESS;
+import static inha.gdgoc.domain.game.controller.message.GameUserMessage.MBTI_RESULT_UPSERT_SUCCESS;
+import static inha.gdgoc.domain.game.controller.message.GameUserMessage.MBTI_RESULT_STATS_RETRIEVED_SUCCESS;
 
 import inha.gdgoc.domain.game.dto.request.GameUserRequest;
+import inha.gdgoc.domain.game.dto.request.MbtiResultRequest;
 import inha.gdgoc.domain.game.dto.response.GameUserResponse;
+import inha.gdgoc.domain.game.dto.response.MbtiResultResponse;
+import inha.gdgoc.domain.game.dto.response.MbtiStatsResponse;
 import inha.gdgoc.domain.game.service.GameUserService;
+import inha.gdgoc.domain.game.service.MbtiResultService;
 import inha.gdgoc.global.dto.response.ApiResponse;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class GameUserController {
 
     private final GameUserService gameUserService;
+    private final MbtiResultService mbtiResultService;
 
     @PostMapping("/result")
     public ResponseEntity<ApiResponse<List<GameUserResponse>, Void>> saveGameResult(
@@ -37,5 +44,19 @@ public class GameUserController {
         List<GameUserResponse> response = gameUserService.findUserRankings();
 
         return ResponseEntity.ok(ApiResponse.ok(GAME_RANK_RETRIEVED_SUCCESS, response));
+    }
+
+    @PostMapping("/mbti/result")
+    public ResponseEntity<ApiResponse<MbtiResultResponse, Void>> upsertMbtiResult(
+            @RequestBody MbtiResultRequest request
+    ) {
+        MbtiResultResponse response = mbtiResultService.upsertMbtiResult(request);
+        return ResponseEntity.ok(ApiResponse.ok(MBTI_RESULT_UPSERT_SUCCESS, response));
+    }
+
+    @GetMapping("/mbti/result/stats")
+    public ResponseEntity<ApiResponse<MbtiStatsResponse, Void>> getMbtiStats() {
+        MbtiStatsResponse response = mbtiResultService.getMbtiStats();
+        return ResponseEntity.ok(ApiResponse.ok(MBTI_RESULT_STATS_RETRIEVED_SUCCESS, response));
     }
 }
