@@ -22,6 +22,7 @@ public interface UserRepository extends JpaRepository<User, Long>, UserRepositor
     Optional<User> findByOauthSubject(String oauthSubject);
     
     boolean existsByStudentId(String studentId);
+    List<User> findByStudentIdIn(Collection<String> studentIds);
     boolean existsByPhoneNumber(String phoneNumber);
     boolean existsByNameAndEmail(String name, String email);
     boolean existsByEmail(String email);
