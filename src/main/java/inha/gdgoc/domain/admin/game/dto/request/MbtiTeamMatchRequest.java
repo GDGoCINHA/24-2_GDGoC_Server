@@ -12,7 +12,7 @@ public record MbtiTeamMatchRequest(
         @Min(2) @Max(10) Integer teamSize
 ) {
     public int resolvedTeamSize() {
-        return teamSize == null ? 4 : teamSize;
+        return teamSize == null ? 6 : teamSize;
     }
 
     public record Candidate(
