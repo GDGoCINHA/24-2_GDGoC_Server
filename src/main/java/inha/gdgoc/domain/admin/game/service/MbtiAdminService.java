@@ -5,9 +5,10 @@ import inha.gdgoc.domain.admin.game.dto.response.MbtiAdminResultRowResponse;
 import inha.gdgoc.domain.admin.game.dto.response.MbtiTeamMatchResponse;
 import inha.gdgoc.domain.game.entity.MbtiResult;
 import inha.gdgoc.domain.game.repository.MbtiResultRepository;
+import inha.gdgoc.domain.user.enums.UserRole;
+import inha.gdgoc.domain.user.repository.UserRepository;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
@@ -24,10 +25,28 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Service
 public class MbtiAdminService {
-
-    private static final String NO_RESULT_REASON = "NO_MBTI_RESULT";
+    private static final String EXCLUDED_PRIVILEGED_ROLE_REASON = "EXCLUDED_PRIVILEGED_ROLE";
+    private static final Map<String, List<String>> TEAMMATE_COMPATIBILITY = Map.ofEntries(
+            Map.entry("LPTI", List.of("CPTF", "CPUI", "LSTF")),
+            Map.entry("LPTF", List.of("LSTF", "CPTF", "LPUI")),
+            Map.entry("LSTI", List.of("LPTF", "CPUF", "LPUF")),
+            Map.entry("LSTF", List.of("LPTI", "CPTF", "LPUF")),
+            Map.entry("CPTI", List.of("LSTF", "LPTI", "LPUI")),
+            Map.entry("CPTF", List.of("LPTI", "LSTF", "LSUI")),
+            Map.entry("CSTI", List.of("CPUI", "LPTF", "LPUI")),
+            Map.entry("CSTF", List.of("LSTF", "CPTF", "CPUF")),
+            Map.entry("LPUI", List.of("CPTF", "LSTF", "CSUI")),
+            Map.entry("LPUF", List.of("LSTI", "LSTF", "CPUF")),
+            Map.entry("LSUI", List.of("LPTF", "CPTI", "LPUI")),
+            Map.entry("LSUF", List.of("LPTF", "CPTF", "CPUF")),
+            Map.entry("CPUI", List.of("LPTI", "LSTI", "CSTI")),
+            Map.entry("CPUF", List.of("LSTI", "LPUF", "CPTF")),
+            Map.entry("CSUI", List.of("LPUI", "LSTF", "CPTF")),
+            Map.entry("CSUF", List.of("CPTF", "LSTF", "CPUF"))
+    );
 
     private final MbtiResultRepository mbtiResultRepository;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public Page<MbtiAdminResultRowResponse> searchResults(String keyword, Pageable pageable) {
@@ -71,6 +90,12 @@ public class MbtiAdminService {
         List<String> studentIds = uniqueCandidates.stream()
                 .map(MbtiTeamMatchRequest.Candidate::studentId)
                 .toList();
+        Map<String, UserRole> roleByStudentId = userRepository.findByStudentIdIn(studentIds).stream()
+                .collect(
+                        LinkedHashMap::new,
+                        (acc, user) -> acc.putIfAbsent(user.getStudentId(), user.getUserRole()),
+                        Map::putAll
+                );
 
         Map<String, MbtiResult> resultMap = mbtiResultRepository.findByStudentIdIn(studentIds).stream()
                 .collect(
@@ -80,15 +105,27 @@ public class MbtiAdminService {
                 );
 
         List<MbtiTeamMatchResponse.Member> matchedMembers = new ArrayList<>();
+        List<MbtiTeamMatchResponse.Member> unmatchedMembers = new ArrayList<>();
         List<MbtiTeamMatchResponse.UnmatchedCandidate> unmatched = new ArrayList<>();
 
         for (MbtiTeamMatchRequest.Candidate candidate : uniqueCandidates) {
-            MbtiResult matched = resultMap.get(candidate.studentId());
-            if (matched == null) {
+            UserRole userRole = roleByStudentId.get(candidate.studentId());
+            if (userRole == UserRole.LEAD || userRole == UserRole.ORGANIZER) {
                 unmatched.add(new MbtiTeamMatchResponse.UnmatchedCandidate(
                         candidate.name(),
                         candidate.studentId(),
-                        NO_RESULT_REASON
+                        EXCLUDED_PRIVILEGED_ROLE_REASON
+                ));
+                continue;
+            }
+
+            MbtiResult matched = resultMap.get(candidate.studentId());
+            if (matched == null) {
+                unmatchedMembers.add(new MbtiTeamMatchResponse.Member(
+                        candidate.name(),
+                        candidate.studentId(),
+                        null,
+                        false
                 ));
                 continue;
             }
@@ -96,39 +133,77 @@ public class MbtiAdminService {
             matchedMembers.add(new MbtiTeamMatchResponse.Member(
                     candidate.name().isEmpty() ? matched.getName() : candidate.name(),
                     candidate.studentId(),
-                    matched.getMbtiType()
+                    matched.getMbtiType(),
+                    true
             ));
         }
 
         int teamSize = request.resolvedTeamSize();
-        List<MbtiTeamMatchResponse.Team> teams = buildBalancedTeams(matchedMembers, teamSize);
+        TeamBuildResult buildResult = buildBalancedTeams(matchedMembers, unmatchedMembers, teamSize);
 
         return new MbtiTeamMatchResponse(
                 rawCandidates.size(),
                 uniqueCandidates.size(),
-                matchedMembers.size(),
+                buildResult.assignedCount(),
                 unmatched.size(),
                 teamSize,
-                teams.size(),
-                teams,
+                buildResult.teams().size(),
+                buildResult.teams(),
                 unmatched
         );
     }
 
-    private List<MbtiTeamMatchResponse.Team> buildBalancedTeams(
-            List<MbtiTeamMatchResponse.Member> members,
+    private TeamBuildResult buildBalancedTeams(
+            List<MbtiTeamMatchResponse.Member> matchedMembers,
+            List<MbtiTeamMatchResponse.Member> unmatchedMembers,
             int teamSize
     ) {
-        if (members.isEmpty()) {
-            return List.of();
+        int totalMembers = matchedMembers.size() + unmatchedMembers.size();
+        if (totalMembers == 0) {
+            return new TeamBuildResult(List.of());
         }
 
-        int teamCount = (int) Math.ceil((double) members.size() / teamSize);
+        int teamCount = (int) Math.ceil((double) totalMembers / teamSize);
+
         List<TeamBucket> buckets = new ArrayList<>();
         for (int i = 0; i < teamCount; i += 1) {
-            buckets.add(new TeamBucket(i + 1));
+            int baseSize = totalMembers / teamCount + (i < totalMembers % teamCount ? 1 : 0);
+            int unmatchedTarget = unmatchedMembers.size() / teamCount + (i < unmatchedMembers.size() % teamCount ? 1 : 0);
+            unmatchedTarget = Math.min(unmatchedTarget, baseSize);
+            buckets.add(new TeamBucket(i + 1, unmatchedTarget, baseSize - unmatchedTarget));
         }
 
+        for (MbtiTeamMatchResponse.Member member : unmatchedMembers) {
+            TeamBucket bucket = buckets.stream()
+                    .filter(TeamBucket::canAcceptUnmatched)
+                    .min(Comparator.comparingInt(TeamBucket::size).thenComparingInt(TeamBucket::teamNumber))
+                    .orElseThrow();
+
+            bucket.addUnmatched(member);
+        }
+
+        List<MbtiTeamMatchResponse.Member> orderedMatched = buildCompatibilitySeedOrder(matchedMembers);
+
+        for (MbtiTeamMatchResponse.Member member : orderedMatched) {
+            TeamBucket bucket = buckets.stream()
+                    .filter(TeamBucket::canAcceptMatched)
+                    .max(
+                            Comparator.comparingInt((TeamBucket team) -> team.compatibilityScoreFor(member))
+                                    .thenComparing(Comparator.comparingInt(TeamBucket::size).reversed())
+                                    .thenComparing(Comparator.comparingInt(TeamBucket::teamNumber).reversed())
+                    )
+                    .orElseThrow();
+
+            bucket.addMatched(member);
+        }
+
+        List<MbtiTeamMatchResponse.Team> teams = buckets.stream().map(TeamBucket::toResponse).toList();
+        return new TeamBuildResult(teams);
+    }
+
+    private List<MbtiTeamMatchResponse.Member> buildCompatibilitySeedOrder(
+            List<MbtiTeamMatchResponse.Member> members
+    ) {
         Map<String, List<MbtiTeamMatchResponse.Member>> grouped = members.stream()
                 .filter(Objects::nonNull)
                 .collect(
@@ -142,29 +217,7 @@ public class MbtiAdminService {
                 .map(list -> (Deque<MbtiTeamMatchResponse.Member>) new ArrayDeque<>(list))
                 .toList();
 
-        List<MbtiTeamMatchResponse.Member> ordered = interleaveByType(queues);
-
-        for (MbtiTeamMatchResponse.Member member : ordered) {
-            TeamBucket bucket = buckets.stream()
-                    .min(
-                            Comparator.comparingInt(TeamBucket::size)
-                                    .thenComparingInt(team -> team.countType(member.mbtiType()))
-                                    .thenComparingInt(TeamBucket::teamNumber)
-                    )
-                    .orElseThrow();
-
-            bucket.add(member);
-        }
-
-        return buckets.stream()
-                .map(TeamBucket::toResponse)
-                .toList();
-    }
-
-    private List<MbtiTeamMatchResponse.Member> interleaveByType(
-            Collection<Deque<MbtiTeamMatchResponse.Member>> queues
-    ) {
-        List<MbtiTeamMatchResponse.Member> result = new ArrayList<>();
+        List<MbtiTeamMatchResponse.Member> ordered = new ArrayList<>();
         boolean hasRemaining = true;
 
         while (hasRemaining) {
@@ -175,14 +228,34 @@ public class MbtiAdminService {
                     continue;
                 }
 
-                result.add(member);
+                ordered.add(member);
                 if (!queue.isEmpty()) {
                     hasRemaining = true;
                 }
             }
         }
 
-        return result;
+        return ordered;
+    }
+
+    private static int pairCompatibilityScore(String sourceType, String targetType) {
+        if (sourceType == null || targetType == null) {
+            return 0;
+        }
+
+        List<String> sourceMatches = TEAMMATE_COMPATIBILITY.getOrDefault(sourceType, List.of());
+        List<String> targetMatches = TEAMMATE_COMPATIBILITY.getOrDefault(targetType, List.of());
+
+        boolean sourcePrefersTarget = sourceMatches.contains(targetType);
+        boolean targetPrefersSource = targetMatches.contains(sourceType);
+
+        if (sourcePrefersTarget && targetPrefersSource) {
+            return 3;
+        }
+        if (sourcePrefersTarget || targetPrefersSource) {
+            return 1;
+        }
+        return 0;
     }
 
     private String normalize(String value) {
@@ -191,16 +264,24 @@ public class MbtiAdminService {
 
     private static final class TeamBucket {
         private final int teamNumber;
+        private final int unmatchedTarget;
+        private final int matchedTarget;
         private final List<MbtiTeamMatchResponse.Member> members = new ArrayList<>();
-        private final Map<String, Integer> typeCounts = new HashMap<>();
+        private int unmatchedCount;
 
-        private TeamBucket(int teamNumber) {
+        private TeamBucket(int teamNumber, int unmatchedTarget, int matchedTarget) {
             this.teamNumber = teamNumber;
+            this.unmatchedTarget = unmatchedTarget;
+            this.matchedTarget = matchedTarget;
         }
 
-        private void add(MbtiTeamMatchResponse.Member member) {
+        private void addMatched(MbtiTeamMatchResponse.Member member) {
             members.add(member);
-            typeCounts.merge(member.mbtiType(), 1, Integer::sum);
+        }
+
+        private void addUnmatched(MbtiTeamMatchResponse.Member member) {
+            members.add(member);
+            unmatchedCount += 1;
         }
 
         private int size() {
@@ -211,12 +292,33 @@ public class MbtiAdminService {
             return teamNumber;
         }
 
-        private int countType(String mbtiType) {
-            return typeCounts.getOrDefault(mbtiType, 0);
+        private boolean canAcceptUnmatched() {
+            return unmatchedCount < unmatchedTarget && size() < unmatchedTarget + matchedTarget;
+        }
+
+        private boolean canAcceptMatched() {
+            return matchedCount() < matchedTarget && size() < unmatchedTarget + matchedTarget;
+        }
+
+        private int matchedCount() {
+            return size() - unmatchedCount;
+        }
+
+        private int compatibilityScoreFor(MbtiTeamMatchResponse.Member candidate) {
+            return members.stream()
+                    .filter(MbtiTeamMatchResponse.Member::hasMbtiResult)
+                    .mapToInt(member -> pairCompatibilityScore(candidate.mbtiType(), member.mbtiType()))
+                    .sum();
         }
 
         private MbtiTeamMatchResponse.Team toResponse() {
             return new MbtiTeamMatchResponse.Team(teamNumber, List.copyOf(members));
+        }
+    }
+
+    private record TeamBuildResult(List<MbtiTeamMatchResponse.Team> teams) {
+        private int assignedCount() {
+            return teams.stream().mapToInt(team -> team.members().size()).sum();
         }
     }
 }

@@ -21,7 +21,8 @@ public record MbtiTeamMatchResponse(
     public record Member(
             String name,
             String studentId,
-            String mbtiType
+            String mbtiType,
+            boolean hasMbtiResult
     ) {
     }
 
