@@ -68,39 +68,45 @@ public class MbtiAdminService {
     @Transactional(readOnly = true)
     public MbtiTeamMatchResponse matchTeams(MbtiTeamMatchRequest request) {
         List<MbtiTeamMatchRequest.Candidate> rawCandidates = request.candidates();
-        Map<String, MbtiTeamMatchRequest.Candidate> uniqueByStudentId = new LinkedHashMap<>();
+        Map<String, MbtiTeamMatchRequest.Candidate> uniqueByCandidateKey = new LinkedHashMap<>();
 
         for (MbtiTeamMatchRequest.Candidate candidate : rawCandidates) {
             if (candidate == null) {
                 continue;
             }
 
-            String studentId = normalize(candidate.studentId());
-            if (studentId.isEmpty()) {
+            String name = normalize(candidate.name());
+            String studentYear = normalizeAcademicYear(candidate.studentId());
+            if (name.isEmpty() || studentYear.isEmpty()) {
                 continue;
             }
 
-            uniqueByStudentId.putIfAbsent(
-                    studentId,
-                    new MbtiTeamMatchRequest.Candidate(normalize(candidate.name()), studentId)
+            String candidateKey = buildCandidateKey(name, studentYear);
+            uniqueByCandidateKey.putIfAbsent(
+                    candidateKey,
+                    new MbtiTeamMatchRequest.Candidate(name, studentYear)
             );
         }
 
-        List<MbtiTeamMatchRequest.Candidate> uniqueCandidates = new ArrayList<>(uniqueByStudentId.values());
-        List<String> studentIds = uniqueCandidates.stream()
-                .map(MbtiTeamMatchRequest.Candidate::studentId)
-                .toList();
-        Map<String, UserRole> roleByStudentId = userRepository.findByStudentIdIn(studentIds).stream()
+        List<MbtiTeamMatchRequest.Candidate> uniqueCandidates = new ArrayList<>(uniqueByCandidateKey.values());
+        Map<String, UserRole> privilegedRoleByCandidateKey = userRepository
+                .findByUserRoleIn(List.of(UserRole.LEAD, UserRole.ORGANIZER))
+                .stream()
                 .collect(
                         LinkedHashMap::new,
-                        (acc, user) -> acc.putIfAbsent(user.getStudentId(), user.getUserRole()),
+                        (acc, user) -> acc.putIfAbsent(
+                                buildCandidateKey(user.getName(), user.getStudentId()),
+                                user.getUserRole()
+                        ),
                         Map::putAll
                 );
-
-        Map<String, MbtiResult> resultMap = mbtiResultRepository.findByStudentIdIn(studentIds).stream()
+        Map<String, MbtiResult> resultMap = mbtiResultRepository.findAll().stream()
                 .collect(
                         LinkedHashMap::new,
-                        (acc, row) -> acc.putIfAbsent(row.getStudentId(), row),
+                        (acc, row) -> acc.putIfAbsent(
+                                buildCandidateKey(row.getName(), row.getStudentId()),
+                                row
+                        ),
                         Map::putAll
                 );
 
@@ -109,7 +115,8 @@ public class MbtiAdminService {
         List<MbtiTeamMatchResponse.UnmatchedCandidate> unmatched = new ArrayList<>();
 
         for (MbtiTeamMatchRequest.Candidate candidate : uniqueCandidates) {
-            UserRole userRole = roleByStudentId.get(candidate.studentId());
+            String candidateKey = buildCandidateKey(candidate.name(), candidate.studentId());
+            UserRole userRole = privilegedRoleByCandidateKey.get(candidateKey);
             if (userRole == UserRole.LEAD || userRole == UserRole.ORGANIZER) {
                 unmatched.add(new MbtiTeamMatchResponse.UnmatchedCandidate(
                         candidate.name(),
@@ -119,7 +126,7 @@ public class MbtiAdminService {
                 continue;
             }
 
-            MbtiResult matched = resultMap.get(candidate.studentId());
+            MbtiResult matched = resultMap.get(candidateKey);
             if (matched == null) {
                 unmatchedMembers.add(new MbtiTeamMatchResponse.Member(
                         candidate.name(),
@@ -260,6 +267,29 @@ public class MbtiAdminService {
 
     private String normalize(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private String buildCandidateKey(String name, String studentIdOrYear) {
+        String normalizedName = normalize(name).toLowerCase();
+        String normalizedYear = normalizeAcademicYear(studentIdOrYear);
+        if (normalizedName.isEmpty() || normalizedYear.isEmpty()) {
+            return "";
+        }
+        return normalizedName + "|" + normalizedYear;
+    }
+
+    private String normalizeAcademicYear(String value) {
+        String digits = value == null ? "" : value.replaceAll("\\D", "");
+        if (digits.length() == 2) {
+            return digits;
+        }
+        if (digits.startsWith("12") && digits.length() >= 4) {
+            return digits.substring(2, 4);
+        }
+        if (digits.length() >= 2) {
+            return digits.substring(0, 2);
+        }
+        return "";
     }
 
     private static final class TeamBucket {
