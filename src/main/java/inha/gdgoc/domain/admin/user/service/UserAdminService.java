@@ -236,11 +236,11 @@ public class UserAdminService {
         }
 
         if (editorRole == UserRole.LEAD) {
-            if (!(targetCurrentRole == UserRole.MEMBER || targetCurrentRole == UserRole.CORE)) {
-                throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "LEAD는 MEMBER/CORE만 수정할 수 있습니다.");
+            if (!(targetCurrentRole == UserRole.GUEST || targetCurrentRole == UserRole.MEMBER || targetCurrentRole == UserRole.CORE)) {
+                throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "LEAD는 GUEST/MEMBER/CORE만 수정할 수 있습니다.");
             }
-            if (!(newRole == UserRole.MEMBER || newRole == UserRole.CORE)) {
-                throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "LEAD는 MEMBER/CORE로만 변경할 수 있습니다.");
+            if (!(newRole == UserRole.GUEST || newRole == UserRole.MEMBER || newRole == UserRole.CORE)) {
+                throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER, "LEAD는 GUEST/MEMBER/CORE로만 변경할 수 있습니다.");
             }
         }
 

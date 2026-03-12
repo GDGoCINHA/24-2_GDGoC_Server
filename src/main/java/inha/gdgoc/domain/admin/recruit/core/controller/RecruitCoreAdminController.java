@@ -6,6 +6,7 @@ import inha.gdgoc.domain.admin.recruit.core.dto.response.RecruitCoreApplicantSum
 import inha.gdgoc.domain.admin.recruit.core.dto.response.RecruitCoreApplicationDecisionResponse;
 import inha.gdgoc.domain.admin.recruit.core.dto.response.RecruitCoreApplicationPageResponse;
 import inha.gdgoc.domain.admin.recruit.core.service.RecruitCoreAdminService;
+import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicantDetailResponse;
 import inha.gdgoc.domain.recruit.core.entity.RecruitCoreApplication;
 import inha.gdgoc.domain.recruit.core.enums.RecruitCoreResultStatus;
 import inha.gdgoc.domain.user.enums.TeamType;
@@ -63,6 +64,12 @@ public class RecruitCoreAdminController {
             result.getTotalPages(),
             result.isLast()
         );
+    }
+
+    @PreAuthorize(ORGANIZER_OR_HR_LEAD_RULE)
+    @GetMapping("/{applicationId}")
+    public ResponseEntity<RecruitCoreApplicantDetailResponse> detail(@PathVariable Long applicationId) {
+        return ResponseEntity.ok(adminService.getApplicationDetail(applicationId));
     }
 
     @PreAuthorize(ORGANIZER_OR_HR_LEAD_RULE)

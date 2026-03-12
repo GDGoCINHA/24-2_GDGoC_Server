@@ -2,6 +2,7 @@ package inha.gdgoc.domain.admin.recruit.core.service;
 
 import inha.gdgoc.domain.admin.recruit.core.dto.request.RecruitCoreApplicationAcceptRequest;
 import inha.gdgoc.domain.admin.recruit.core.dto.request.RecruitCoreApplicationRejectRequest;
+import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicantDetailResponse;
 import inha.gdgoc.domain.admin.recruit.core.dto.response.RecruitCoreApplicationDecisionResponse;
 import inha.gdgoc.domain.recruit.core.entity.RecruitCoreApplication;
 import inha.gdgoc.domain.recruit.core.enums.RecruitCoreResultStatus;
@@ -41,6 +42,11 @@ public class RecruitCoreAdminService {
             spec = spec.and((root, query, builder) -> builder.equal(root.get("team"), team.name()));
         }
         return repository.findAll(spec, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public RecruitCoreApplicantDetailResponse getApplicationDetail(Long applicationId) {
+        return RecruitCoreApplicantDetailResponse.from(getApplication(applicationId));
     }
 
     @Transactional
