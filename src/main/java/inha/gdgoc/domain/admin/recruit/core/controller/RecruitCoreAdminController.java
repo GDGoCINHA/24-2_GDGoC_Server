@@ -32,17 +32,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class RecruitCoreAdminController {
 
-    private static final String ORGANIZER_OR_HR_LEAD_RULE =
+    private static final String LEAD_OR_HIGHER_RULE =
             "@accessGuard.check(authentication,"
                     + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
-                    + "T(inha.gdgoc.domain.user.enums.UserRole).ORGANIZER),"
-                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).of("
-                    + "T(inha.gdgoc.domain.user.enums.UserRole).LEAD,"
-                    + " T(inha.gdgoc.domain.user.enums.TeamType).HR))";
+                    + "T(inha.gdgoc.domain.user.enums.UserRole).LEAD))";
 
     private final RecruitCoreAdminService adminService;
 
-    @PreAuthorize("hasAnyRole('ADMIN','ORGANIZER')")
+    @PreAuthorize(LEAD_OR_HIGHER_RULE)
     @GetMapping
     public RecruitCoreApplicationPageResponse list(
         @RequestParam String session,
@@ -66,13 +63,13 @@ public class RecruitCoreAdminController {
         );
     }
 
-    @PreAuthorize(ORGANIZER_OR_HR_LEAD_RULE)
+    @PreAuthorize(LEAD_OR_HIGHER_RULE)
     @GetMapping("/{applicationId}")
     public ResponseEntity<RecruitCoreApplicantDetailResponse> detail(@PathVariable Long applicationId) {
         return ResponseEntity.ok(adminService.getApplicationDetail(applicationId));
     }
 
-    @PreAuthorize(ORGANIZER_OR_HR_LEAD_RULE)
+    @PreAuthorize(LEAD_OR_HIGHER_RULE)
     @PostMapping("/{applicationId}/accept")
     public ResponseEntity<RecruitCoreApplicationDecisionResponse> accept(
         @AuthenticationPrincipal CustomUserDetails reviewer,
@@ -84,7 +81,7 @@ public class RecruitCoreAdminController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize(ORGANIZER_OR_HR_LEAD_RULE)
+    @PreAuthorize(LEAD_OR_HIGHER_RULE)
     @PostMapping("/{applicationId}/reject")
     public ResponseEntity<RecruitCoreApplicationDecisionResponse> reject(
         @AuthenticationPrincipal CustomUserDetails reviewer,
