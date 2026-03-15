@@ -1,10 +1,12 @@
 package inha.gdgoc.domain.game.service;
 
 import inha.gdgoc.domain.game.dto.request.Rythm8beatScoreRequest;
+import inha.gdgoc.domain.game.dto.response.Rythm8beatAdminScoreResponse;
 import inha.gdgoc.domain.game.dto.response.Rythm8beatRankItemResponse;
 import inha.gdgoc.domain.game.dto.response.Rythm8beatRankingResponse;
 import inha.gdgoc.domain.game.entity.Rythm8beatScore;
 import inha.gdgoc.domain.game.repository.Rythm8beatScoreRepository;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +56,28 @@ public class Rythm8beatScoreService {
         }
 
         return new Rythm8beatRankingResponse(top3Response, userRank);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Rythm8beatAdminScoreResponse> getAllScores() {
+        List<Rythm8beatScore> scores = rythm8beatScoreRepository.findAllByOrderByScoreDescUpdatedAtAsc();
+        List<Rythm8beatAdminScoreResponse> responses = new ArrayList<>();
+
+        Integer previousScore = null;
+        int previousRank = 0;
+
+        for (int index = 0; index < scores.size(); index++) {
+            Rythm8beatScore score = scores.get(index);
+            int rank = previousScore != null && previousScore == score.getScore()
+                    ? previousRank
+                    : index + 1;
+
+            responses.add(new Rythm8beatAdminScoreResponse(rank, score));
+            previousScore = score.getScore();
+            previousRank = rank;
+        }
+
+        return responses;
     }
 
     public void resetAll() {
