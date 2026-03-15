@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public enum RecruitCoreApplicationErrorCode {
+    RECRUITMENT_CLOSED("RECRUITMENT_CLOSED", "코어 지원 기간이 종료되었습니다.", HttpStatus.FORBIDDEN),
     ALREADY_APPLIED("ALREADY_APPLIED", "이미 지원이 완료되었습니다.", HttpStatus.CONFLICT),
     APPLICATION_NOT_FOUND("APPLICATION_NOT_FOUND", "제출된 운영진 지원서가 없습니다.", HttpStatus.NOT_FOUND);
 

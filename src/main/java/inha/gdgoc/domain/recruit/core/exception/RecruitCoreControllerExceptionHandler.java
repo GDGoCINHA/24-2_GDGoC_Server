@@ -27,6 +27,19 @@ public class RecruitCoreControllerExceptionHandler {
         return ResponseEntity.status(code.getStatus()).body(body);
     }
 
+    @ExceptionHandler(RecruitCoreClosedException.class)
+    public ResponseEntity<RecruitCoreApplicationErrorResponse> handleClosed(
+        RecruitCoreClosedException ex
+    ) {
+        log.debug("RecruitCoreClosedException: {}", ex.getMessage());
+        var code = ex.getErrorCode();
+        RecruitCoreApplicationErrorResponse body = RecruitCoreApplicationErrorResponse.of(
+            code.getCode(),
+            code.getMessage()
+        );
+        return ResponseEntity.status(code.getStatus()).body(body);
+    }
+
     @ExceptionHandler(RecruitCoreApplicationNotFoundException.class)
     public ResponseEntity<RecruitCoreApplicationErrorResponse> handleNotFound(
         RecruitCoreApplicationNotFoundException ex

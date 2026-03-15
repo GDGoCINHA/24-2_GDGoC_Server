@@ -11,12 +11,14 @@ import inha.gdgoc.domain.recruit.core.entity.RecruitCoreApplication;
 import inha.gdgoc.domain.recruit.core.enums.RecruitCoreResultStatus;
 import inha.gdgoc.domain.recruit.core.exception.RecruitCoreAlreadyAppliedException;
 import inha.gdgoc.domain.recruit.core.exception.RecruitCoreApplicationNotFoundException;
+import inha.gdgoc.domain.recruit.core.exception.RecruitCoreClosedException;
 import inha.gdgoc.domain.recruit.core.repository.RecruitCoreApplicationRepository;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.GlobalErrorCode;
+import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class RecruitCoreApplicationService {
+
+    private static final Instant RECRUITMENT_DEADLINE = Instant.parse("2026-03-14T14:59:59Z");
 
     private final RecruitCoreApplicationRepository repository;
     private final UserRepository userRepository;
@@ -38,6 +42,7 @@ public class RecruitCoreApplicationService {
 
     @Transactional(readOnly = true)
     public RecruitCoreEligibilityResponse checkEligibility(Long userId) {
+        validateRecruitmentOpen();
         String session = recruitCoreSessionResolver.currentSession();
         return repository.findByUserIdAndSession(userId, session)
             .map(app -> RecruitCoreEligibilityResponse.ineligible(session, "ALREADY_APPLIED", app.getId()))
@@ -46,6 +51,7 @@ public class RecruitCoreApplicationService {
 
     @Transactional(readOnly = true)
     public RecruitCorePrefillResponse prefill(Long userId) {
+        validateRecruitmentOpen();
         String session = recruitCoreSessionResolver.currentSession();
         repository.findByUserIdAndSession(userId, session)
             .ifPresent(existing -> {
@@ -58,6 +64,7 @@ public class RecruitCoreApplicationService {
 
     @Transactional
     public RecruitCoreApplicationCreateResponse submit(Long userId, RecruitCoreApplicationCreateRequest request) {
+        validateRecruitmentOpen();
         String session = recruitCoreSessionResolver.currentSession();
         repository.findByUserIdAndSession(userId, session)
             .ifPresent(existing -> {
@@ -121,6 +128,12 @@ public class RecruitCoreApplicationService {
     private User getUser(Long userId) {
         return userRepository.findById(userId)
             .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
+    }
+
+    private void validateRecruitmentOpen() {
+        if (Instant.now().isAfter(RECRUITMENT_DEADLINE)) {
+            throw new RecruitCoreClosedException(RECRUITMENT_DEADLINE);
+        }
     }
 
 }
