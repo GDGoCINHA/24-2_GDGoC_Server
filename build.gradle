@@ -85,6 +85,7 @@ dependencies {
 
     // --- AWS (S3) ---
     implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3'
+    implementation 'software.amazon.awssdk:url-connection-client'
 
     // --- Flyway ---
     implementation "org.flywaydb:flyway-core:${flywayVersion}"
@@ -101,7 +102,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.mockito:mockito-core:5.6.0'
     testImplementation 'org.mockito:mockito-junit-jupiter:5.6.0'
-    testImplementation 'org.assertj:assertj-core:3.24.2'
+    testImplementation 'org.assertj:assertj-core:3.27.7'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     //Google API Client

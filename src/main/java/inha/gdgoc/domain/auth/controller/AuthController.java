@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -112,6 +113,14 @@ public class AuthController {
         }
         authService.logout(request.getRefreshToken());
         return ResponseEntity.ok().body(ApiResponse.ok(LOGOUT_SUCCESS));
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<?, Void>> me(
+            @AuthenticationPrincipal TokenProvider.CustomUserDetails me
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(ME_RETRIEVED_SUCCESS, authService.getCurrentUser(me)));
     }
 
     // 5. 권한 체크 (Role or Team)

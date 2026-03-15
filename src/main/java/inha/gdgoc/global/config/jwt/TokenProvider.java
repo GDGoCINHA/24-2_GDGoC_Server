@@ -129,9 +129,7 @@ public class TokenProvider {
             String roleRaw = claims.get(CLAIM_ROLE, String.class);
             userRole = roleRaw != null ? UserRole.valueOf(roleRaw) : UserRole.ADMIN;
             String teamRaw = claims.get(CLAIM_TEAM, String.class);
-            if (teamRaw != null && !teamRaw.isBlank()) {
-                team = TeamType.valueOf(teamRaw);
-            }
+            team = TeamType.from(teamRaw);
             username = claims.getSubject();
         } else {
             log.warn("JWT 검증 실패: uid/aid 클레임이 모두 누락되었습니다.");
