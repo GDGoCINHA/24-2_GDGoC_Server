@@ -108,11 +108,8 @@ public class RecruitCoreAdminService {
     }
 
     private TeamType teamTypeOf(String team) {
-        if (team == null) {
-            return null;
-        }
         try {
-            return TeamType.valueOf(team);
+            return TeamType.from(team);
         } catch (IllegalArgumentException ex) {
             return null;
         }

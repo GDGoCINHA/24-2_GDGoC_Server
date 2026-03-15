@@ -150,6 +150,31 @@ public class AuthService {
     return accessGuard.check(me, conditions.toArray(AccessGuard.AccessCondition[]::new));
   }
 
+  @Transactional(readOnly = true)
+  public AuthUserResponse getCurrentUser(CustomUserDetails me) {
+    if (me == null) {
+      throw new IllegalArgumentException("인증 정보가 없습니다.");
+    }
+
+    if (me.getRole() == UserRole.ADMIN && me.getUserId() == null) {
+      String username = me.getUsername();
+      String loginId = username != null && username.startsWith("admin:")
+              ? username.substring("admin:".length())
+              : username;
+      return AuthUserResponse.admin(loginId);
+    }
+
+    if (me.getUserId() == null) {
+      throw new IllegalArgumentException("존재하지 않는 사용자입니다.");
+    }
+
+    User user = userRepository
+            .findById(me.getUserId())
+            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+    return AuthUserResponse.from(user);
+  }
+
   public RefreshResult refresh(String refreshToken) {
     RefreshSession session = resolveRefreshSession(refreshToken);
     if (session.principalType() == PrincipalType.ADMIN) {

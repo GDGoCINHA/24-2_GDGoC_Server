@@ -11,6 +11,8 @@ public interface Rythm8beatScoreRepository extends JpaRepository<Rythm8beatScore
 
     Optional<Rythm8beatScore> findByPhoneNumber(String phoneNumber);
 
+    List<Rythm8beatScore> findAllByOrderByScoreDescUpdatedAtAsc();
+
     List<Rythm8beatScore> findTop3ByOrderByScoreDescUpdatedAtAsc();
 
     @Query("SELECT COUNT(r) FROM Rythm8beatScore r WHERE r.score > :score")

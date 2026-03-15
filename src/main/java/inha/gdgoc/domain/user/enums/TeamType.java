@@ -18,13 +18,24 @@ public enum TeamType {
     @JsonCreator
     public static TeamType from(String raw) {
         if (raw == null) return null;
-        return switch (raw) {
+
+        String normalized = raw.trim()
+                .replace('-', '_')
+                .replace(' ', '_')
+                .toUpperCase();
+
+        if (normalized.isBlank()) {
+            return null;
+        }
+
+        return switch (normalized) {
             case "HQ" -> HQ;
             case "HR" -> HR;
             case "TECH" -> TECH;
             case "BD" -> BD;
             case "PR_DESIGN" -> PR_DESIGN;
-                        default -> throw new IllegalArgumentException("Unknown team: " + raw);
+            case "PR/DESIGN" -> PR_DESIGN;
+            default -> throw new IllegalArgumentException("Unknown team: " + raw);
         };
     }
 }
