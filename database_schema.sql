@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS attendance_records (
     id BIGSERIAL PRIMARY KEY,
     meeting_id BIGINT NOT NULL REFERENCES meetings(id),
     user_id BIGINT NOT NULL REFERENCES users(id),
-    present BOOLEAN NOT NULL DEFAULT FALSE,
+    status VARCHAR(32) NOT NULL DEFAULT 'ABSENT',
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_by BIGINT REFERENCES users(id),
     UNIQUE (meeting_id, user_id)
