@@ -12,9 +12,9 @@ import java.util.List;
 @Repository
 public interface AttendanceRecordRepository extends JpaRepository<AttendanceRecord, Long> {
 
-    /* 조회: 특정 meetingId의 (userId, present) 목록 */
+    /* 조회: 특정 meetingId의 (userId, status) 목록 */
     @Query("""
-                select ar.user.id, ar.present
+                select ar.user.id, ar.status
                 from AttendanceRecord ar
                 where ar.meeting.id = :meetingId
             """)
@@ -26,12 +26,12 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
     /* 배치 업서트(ON CONFLICT) — meeting_id 기준 */
     @Modifying
     @Query(value = """
-            INSERT INTO public.attendance_records (meeting_id, user_id, present, updated_at)
-            SELECT :meetingId, uid, :present, NOW()
+            INSERT INTO public.attendance_records (meeting_id, user_id, status, updated_at)
+            SELECT :meetingId, uid, CAST(:status AS varchar), NOW()
             FROM unnest(CAST(:userIds AS bigint[])) AS uid
             ON CONFLICT (meeting_id, user_id)
-            DO UPDATE SET present = EXCLUDED.present, updated_at = NOW()
+            DO UPDATE SET status = EXCLUDED.status, updated_at = NOW()
             """, nativeQuery = true)
     int upsertBatchByMeetingId(@Param("meetingId") Long meetingId, @Param("userIds") Long[] userIds,  // 👈 배열
-                               @Param("present") boolean present);
+                               @Param("status") String status);
 }

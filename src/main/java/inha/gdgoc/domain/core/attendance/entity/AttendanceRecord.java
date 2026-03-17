@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.core.attendance.entity;
 
+import inha.gdgoc.domain.core.attendance.enums.AttendanceStatus;
 import inha.gdgoc.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -33,8 +34,9 @@ public class AttendanceRecord {
     @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_attendance_user"))
     private User user;
 
-    @Column(name = "present", nullable = false)
-    private boolean present;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 32)
+    private AttendanceStatus status;
 
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
