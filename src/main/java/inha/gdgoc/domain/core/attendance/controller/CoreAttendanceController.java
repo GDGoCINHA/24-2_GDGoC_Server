@@ -29,18 +29,16 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/core-attendance/meetings")
 @RequiredArgsConstructor
-@PreAuthorize(CoreAttendanceController.LEAD_OR_HIGHER_RULE)
 public class CoreAttendanceController {
 
+    public static final String CORE_OR_HIGHER_RULE =
+            "@accessGuard.check(authentication,"
+                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
+                    + "T(inha.gdgoc.domain.user.enums.UserRole).CORE))";
     public static final String LEAD_OR_HIGHER_RULE =
             "@accessGuard.check(authentication,"
                     + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
                     + "T(inha.gdgoc.domain.user.enums.UserRole).LEAD))";
-    public static final String ORGANIZER_OR_HIGHER_RULE =
-            "@accessGuard.check(authentication,"
-                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
-                    + "T(inha.gdgoc.domain.user.enums.UserRole).ORGANIZER))";
-
     private final CoreAttendanceService service;
 
     private static ResponseEntity<ApiResponse<Map<String, Object>, Void>> okUpdated(long updated, List<Long> ignored) {
@@ -48,19 +46,20 @@ public class CoreAttendanceController {
     }
 
     /* ===== Meetings(날짜) 목록 ===== */
+    @PreAuthorize(CORE_OR_HIGHER_RULE)
     @GetMapping
     public ResponseEntity<ApiResponse<DateListResponse, Void>> listDates() {
         return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.DATE_LIST_RETRIEVED_SUCCESS, new DateListResponse(service.getDates())));
     }
 
-    @PreAuthorize(ORGANIZER_OR_HIGHER_RULE)
+    @PreAuthorize(LEAD_OR_HIGHER_RULE)
     @PostMapping
     public ResponseEntity<ApiResponse<DateListResponse, Void>> createDate(@Valid @RequestBody CreateDateRequest request) {
         service.addDate(request.getDate());
         return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.DATE_CREATED_SUCCESS, new DateListResponse(service.getDates())));
     }
 
-    @PreAuthorize(ORGANIZER_OR_HIGHER_RULE)
+    @PreAuthorize(LEAD_OR_HIGHER_RULE)
     @DeleteMapping("/{date}")
     public ResponseEntity<ApiResponse<DateListResponse, Void>> deleteDate(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         service.deleteDate(date.toString());
@@ -68,9 +67,10 @@ public class CoreAttendanceController {
     }
 
     /* ===== 팀 목록 (리드=본인 팀만 / 관리자=전체) ===== */
+    @PreAuthorize(CORE_OR_HIGHER_RULE)
     @GetMapping("/teams")
     public ResponseEntity<ApiResponse<List<TeamResponse>, PageMeta>> getTeams(@AuthenticationPrincipal CustomUserDetails me) {
-        List<TeamResponse> list = service.isLeadScoped(me.getRole(), me.getTeam())
+        List<TeamResponse> list = service.isTeamScoped(me.getRole(), me.getTeam())
                 ? service.getTeamsForLead(service.resolveEffectiveTeam(me.getRole(), me.getTeam(), null))
                 : service.getTeamsForOrganizerOrAdmin();
 
@@ -80,24 +80,26 @@ public class CoreAttendanceController {
 
     /* ===== 특정 날짜의 팀원+현재 출석 상태 조회 (리드=본인 팀만) ===== */
     // 프론트가 체크박스 채우기 전에 필요한 목록/상태
+    @PreAuthorize(CORE_OR_HIGHER_RULE)
     @GetMapping("/{date}/members")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>, Void>> membersOfMeeting(@AuthenticationPrincipal CustomUserDetails me, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam(required = false) TeamType team // 관리자만 사용, 리드는 무시
     ) {
         TeamType effectiveTeam = service.resolveEffectiveTeam(me.getRole(), me.getTeam(), team);
         var list = service.getMembersWithPresence(date.toString(), effectiveTeam);
-        // list 원소 예시: { "userId": "123", "name": "홍길동", "present": true, "lastModifiedAt": "..." }
+        // list 원소 예시: { "userId": "123", "name": "홍길동", "status": "PRESENT", "lastModifiedAt": "..." }
         return ResponseEntity.ok(ApiResponse.ok(CoreAttendanceMessage.TEAM_LIST_RETRIEVED_SUCCESS, list));
     }
 
     /* ===== 특정 날짜 출석 일괄 저장 (멱등 스냅샷) ===== */
-    // Body: { "userIds": ["1","2",...], "present": true }  → presentUserIds만 보내는 구조로도 쉽게 변환 가능
+    // Body: { "userIds": ["1","2",...], "status": "PRESENT" }
+    @PreAuthorize(LEAD_OR_HIGHER_RULE)
     @PutMapping("/{date}/attendance")
     public ResponseEntity<ApiResponse<Map<String, Object>, Void>> saveAttendanceSnapshot(@AuthenticationPrincipal CustomUserDetails me, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestBody @Valid SetAttendanceRequest req) {
         var userIds = req.safeUserIds();
         CoreAttendanceService.AttendanceUpdateResult result = service.saveAttendanceSnapshot(
                 date.toString(),
                 userIds,
-                req.presentValue(),
+                req.statusValue(),
                 me.getRole(),
                 me.getTeam()
         );
@@ -105,6 +107,7 @@ public class CoreAttendanceController {
     }
 
     /* ===== 날짜 요약(JSON) ===== */
+    @PreAuthorize(CORE_OR_HIGHER_RULE)
     @GetMapping("/{date}/summary")
     public ResponseEntity<ApiResponse<DaySummaryResponse, Void>> summary(@AuthenticationPrincipal CustomUserDetails me, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam(required = false) TeamType team) {
         TeamType effectiveTeam = service.resolveEffectiveTeam(me.getRole(), me.getTeam(), team);
@@ -113,6 +116,7 @@ public class CoreAttendanceController {
     }
 
     /* ===== 날짜 요약(CSV) ===== */
+    @PreAuthorize(CORE_OR_HIGHER_RULE)
     @GetMapping(value = "/{date}/summary.csv", produces = "text/csv; charset=UTF-8")
     public ResponseEntity<String> summaryCsv(@AuthenticationPrincipal CustomUserDetails me, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam(required = false) TeamType team) {
         TeamType effective = service.resolveEffectiveTeam(me.getRole(), me.getTeam(), team);
@@ -122,6 +126,7 @@ public class CoreAttendanceController {
                 .body(csv);
     }
 
+    @PreAuthorize(CORE_OR_HIGHER_RULE)
     @GetMapping(value = "/summary.csv", produces = "text/csv; charset=UTF-8")
     public ResponseEntity<String> summaryCsvAll(
             @AuthenticationPrincipal CustomUserDetails me,

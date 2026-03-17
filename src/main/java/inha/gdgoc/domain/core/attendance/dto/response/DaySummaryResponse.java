@@ -14,6 +14,9 @@ public class DaySummaryResponse {
     private String date;
     private List<TeamSummary> perTeam;
     private long present;
+    private long late;
+    private long preArranged;
+    private long absent;
     private long total;
 
     @Getter
@@ -23,6 +26,9 @@ public class DaySummaryResponse {
         private String teamId;
         private String teamName;
         private long present;
+        private long late;
+        private long preArranged;
+        private long absent;
         private long total;
     }
 }

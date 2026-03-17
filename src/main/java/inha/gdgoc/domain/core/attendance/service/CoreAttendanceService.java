@@ -4,6 +4,7 @@ import inha.gdgoc.domain.core.attendance.dto.response.DaySummaryResponse;
 import inha.gdgoc.domain.core.attendance.dto.response.MemberResponse;
 import inha.gdgoc.domain.core.attendance.dto.response.TeamResponse;
 import inha.gdgoc.domain.core.attendance.entity.Meeting;
+import inha.gdgoc.domain.core.attendance.enums.AttendanceStatus;
 import inha.gdgoc.domain.core.attendance.repository.AttendanceRecordRepository;
 import inha.gdgoc.domain.core.attendance.repository.MeetingRepository;
 import inha.gdgoc.domain.user.entity.User;
@@ -78,12 +79,15 @@ public class CoreAttendanceService {
         return toTeamResponsesGrouped(users);
     }
 
-    public boolean isLeadScoped(UserRole role, TeamType team) {
+    public boolean isTeamScoped(UserRole role, TeamType team) {
+        if (role == UserRole.CORE) {
+            return team != null;
+        }
         return role == UserRole.LEAD && team != TeamType.HR;
     }
 
     public TeamType resolveEffectiveTeam(UserRole role, TeamType principalTeam, TeamType requestedTeam) {
-        return isLeadScoped(role, principalTeam) ? requireTeam(principalTeam) : requestedTeam;
+        return isTeamScoped(role, principalTeam) ? requireTeam(principalTeam) : requestedTeam;
     }
 
     /* ===================== Attendance ===================== */
@@ -123,17 +127,17 @@ public class CoreAttendanceService {
     }
 
     /**
-     * 배치로 출석 true/false 반영 (고성능 UPSERT)
+     * 배치로 출석 상태 반영 (고성능 UPSERT)
      */
     @Transactional
-    public long setAttendance(String date, List<Long> userIds, boolean present) {
+    public long setAttendance(String date, List<Long> userIds, AttendanceStatus status) {
         if (userIds == null || userIds.isEmpty()) return 0L;
 
         LocalDate d = LocalDate.parse(date);
         Long meetingId = ensureMeetingAndGetId(d);
 
         Long[] arr = userIds.toArray(Long[]::new); // ✅ List -> Array
-        int affected = attendanceRecordRepository.upsertBatchByMeetingId(meetingId, arr, present);
+        int affected = attendanceRecordRepository.upsertBatchByMeetingId(meetingId, arr, status.name());
         return Math.max(affected, 0);
     }
 
@@ -141,21 +145,21 @@ public class CoreAttendanceService {
     public AttendanceUpdateResult saveAttendanceSnapshot(
             String date,
             List<Long> userIds,
-            boolean present,
+            AttendanceStatus status,
             UserRole role,
             TeamType principalTeam
     ) {
-        if (isLeadScoped(role, principalTeam)) {
+        if (isTeamScoped(role, principalTeam)) {
             TeamType myTeam = requireTeam(principalTeam);
             UserIdValidationResult validation = filterUserIdsNotInTeam(myTeam, userIds);
             if (validation.validIds().isEmpty()) {
                 return new AttendanceUpdateResult(0L, validation.invalidIds());
             }
-            long updated = setAttendance(date, validation.validIds(), present);
+            long updated = setAttendance(date, validation.validIds(), status);
             return new AttendanceUpdateResult(updated, validation.invalidIds());
         }
 
-        long updated = setAttendance(date, userIds, present);
+        long updated = setAttendance(date, userIds, status);
         return new AttendanceUpdateResult(updated, List.of());
     }
 
@@ -165,17 +169,19 @@ public class CoreAttendanceService {
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getMembersWithPresence(String date, TeamType teamOrNull) {
         LocalDate d = LocalDate.parse(date);
-        Map<Long, Boolean> day = getPresenceMap(d);
+        Map<Long, AttendanceStatus> day = getStatusMap(d);
 
         var roles = List.of(UserRole.CORE, UserRole.LEAD, UserRole.ORGANIZER);
         List<User> users = (teamOrNull == null) ? userRepository.findByUserRoleIn(roles) : userRepository.findByTeamAndUserRoleIn(teamOrNull, roles);
 
         return users.stream().filter(u -> u.getTeam() != null).sorted(Comparator.comparing(User::getName)).map(u -> {
+            AttendanceStatus status = day.getOrDefault(u.getId(), AttendanceStatus.ABSENT);
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("userId", String.valueOf(u.getId()));
             row.put("name", u.getName());
             row.put("team", u.getTeam().getLabel());
-            row.put("present", day.getOrDefault(u.getId(), false));
+            row.put("status", status.name());
+            row.put("statusLabel", status.getLabel());
             row.put("lastModifiedAt", null); // 추후 updatedAt/updatedBy 확장 시 채우기
             return row;
         }).toList();
@@ -200,7 +206,7 @@ public class CoreAttendanceService {
     @Transactional(readOnly = true)
     public DaySummaryResponse summary(String date, TeamType teamForLeadOrNull) {
         LocalDate d = LocalDate.parse(date);
-        Map<Long, Boolean> day = getPresenceMap(d);
+        Map<Long, AttendanceStatus> day = getStatusMap(d);
 
         var roles = List.of(UserRole.CORE, UserRole.LEAD, UserRole.ORGANIZER);
         List<User> baseUsers = (teamForLeadOrNull == null) ? userRepository.findByUserRoleIn(roles) : userRepository.findByTeamAndUserRoleIn(teamForLeadOrNull, roles);
@@ -212,14 +218,20 @@ public class CoreAttendanceService {
         var perTeam = byTeam.entrySet().stream().map(e -> {
             TeamType team = e.getKey();
             List<User> us = e.getValue();
-            long p = us.stream().filter(u -> day.getOrDefault(u.getId(), false)).count();
-            return new DaySummaryResponse.TeamSummary(team.name(), team.getLabel(), p, us.size());
+            long present = countStatus(us, day, AttendanceStatus.PRESENT);
+            long late = countStatus(us, day, AttendanceStatus.LATE);
+            long preArranged = countStatus(us, day, AttendanceStatus.PRE_ARRANGED);
+            long absent = countStatus(us, day, AttendanceStatus.ABSENT);
+            return new DaySummaryResponse.TeamSummary(team.name(), team.getLabel(), present, late, preArranged, absent, us.size());
         }).sorted(Comparator.comparing(DaySummaryResponse.TeamSummary::getTeamName)).toList();
 
         long present = perTeam.stream().mapToLong(DaySummaryResponse.TeamSummary::getPresent).sum();
+        long late = perTeam.stream().mapToLong(DaySummaryResponse.TeamSummary::getLate).sum();
+        long preArranged = perTeam.stream().mapToLong(DaySummaryResponse.TeamSummary::getPreArranged).sum();
+        long absent = perTeam.stream().mapToLong(DaySummaryResponse.TeamSummary::getAbsent).sum();
         long total = perTeam.stream().mapToLong(DaySummaryResponse.TeamSummary::getTotal).sum();
 
-        return new DaySummaryResponse(date, perTeam, present, total);
+        return new DaySummaryResponse(date, perTeam, present, late, preArranged, absent, total);
     }
 
     /**
@@ -229,7 +241,7 @@ public class CoreAttendanceService {
     public String buildSummaryCsv(String date, TeamType teamOrNull) {
         DaySummaryResponse s = summary(date, teamOrNull);
         StringBuilder sb = new StringBuilder();
-        sb.append("date,team_id,team_name,present,total\n");
+        sb.append("date,team_id,team_name,present,late,pre_arranged,absent,total\n");
         for (var t : s.getPerTeam()) {
             sb.append(escape(date))
                     .append(',')
@@ -238,6 +250,12 @@ public class CoreAttendanceService {
                     .append(escape(t.getTeamName()))
                     .append(',')
                     .append(t.getPresent())
+                    .append(',')
+                    .append(t.getLate())
+                    .append(',')
+                    .append(t.getPreArranged())
+                    .append(',')
+                    .append(t.getAbsent())
                     .append(',')
                     .append(t.getTotal())
                     .append('\n');
@@ -249,6 +267,12 @@ public class CoreAttendanceService {
                 .append("전체")
                 .append(',')
                 .append(s.getPresent())
+                .append(',')
+                .append(s.getLate())
+                .append(',')
+                .append(s.getPreArranged())
+                .append(',')
+                .append(s.getAbsent())
                 .append(',')
                 .append(s.getTotal())
                 .append('\n');
@@ -266,7 +290,7 @@ public class CoreAttendanceService {
 
         // 날짜가 없으면 헤더만
         if (dates.isEmpty()) {
-            return "이름,출석률\n";
+            return "이름,출석,지각,사전 승인,결석\n";
         }
 
         // 2) 대상 사용자: 기존 정책과 동일 (CORE/LEAD/ORGANIZER), 팀 필터 적용
@@ -280,17 +304,15 @@ public class CoreAttendanceService {
         if (users.isEmpty()) {
             StringBuilder onlyHeader = new StringBuilder("이름");
             for (LocalDate d : dates) onlyHeader.append(',').append(d);
-            onlyHeader.append(",출석률\n");
+            onlyHeader.append(",출석,지각,사전 승인,결석\n");
             return new String(onlyHeader.toString().getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
         }
 
-        // 3) 날짜별 출석 맵 수집 (userId -> present)
-        List<Map<Long, Boolean>> presenceByDate = new ArrayList<>(dates.size());
+        // 3) 날짜별 출석 상태 맵 수집 (userId -> status)
+        List<Map<Long, AttendanceStatus>> presenceByDate = new ArrayList<>(dates.size());
         for (LocalDate d : dates) {
-            presenceByDate.add(getPresenceMap(d));
+            presenceByDate.add(getStatusMap(d));
         }
-
-        int totalSessions = dates.size();
 
         // 4) CSV 빌드
         StringBuilder sb = new StringBuilder();
@@ -299,32 +321,37 @@ public class CoreAttendanceService {
         for (LocalDate d : dates) {
             sb.append(',').append(d);
         }
-        sb.append(",출석률\n");
+        sb.append(",출석,지각,사전 승인,결석\n");
 
         // Rows
         for (User u : users) {
             sb.append(escape(u.getName()));
             Long uid = u.getId();
 
-            int attended = 0;
+            int present = 0;
+            int late = 0;
+            int preArranged = 0;
+            int absent = 0;
 
-            // 날짜별 O/X 채우면서 출석 횟수 카운트
-            for (Map<Long, Boolean> day : presenceByDate) {
-                boolean present = Boolean.TRUE.equals(day.getOrDefault(uid, false));
-                if (present) attended++;
-                sb.append(',').append(present ? 'O' : 'X');
+            for (Map<Long, AttendanceStatus> day : presenceByDate) {
+                AttendanceStatus status = day.getOrDefault(uid, AttendanceStatus.ABSENT);
+                switch (status) {
+                    case PRESENT -> present++;
+                    case LATE -> late++;
+                    case PRE_ARRANGED -> preArranged++;
+                    case ABSENT -> absent++;
+                }
+                sb.append(',').append(escape(status.getLabel()));
             }
 
-            // 출석률: 전체 회차 기준 (중간 합류 없음 가정)
-            double rate = attended * 100.0 / totalSessions;
-
             sb.append(',')
-                    .append(attended)
-                    .append('/')
-                    .append(totalSessions)
-                    .append(" (")
-                    .append(String.format(java.util.Locale.US, "%.1f", rate))
-                    .append("%)")
+                    .append(present)
+                    .append(',')
+                    .append(late)
+                    .append(',')
+                    .append(preArranged)
+                    .append(',')
+                    .append(absent)
                     .append('\n');
         }
 
@@ -344,21 +371,39 @@ public class CoreAttendanceService {
     }
 
     /**
-     * 특정 날짜의 출석 맵(userId → present)
+     * 특정 날짜의 출석 맵(userId → status)
      */
     @Transactional(readOnly = true)
-    protected Map<Long, Boolean> getPresenceMap(LocalDate date) {
-        Map<Long, Boolean> map = new HashMap<>();
+    protected Map<Long, AttendanceStatus> getStatusMap(LocalDate date) {
+        Map<Long, AttendanceStatus> map = new HashMap<>();
         var meetingOpt = meetingRepository.findByMeetingDate(date);
         if (meetingOpt.isEmpty()) return map;
 
         Long meetingId = meetingOpt.get().getId();
         attendanceRecordRepository.findPresencePairsByMeetingId(meetingId).forEach(row -> {
             Long uid = ((Number) row[0]).longValue();
-            Boolean present = (Boolean) row[1];
-            map.put(uid, present != null && present);
+            map.put(uid, toAttendanceStatus(row[1]));
         });
         return map;
+    }
+
+    private long countStatus(List<User> users, Map<Long, AttendanceStatus> day, AttendanceStatus target) {
+        return users.stream()
+                .filter(u -> day.getOrDefault(u.getId(), AttendanceStatus.ABSENT) == target)
+                .count();
+    }
+
+    private AttendanceStatus toAttendanceStatus(Object raw) {
+        if (raw instanceof AttendanceStatus status) {
+            return status;
+        }
+        if (raw instanceof Enum<?> enumValue) {
+            return AttendanceStatus.from(enumValue.name());
+        }
+        if (raw instanceof String value) {
+            return AttendanceStatus.from(value);
+        }
+        return AttendanceStatus.ABSENT;
     }
 
     public record UserIdValidationResult(List<Long> validIds, List<Long> invalidIds) {
