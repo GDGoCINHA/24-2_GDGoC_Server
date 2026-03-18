@@ -5,6 +5,7 @@ import inha.gdgoc.domain.recruit.member.entity.RecruitMember;
 import inha.gdgoc.domain.recruit.member.enums.AdmissionSemester;
 import inha.gdgoc.domain.recruit.member.enums.EnrolledClassification;
 import inha.gdgoc.domain.recruit.member.enums.Gender;
+import inha.gdgoc.global.util.MajorNormalizer;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,7 +28,7 @@ public class RecruitMemberRequest {
     private String major;
     private Boolean isPayed;
 
-    public RecruitMember toEntity(AdmissionSemester admissionSemester) {
+    public RecruitMember toEntity(AdmissionSemester admissionSemester, MajorNormalizer majorNormalizer) {
         String cleanPhone = phoneNumber.replaceAll("[^0-9]", "");
         return RecruitMember.builder()
                 .name(name)
@@ -37,7 +38,7 @@ public class RecruitMemberRequest {
                 .email(email)
                 .gender(Gender.fromType(gender))
                 .birth(birth)
-                .major(major)
+                .major(majorNormalizer.normalize(major))
                 .isPayed(false)
                 .admissionSemester(admissionSemester)
                 .build();

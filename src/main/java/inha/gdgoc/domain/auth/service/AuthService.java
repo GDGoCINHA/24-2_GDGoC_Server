@@ -21,6 +21,7 @@ import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.config.jwt.TokenProvider;
 import inha.gdgoc.global.config.jwt.TokenProvider.CustomUserDetails;
 import inha.gdgoc.global.security.AccessGuard;
+import inha.gdgoc.global.util.MajorNormalizer;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
@@ -51,6 +52,7 @@ public class AuthService {
   private final StringRedisTemplate redisTemplate;
   private final AccessGuard accessGuard;
   private final PasswordEncoder passwordEncoder;
+  private final MajorNormalizer majorNormalizer;
 
   @Value("${google.client-id}")
   private String googleClientId;
@@ -112,7 +114,7 @@ public class AuthService {
             .email(request.getEmail())
             .name(request.getName())
             .studentId(request.getStudentId())
-            .major(request.getMajor())
+            .major(majorNormalizer.normalize(request.getMajor()))
             .phoneNumber(cleanPhone)
             .image(request.getImage())
             // Role(GUEST), Status(PENDING) 등은 User 엔티티 생성자에서 기본값 처리됨

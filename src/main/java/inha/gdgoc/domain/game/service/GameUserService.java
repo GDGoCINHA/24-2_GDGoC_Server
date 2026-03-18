@@ -4,6 +4,7 @@ import inha.gdgoc.domain.game.dto.request.GameUserRequest;
 import inha.gdgoc.domain.game.dto.response.GameUserResponse;
 import inha.gdgoc.domain.game.entity.GameUser;
 import inha.gdgoc.domain.game.repository.GameUserRepository;
+import inha.gdgoc.global.util.MajorNormalizer;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -18,11 +19,18 @@ import org.springframework.stereotype.Service;
 public class GameUserService {
 
     private final GameUserRepository gameUserRepository;
+    private final MajorNormalizer majorNormalizer;
 
     @Transactional
     public List<GameUserResponse> saveGameResultAndGetRanking(GameUserRequest gameUserRequest) {
         // 유저 정보 저장
-        GameUser gameUser = gameUserRequest.toEntity();
+        GameUser gameUser = GameUser.builder()
+                .name(gameUserRequest.getName())
+                .major(majorNormalizer.normalize(gameUserRequest.getMajor()))
+                .studentId(gameUserRequest.getStudentId())
+                .phoneNumber(gameUserRequest.getPhoneNumber())
+                .typingSpeed(gameUserRequest.getTypingSpeed())
+                .build();
         gameUserRepository.save(gameUser);
 
         return findUserRankings();
