@@ -18,6 +18,7 @@ import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.GlobalErrorCode;
+import inha.gdgoc.global.util.MajorNormalizer;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class RecruitCoreApplicationService {
     private final RecruitCoreApplicationRepository repository;
     private final UserRepository userRepository;
     private final RecruitCoreSessionResolver recruitCoreSessionResolver;
+    private final MajorNormalizer majorNormalizer;
 
     @Transactional(readOnly = true)
     public RecruitCoreApplicantDetailResponse getApplicantDetail(Long id) {
@@ -82,7 +84,7 @@ public class RecruitCoreApplicationService {
             .name(request.snapshot().name())
             .studentId(request.snapshot().studentId())
             .phone(cleanPhone)
-            .major(request.snapshot().major())
+            .major(majorNormalizer.normalize(request.snapshot().major()))
             .email(request.snapshot().email())
             .team(request.team())
             .motivation(request.motivation())

@@ -22,6 +22,7 @@ import inha.gdgoc.domain.recruit.member.repository.AnswerRepository;
 import inha.gdgoc.domain.recruit.member.repository.RecruitMemberMemoRepository;
 import inha.gdgoc.domain.recruit.member.repository.RecruitMemberRepository;
 import inha.gdgoc.global.util.SemesterCalculator;
+import inha.gdgoc.global.util.MajorNormalizer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ public class RecruitMemberService {
     private final ObjectMapper objectMapper;
     private final SemesterCalculator semesterCalculator;
     private final S3Service s3Service;
+    private final MajorNormalizer majorNormalizer;
 
     @Transactional
     public void addRecruitMember(Map<String, Object> requestPayload, MultipartFile file) {
@@ -63,7 +65,7 @@ public class RecruitMemberService {
         }
 
         RecruitMember member = memberRequest
-                .toEntity(semesterCalculator.currentSemester());
+                .toEntity(semesterCalculator.currentSemester(), majorNormalizer);
         recruitMemberRepository.save(member);
 
         List<Answer> answerEntities = answers.entrySet().stream()
