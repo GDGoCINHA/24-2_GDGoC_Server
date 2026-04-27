@@ -22,6 +22,10 @@ public record RecruitCoreApplicantDetailResponse(
 ) {
 
     public static RecruitCoreApplicantDetailResponse from(RecruitCoreApplication entity) {
+        return from(entity, entity.getFileUrls());
+    }
+
+    public static RecruitCoreApplicantDetailResponse from(RecruitCoreApplication entity, List<String> fileUrls) {
         return new RecruitCoreApplicantDetailResponse(
             entity.getId(),
             entity.getSession(),
@@ -31,7 +35,7 @@ public record RecruitCoreApplicantDetailResponse(
             entity.getWish(),
             entity.getStrengths(),
             entity.getPledge(),
-            entity.getFileUrls(),
+            fileUrls,
             entity.getResultStatus(),
             RecruitCoreApplicationReviewResponse.from(entity),
             entity.getCreatedAt(),

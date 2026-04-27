@@ -5,7 +5,9 @@ import lombok.Getter;
 @Getter
 public enum S3KeyType {
 
-    study("study");
+    study("study"),
+    recruitCore("recruit/core"),
+    recruitMember("recruit/member");
 
     private final String value;
 

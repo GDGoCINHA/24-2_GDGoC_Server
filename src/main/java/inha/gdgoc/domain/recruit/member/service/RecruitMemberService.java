@@ -5,6 +5,9 @@ import static inha.gdgoc.domain.recruit.member.exception.RecruitMemberErrorCode.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import inha.gdgoc.domain.resource.enums.S3KeyType;
+import inha.gdgoc.domain.resource.dto.response.PresignedUploadResponse;
+import inha.gdgoc.domain.resource.exception.ResourceErrorCode;
+import inha.gdgoc.domain.resource.exception.ResourceException;
 import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.recruit.member.dto.request.ApplicationRequest;
 import inha.gdgoc.domain.recruit.member.dto.request.RecruitMemberMemoRequest;
@@ -36,6 +39,8 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 @Service
 public class RecruitMemberService {
+    private static final long MAX_PROOF_FILE_SIZE = 10 * 1024 * 1024;
+
     private final RecruitMemberRepository recruitMemberRepository;
     private final RecruitMemberMemoRepository recruitMemberMemoRepository;
     private final AnswerRepository answerRepository;
@@ -63,6 +68,7 @@ public class RecruitMemberService {
             String proofFileUrl = s3Service.getS3FileUrl(key);
             answers.put("proofFileUrl", proofFileUrl);
         }
+        normalizeProofFileUrl(answers);
 
         RecruitMember member = memberRequest
                 .toEntity(semesterCalculator.currentSemester(), majorNormalizer);
@@ -86,10 +92,28 @@ public class RecruitMemberService {
 
     private String uploadProofFile(MultipartFile file) {
         try {
-            return s3Service.upload(0L, S3KeyType.study, file);
+            return s3Service.upload(0L, S3KeyType.recruitMember, file);
         } catch (Exception e) {
             throw new RuntimeException("증빙 파일 업로드 중 오류가 발생했습니다.", e);
         }
+    }
+
+    public PresignedUploadResponse createProofFilePresignedUpload(
+            String fileName,
+            String contentType,
+            Long fileSize
+    ) {
+        if (fileSize == null || fileSize > MAX_PROOF_FILE_SIZE) {
+            throw new ResourceException(ResourceErrorCode.INVALID_BIG_FILE);
+        }
+
+        S3Service.PresignedUpload presignedUpload = s3Service.createPresignedUpload(
+                0L,
+                S3KeyType.recruitMember,
+                fileName,
+                contentType
+        );
+        return new PresignedUploadResponse(presignedUpload.key(), presignedUpload.uploadUrl());
     }
 
     @Transactional
@@ -187,6 +211,7 @@ public class RecruitMemberService {
         putIfPresent(answers, "gdgInterest", step6.get("gdgInterest"));
         putIfPresent(answers, "gdgWish", step6.get("gdgWish"));
         putIfPresent(answers, "gdgFeedback", step6.get("gdgFeedback"));
+        putIfPresent(answers, "proofFileUrl", step6.get("proofFileUrl"));
 
         return answers;
     }
@@ -213,7 +238,19 @@ public class RecruitMemberService {
         putIfPresent(answers, "gdgInterest", rawAnswers.get("gdgInterest"));
         putIfPresent(answers, "gdgWish", rawAnswers.get("gdgWish"));
         putIfPresent(answers, "gdgFeedback", rawAnswers.get("gdgFeedback"));
+        putIfPresent(answers, "proofFileUrl", rawAnswers.get("proofFileUrl"));
         return answers;
+    }
+
+    private void normalizeProofFileUrl(Map<String, Object> answers) {
+        Object proofFileUrl = answers.get("proofFileUrl");
+        if (!(proofFileUrl instanceof String fileUrl) || fileUrl.isBlank()) {
+            return;
+        }
+        if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
+            return;
+        }
+        answers.put("proofFileUrl", s3Service.getS3FileUrl(fileUrl));
     }
 
 }

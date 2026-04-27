@@ -13,6 +13,7 @@ import inha.gdgoc.domain.recruit.core.exception.RecruitCoreAlreadyAppliedExcepti
 import inha.gdgoc.domain.recruit.core.exception.RecruitCoreApplicationNotFoundException;
 import inha.gdgoc.domain.recruit.core.exception.RecruitCoreClosedException;
 import inha.gdgoc.domain.recruit.core.repository.RecruitCoreApplicationRepository;
+import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
@@ -35,11 +36,12 @@ public class RecruitCoreApplicationService {
     private final UserRepository userRepository;
     private final RecruitCoreSessionResolver recruitCoreSessionResolver;
     private final MajorNormalizer majorNormalizer;
+    private final S3Service s3Service;
 
     @Transactional(readOnly = true)
     public RecruitCoreApplicantDetailResponse getApplicantDetail(Long id) {
         RecruitCoreApplication app = getApplication(id);
-        return RecruitCoreApplicantDetailResponse.from(app);
+        return RecruitCoreApplicantDetailResponse.from(app, toS3FileUrls(app.getFileUrls()));
     }
 
     @Transactional(readOnly = true)
@@ -119,7 +121,23 @@ public class RecruitCoreApplicationService {
         if (!privileged && !application.isOwnedBy(viewerId)) {
             throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER);
         }
-        return RecruitCoreApplicantDetailResponse.from(application);
+        return RecruitCoreApplicantDetailResponse.from(application, toS3FileUrls(application.getFileUrls()));
+    }
+
+    private List<String> toS3FileUrls(List<String> fileKeys) {
+        if (fileKeys == null || fileKeys.isEmpty()) {
+            return List.of();
+        }
+        return fileKeys.stream()
+            .map(this::toS3FileUrl)
+            .toList();
+    }
+
+    private String toS3FileUrl(String fileKey) {
+        if (fileKey.startsWith("http://") || fileKey.startsWith("https://")) {
+            return fileKey;
+        }
+        return s3Service.getS3FileUrl(fileKey);
     }
 
     private RecruitCoreApplication getApplication(Long id) {
