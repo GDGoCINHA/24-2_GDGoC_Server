@@ -4,6 +4,7 @@ import static inha.gdgoc.domain.board.event.controller.message.EventBoardMessage
 
 import inha.gdgoc.domain.board.event.dto.request.EventBoardCreateRequest;
 import inha.gdgoc.domain.board.event.dto.request.EventBoardUpdateRequest;
+import inha.gdgoc.domain.board.event.dto.response.DeletedEventBoardSummaryResponse;
 import inha.gdgoc.domain.board.event.dto.response.EventBoardDetailResponse;
 import inha.gdgoc.domain.board.event.dto.response.EventBoardSummaryResponse;
 import inha.gdgoc.domain.board.event.enums.SearchType;
@@ -45,7 +46,7 @@ public class EventBoardController {
       @RequestParam(required = false) String keyword) {
     Page<EventBoardSummaryResponse> result =
         eventBoardService.listEventBoards(
-            page, size, searchType, keyword, me != null ? me.getTeam() : null);
+            page, size, searchType, keyword, me != null ? me.getTeam() : null, me != null ? me.getRole() : null);
     return ResponseEntity.ok(
         ApiResponse.ok(EVENT_BOARD_LIST_RETRIEVED, result, PageMeta.of(result)));
   }
@@ -56,7 +57,7 @@ public class EventBoardController {
     return ResponseEntity.ok(
         ApiResponse.ok(
             EVENT_BOARD_RETRIEVED,
-            eventBoardService.getEventBoard(id, me != null ? me.getTeam() : null)));
+            eventBoardService.getEventBoard(id, me != null ? me.getTeam() : null, me != null ? me.getRole() : null)));
   }
 
   @Authorize(@Condition(atLeast = UserRole.CORE))
@@ -73,7 +74,7 @@ public class EventBoardController {
   public ResponseEntity<ApiResponse<Void, Void>> updateEventBoard(
       @AuthenticationPrincipal CustomUserDetails me,
       @PathVariable Long id, @Valid @RequestBody EventBoardUpdateRequest req) {
-    eventBoardService.updateEventBoard(id, req, me.getTeam());
+    eventBoardService.updateEventBoard(id, req, me.getRole(), me.getTeam());
     return ResponseEntity.ok(ApiResponse.ok(EVENT_BOARD_UPDATED));
   }
 
@@ -82,7 +83,28 @@ public class EventBoardController {
   public ResponseEntity<ApiResponse<Void, Void>> deleteEventBoard(
       @AuthenticationPrincipal CustomUserDetails me,
       @PathVariable Long id) {
-    eventBoardService.deleteEventBoard(id, me.getTeam());
+    eventBoardService.deleteEventBoard(id, me.getRole(), me.getTeam());
     return ResponseEntity.ok(ApiResponse.ok(EVENT_BOARD_DELETED));
+  }
+
+  @Authorize(@Condition(atLeast = UserRole.CORE))
+  @GetMapping("/deleted")
+  public ResponseEntity<ApiResponse<Page<DeletedEventBoardSummaryResponse>, PageMeta>> listDeletedBoards(
+      @AuthenticationPrincipal CustomUserDetails me,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "12") int size) {
+    Page<DeletedEventBoardSummaryResponse> result =
+        eventBoardService.listDeletedBoards(page, size, me.getRole(), me.getTeam());
+    return ResponseEntity.ok(
+        ApiResponse.ok(EVENT_BOARD_DELETED_LIST_RETRIEVED, result, PageMeta.of(result)));
+  }
+
+  @Authorize(@Condition(atLeast = UserRole.CORE))
+  @PostMapping("/{id}/restore")
+  public ResponseEntity<ApiResponse<Void, Void>> restoreEventBoard(
+      @AuthenticationPrincipal CustomUserDetails me,
+      @PathVariable Long id) {
+    eventBoardService.restoreEventBoard(id, me.getRole(), me.getTeam());
+    return ResponseEntity.ok(ApiResponse.ok(EVENT_BOARD_RESTORED));
   }
 }

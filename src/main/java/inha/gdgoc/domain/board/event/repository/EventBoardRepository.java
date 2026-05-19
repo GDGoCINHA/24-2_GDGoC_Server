@@ -7,6 +7,8 @@ public interface EventBoardRepository extends EventBoardQueryDslRepository {
 
   Optional<EventBoard> findById(Long id);
 
+  Optional<EventBoard> findDeletedById(Long id);
+
   EventBoard save(EventBoard board);
 
   void delete(EventBoard board);

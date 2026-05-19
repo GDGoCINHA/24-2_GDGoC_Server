@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS event_board (
     is_published      BOOLEAN      NOT NULL DEFAULT FALSE,
     author_id         BIGINT       NOT NULL REFERENCES users(id),
     created_at        TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at        TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at        TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at        TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS event_board_attachment (
@@ -23,3 +24,4 @@ CREATE TABLE IF NOT EXISTS event_board_attachment (
 CREATE INDEX IF NOT EXISTS idx_event_board_is_published        ON event_board(is_published);
 CREATE INDEX IF NOT EXISTS idx_event_board_author_id           ON event_board(author_id);
 CREATE INDEX IF NOT EXISTS idx_event_board_attachment_board_id ON event_board_attachment(event_board_id);
+CREATE INDEX IF NOT EXISTS idx_event_board_deleted_at ON event_board(deleted_at) WHERE deleted_at IS NOT NULL;

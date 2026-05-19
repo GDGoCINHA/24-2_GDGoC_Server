@@ -2,6 +2,7 @@ package inha.gdgoc.domain.board.event.service;
 
 import inha.gdgoc.domain.board.event.dto.request.EventBoardCreateRequest;
 import inha.gdgoc.domain.board.event.dto.request.EventBoardUpdateRequest;
+import inha.gdgoc.domain.board.event.dto.response.DeletedEventBoardSummaryResponse;
 import inha.gdgoc.domain.board.event.dto.response.EventBoardDetailResponse;
 import inha.gdgoc.domain.board.event.dto.response.EventBoardDetailResponse.AttachmentResponse;
 import inha.gdgoc.domain.board.event.dto.response.EventBoardSummaryResponse;
@@ -11,6 +12,7 @@ import inha.gdgoc.domain.board.event.enums.SearchType;
 import inha.gdgoc.domain.board.event.repository.EventBoardRepository;
 import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.user.enums.TeamType;
+import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.GlobalErrorCode;
 import java.util.List;
@@ -29,14 +31,23 @@ public class EventBoardService {
   private final S3Service s3Service;
 
   public Page<EventBoardSummaryResponse> listEventBoards(
-      int page, int size, SearchType searchType, String keyword, TeamType userTeam) {
+      int page, int size, SearchType searchType, String keyword, TeamType userTeam, UserRole userRole) {
     return eventBoardRepository
-        .findVisibleBoards(userTeam, searchType, keyword, PageRequest.of(page, size))
+        .findVisibleBoards(userTeam, userRole, searchType, keyword, PageRequest.of(page, size))
         .map(this::toSummaryResponse);
   }
 
-  public EventBoardDetailResponse getEventBoard(Long id, TeamType userTeam) {
-    return toDetailResponse(findVisibleBoard(id, userTeam));
+  public Page<DeletedEventBoardSummaryResponse> listDeletedBoards(
+      int page, int size, UserRole userRole, TeamType userTeam) {
+    return eventBoardRepository
+        .findDeletedBoards(userTeam, userRole, PageRequest.of(page, size))
+        .map(b -> new DeletedEventBoardSummaryResponse(
+            b.getId(), b.getTitle(), b.getEventStartDate(), b.getEventEndDate(),
+            b.getOrganizingTeam(), b.getDeletedAt()));
+  }
+
+  public EventBoardDetailResponse getEventBoard(Long id, TeamType userTeam, UserRole userRole) {
+    return toDetailResponse(findVisibleBoard(id, userTeam, userRole));
   }
 
   @Transactional
@@ -60,15 +71,13 @@ public class EventBoardService {
   }
 
   @Transactional
-  public void updateEventBoard(Long id, EventBoardUpdateRequest req, TeamType userTeam) {
+  public void updateEventBoard(Long id, EventBoardUpdateRequest req, UserRole userRole, TeamType userTeam) {
     EventBoard board =
         eventBoardRepository
             .findById(id)
             .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
 
-    if (userTeam == null || userTeam != board.getOrganizingTeam()) {
-      throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER);
-    }
+    requireTeamAccess(board, userRole, userTeam);
 
     board.update(
         req.title(),
@@ -86,29 +95,48 @@ public class EventBoardService {
   }
 
   @Transactional
-  public void deleteEventBoard(Long id, TeamType userTeam) {
+  public void deleteEventBoard(Long id, UserRole userRole, TeamType userTeam) {
     EventBoard board =
         eventBoardRepository
             .findById(id)
             .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
 
+    requireTeamAccess(board, userRole, userTeam);
+    board.softDelete();
+  }
+
+  @Transactional
+  public void restoreEventBoard(Long id, UserRole userRole, TeamType userTeam) {
+    EventBoard board =
+        eventBoardRepository
+            .findDeletedById(id)
+            .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
+
+    requireTeamAccess(board, userRole, userTeam);
+    board.restore();
+  }
+
+  private EventBoard findVisibleBoard(Long id, TeamType userTeam, UserRole userRole) {
+    EventBoard board =
+        eventBoardRepository
+            .findById(id)
+            .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
+
+    if (!board.isPublished()) {
+      if (!UserRole.hasAtLeast(userRole, UserRole.ORGANIZER)) {
+        if (userTeam == null || userTeam != board.getOrganizingTeam()) {
+          throw new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND);
+        }
+      }
+    }
+    return board;
+  }
+
+  private void requireTeamAccess(EventBoard board, UserRole userRole, TeamType userTeam) {
+    if (UserRole.hasAtLeast(userRole, UserRole.ORGANIZER)) return;
     if (userTeam == null || userTeam != board.getOrganizingTeam()) {
       throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER);
     }
-
-    eventBoardRepository.delete(board);
-  }
-
-  private EventBoard findVisibleBoard(Long id, TeamType userTeam) {
-    EventBoard board =
-        eventBoardRepository
-            .findById(id)
-            .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
-
-    if (!board.isPublished() && (userTeam == null || userTeam != board.getOrganizingTeam())) {
-      throw new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND);
-    }
-    return board;
   }
 
   private EventBoardSummaryResponse toSummaryResponse(EventBoard board) {

@@ -12,6 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +55,9 @@ public class EventBoard extends BaseEntity {
   @Column(name = "author_id", nullable = false)
   private Long authorId;
 
+  @Column
+  private Instant deletedAt;
+
   @OneToMany(mappedBy = "eventBoard", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<EventBoardAttachment> attachments = new ArrayList<>();
 
@@ -76,6 +80,14 @@ public class EventBoard extends BaseEntity {
     board.isPublished = isPublished;
     board.authorId = authorId;
     return board;
+  }
+
+  public void softDelete() {
+    this.deletedAt = Instant.now();
+  }
+
+  public void restore() {
+    this.deletedAt = null;
   }
 
   public void addAttachment(String fileKey, String fileName) {
