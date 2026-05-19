@@ -61,25 +61,28 @@ public class EventBoardController {
 
   @Authorize(@Condition(atLeast = UserRole.CORE))
   @PostMapping
-  public ResponseEntity<ApiResponse<Void, Void>> createEventBoard(
+  public ResponseEntity<ApiResponse<Long, Void>> createEventBoard(
       @AuthenticationPrincipal CustomUserDetails me,
       @Valid @RequestBody EventBoardCreateRequest req) {
-    eventBoardService.createEventBoard(req, me.getUserId());
-    return ResponseEntity.ok(ApiResponse.ok(EVENT_BOARD_CREATED));
+    Long id = eventBoardService.createEventBoard(req, me.getUserId());
+    return ResponseEntity.ok(ApiResponse.ok(EVENT_BOARD_CREATED, id));
   }
 
   @Authorize(@Condition(atLeast = UserRole.CORE))
   @PatchMapping("/{id}")
   public ResponseEntity<ApiResponse<Void, Void>> updateEventBoard(
+      @AuthenticationPrincipal CustomUserDetails me,
       @PathVariable Long id, @Valid @RequestBody EventBoardUpdateRequest req) {
-    eventBoardService.updateEventBoard(id, req);
+    eventBoardService.updateEventBoard(id, req, me.getTeam());
     return ResponseEntity.ok(ApiResponse.ok(EVENT_BOARD_UPDATED));
   }
 
   @Authorize(@Condition(atLeast = UserRole.CORE))
   @DeleteMapping("/{id}")
-  public ResponseEntity<ApiResponse<Void, Void>> deleteEventBoard(@PathVariable Long id) {
-    eventBoardService.deleteEventBoard(id);
+  public ResponseEntity<ApiResponse<Void, Void>> deleteEventBoard(
+      @AuthenticationPrincipal CustomUserDetails me,
+      @PathVariable Long id) {
+    eventBoardService.deleteEventBoard(id, me.getTeam());
     return ResponseEntity.ok(ApiResponse.ok(EVENT_BOARD_DELETED));
   }
 }

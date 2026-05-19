@@ -60,11 +60,15 @@ public class EventBoardService {
   }
 
   @Transactional
-  public void updateEventBoard(Long id, EventBoardUpdateRequest req) {
+  public void updateEventBoard(Long id, EventBoardUpdateRequest req, TeamType userTeam) {
     EventBoard board =
         eventBoardRepository
             .findById(id)
             .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
+
+    if (userTeam == null || userTeam != board.getOrganizingTeam()) {
+      throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER);
+    }
 
     board.update(
         req.title(),
@@ -82,11 +86,16 @@ public class EventBoardService {
   }
 
   @Transactional
-  public void deleteEventBoard(Long id) {
+  public void deleteEventBoard(Long id, TeamType userTeam) {
     EventBoard board =
         eventBoardRepository
             .findById(id)
             .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
+
+    if (userTeam == null || userTeam != board.getOrganizingTeam()) {
+      throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER);
+    }
+
     eventBoardRepository.delete(board);
   }
 
