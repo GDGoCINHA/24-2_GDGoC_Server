@@ -43,3 +43,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Local dev ###
+docker-compose-local.yml
