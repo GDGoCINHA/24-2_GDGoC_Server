@@ -55,6 +55,9 @@ public class EventBoard extends BaseEntity {
   @Column(name = "author_id", nullable = false)
   private Long authorId;
 
+  @Column(name = "author_name", nullable = false, length = 100)
+  private String authorName;
+
   @Column
   private Instant deletedAt;
 
@@ -69,7 +72,8 @@ public class EventBoard extends BaseEntity {
       String thumbnailKey,
       String content,
       boolean isPublished,
-      Long authorId) {
+      Long authorId,
+      String authorName) {
     EventBoard board = new EventBoard();
     board.title = title;
     board.eventStartDate = eventStartDate;
@@ -79,6 +83,7 @@ public class EventBoard extends BaseEntity {
     board.content = content;
     board.isPublished = isPublished;
     board.authorId = authorId;
+    board.authorName = authorName;
     return board;
   }
 

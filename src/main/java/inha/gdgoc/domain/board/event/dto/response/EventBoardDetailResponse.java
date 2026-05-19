@@ -12,6 +12,7 @@ public record EventBoardDetailResponse(
     LocalDate eventStartDate,
     LocalDate eventEndDate,
     TeamType organizingTeam,
+    String authorName,
     String thumbnailUrl,
     String content,
     boolean isPublished,

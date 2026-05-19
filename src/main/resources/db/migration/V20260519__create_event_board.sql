@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS event_board (
     content           TEXT         NOT NULL,
     is_published      BOOLEAN      NOT NULL DEFAULT FALSE,
     author_id         BIGINT       NOT NULL REFERENCES users(id),
+    author_name       VARCHAR(100) NOT NULL DEFAULT '',
     created_at        TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at        TIMESTAMPTZ

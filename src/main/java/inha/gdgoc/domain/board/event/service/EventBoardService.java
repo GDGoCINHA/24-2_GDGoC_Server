@@ -11,8 +11,10 @@ import inha.gdgoc.domain.board.event.enums.EventBoardStatus;
 import inha.gdgoc.domain.board.event.enums.SearchType;
 import inha.gdgoc.domain.board.event.repository.EventBoardRepository;
 import inha.gdgoc.domain.resource.service.S3Service;
+import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.TeamType;
 import inha.gdgoc.domain.user.enums.UserRole;
+import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.GlobalErrorCode;
 import java.util.List;
@@ -28,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class EventBoardService {
 
   private final EventBoardRepository eventBoardRepository;
+  private final UserRepository userRepository;
   private final S3Service s3Service;
 
   public Page<EventBoardSummaryResponse> listEventBoards(
@@ -52,6 +55,9 @@ public class EventBoardService {
 
   @Transactional
   public Long createEventBoard(EventBoardCreateRequest req, Long authorId) {
+    User author = userRepository.findById(authorId)
+        .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
+
     EventBoard board =
         EventBoard.create(
             req.title(),
@@ -61,7 +67,8 @@ public class EventBoardService {
             req.thumbnailKey(),
             req.content(),
             req.isPublished(),
-            authorId);
+            authorId,
+            author.getName());
 
     if (req.attachments() != null) {
       req.attachments().forEach(a -> board.addAttachment(a.fileKey(), a.fileName()));
@@ -149,6 +156,7 @@ public class EventBoardService {
         board.getEventStartDate(),
         board.getEventEndDate(),
         board.getOrganizingTeam(),
+        board.getAuthorName(),
         EventBoardStatus.of(board.getEventStartDate(), board.getEventEndDate()));
   }
 
@@ -167,6 +175,7 @@ public class EventBoardService {
         board.getEventStartDate(),
         board.getEventEndDate(),
         board.getOrganizingTeam(),
+        board.getAuthorName(),
         thumbnailUrl,
         board.getContent(),
         board.isPublished(),

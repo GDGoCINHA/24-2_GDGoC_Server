@@ -11,4 +11,5 @@ public record EventBoardSummaryResponse(
     LocalDate eventStartDate,
     LocalDate eventEndDate,
     TeamType organizingTeam,
+    String authorName,
     EventBoardStatus status) {}

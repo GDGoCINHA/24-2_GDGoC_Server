@@ -124,6 +124,7 @@ public class EventBoardRepositoryImpl implements EventBoardRepository {
       case CONTENT -> board.content.containsIgnoreCase(keyword);
       case TITLE_AND_CONTENT ->
           board.title.containsIgnoreCase(keyword).or(board.content.containsIgnoreCase(keyword));
+      case AUTHOR -> board.authorName.containsIgnoreCase(keyword);
     };
   }
 }
