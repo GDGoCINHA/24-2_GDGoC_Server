@@ -15,6 +15,9 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.core.ResponseInputStream;
 
 @Service
 @RequiredArgsConstructor
@@ -58,6 +61,13 @@ public class S3Service {
             .build();
         PresignedPutObjectRequest presignedReq = s3Presigner.presignPutObject(presignReq);
         return new PresignedUpload(key, presignedReq.url().toExternalForm());
+    }
+
+    public ResponseInputStream<GetObjectResponse> download(String key) {
+        return s3Client.getObject(GetObjectRequest.builder()
+            .bucket(s3Properties.getBucket())
+            .key(key)
+            .build());
     }
 
     public String getS3FileUrl(String key) {

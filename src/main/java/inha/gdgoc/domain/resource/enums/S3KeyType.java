@@ -7,7 +7,8 @@ public enum S3KeyType {
 
     study("study"),
     recruitCore("recruit/core"),
-    recruitMember("recruit/member");
+    recruitMember("recruit/member"),
+    notice("notice");
 
     private final String value;
 
