@@ -228,3 +228,84 @@ CREATE INDEX IF NOT EXISTS idx_recruit_member_memo_email_lower
     ON recruit_member_memo((lower(email)));
 CREATE INDEX IF NOT EXISTS idx_recruit_member_memo_created_at
     ON recruit_member_memo(created_at DESC);
+
+-- 17. 이벤트 게시판 (event_board)
+CREATE TABLE IF NOT EXISTS event_board (
+    id                BIGSERIAL    PRIMARY KEY,
+    title             VARCHAR(255) NOT NULL,
+    event_start_date  DATE         NOT NULL,
+    event_end_date    DATE         NOT NULL,
+    organizing_team   VARCHAR(32)  NOT NULL,
+    thumbnail_key     VARCHAR(512),
+    content           TEXT         NOT NULL,
+    is_published      BOOLEAN      NOT NULL DEFAULT FALSE,
+    author_id         BIGINT       NOT NULL REFERENCES users(id),
+    author_name       VARCHAR(100) NOT NULL DEFAULT '',
+    created_at        TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at        TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS event_board_attachment (
+    id               BIGSERIAL    PRIMARY KEY,
+    event_board_id   BIGINT       NOT NULL REFERENCES event_board(id) ON DELETE CASCADE,
+    file_key         VARCHAR(512) NOT NULL,
+    file_name        VARCHAR(255) NOT NULL,
+    created_at       TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_event_board_is_published        ON event_board(is_published);
+CREATE INDEX IF NOT EXISTS idx_event_board_author_id           ON event_board(author_id);
+CREATE INDEX IF NOT EXISTS idx_event_board_attachment_board_id ON event_board_attachment(event_board_id);
+CREATE INDEX IF NOT EXISTS idx_event_board_deleted_at          ON event_board(deleted_at) WHERE deleted_at IS NOT NULL;
+
+-- 18. 공지사항 게시판 (notice_board)
+CREATE TABLE IF NOT EXISTS notice_board (
+    article_id       UUID            NOT NULL DEFAULT gen_random_uuid(),
+    article_number   BIGSERIAL       NOT NULL,
+    category         VARCHAR(32)              DEFAULT NULL,
+    is_pinned        BOOLEAN         NOT NULL DEFAULT FALSE,
+    status           VARCHAR(32)     NOT NULL DEFAULT 'PUBLISHED',
+    title            VARCHAR(255)    NOT NULL,
+    content          TEXT            NOT NULL,
+    view_count       INTEGER         NOT NULL DEFAULT 0,
+    posted_by        BIGINT          NOT NULL REFERENCES users(id),
+    posted_by_name   VARCHAR(100)    NOT NULL,
+    created_at       TIMESTAMPTZ     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       TIMESTAMPTZ     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at       TIMESTAMPTZ              DEFAULT NULL,
+
+    CONSTRAINT pk_notice_board PRIMARY KEY (article_id)
+);
+
+CREATE TABLE IF NOT EXISTS notice_board_attachment (
+    attachment_id    UUID            NOT NULL DEFAULT gen_random_uuid(),
+    article_id       UUID            NOT NULL REFERENCES notice_board(article_id) ON DELETE CASCADE,
+    attachment_type  VARCHAR(32)     NOT NULL,
+    original_name    VARCHAR(255)             DEFAULT NULL,  -- FILE 전용
+    stored_name      VARCHAR(255)             DEFAULT NULL,  -- FILE 전용 (S3 UUID 기반)
+    file_url         TEXT                     DEFAULT NULL,  -- FILE 전용 (S3 접근 경로)
+    file_size        BIGINT                   DEFAULT NULL,  -- FILE 전용 (바이트 단위)
+    mime_type        VARCHAR(100)             DEFAULT NULL,  -- FILE 전용
+    link_url         TEXT                     DEFAULT NULL,  -- URL 전용
+    display_order    INTEGER         NOT NULL,
+    created_at       TIMESTAMPTZ     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT pk_notice_board_attachment PRIMARY KEY (attachment_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_articles_number ON notice_board (article_number);
+CREATE INDEX IF NOT EXISTS idx_category ON notice_board (category) WHERE category IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_articles_deleted ON notice_board (deleted_at) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_articles_pinned ON notice_board (is_pinned) WHERE is_pinned = TRUE;
+CREATE INDEX IF NOT EXISTS idx_articles_status ON notice_board (status) WHERE status = 'PUBLISHED';
+CREATE INDEX IF NOT EXISTS idx_articles_prev_next ON notice_board (category, status, article_number) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_notice_board_attachment_article_id ON notice_board_attachment (article_id);
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+CREATE INDEX IF NOT EXISTS idx_title_trgm ON notice_board USING GIN (title gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_content_trgm ON notice_board USING GIN (content gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_title_content_trgm ON notice_board USING GIN ((title || ' ' || content) gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_articles_posted_by_name ON notice_board USING GIN (posted_by_name gin_trgm_ops);
+
