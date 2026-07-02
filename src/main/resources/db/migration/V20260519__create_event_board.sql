@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS event_board_attachment (
     event_board_id   BIGINT       NOT NULL REFERENCES event_board(id) ON DELETE CASCADE,
     file_key         VARCHAR(512) NOT NULL,
     file_name        VARCHAR(255) NOT NULL,
-    created_at       TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at       TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_event_board_is_published        ON event_board(is_published);

@@ -95,6 +95,11 @@ public class EventBoardService {
         req.content(),
         req.isPublished());
 
+    if (board.getEventEndDate().isBefore(board.getEventStartDate())) {
+      throw new BusinessException(
+          GlobalErrorCode.BAD_REQUEST, "행사 종료일은 시작일보다 앞설 수 없습니다.");
+    }
+
     if (req.attachments() != null) {
       board.getAttachments().clear();
       req.attachments().forEach(a -> board.addAttachment(a.fileKey(), a.fileName()));
