@@ -228,3 +228,15 @@ CREATE INDEX IF NOT EXISTS idx_recruit_member_memo_email_lower
     ON recruit_member_memo((lower(email)));
 CREATE INDEX IF NOT EXISTS idx_recruit_member_memo_created_at
     ON recruit_member_memo(created_at DESC);
+
+-- 17. 자유게시판 (posts)
+CREATE TABLE IF NOT EXISTS posts (
+    id BIGSERIAL PRIMARY KEY,
+    author_id BIGINT NOT NULL REFERENCES users(id),
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id);
