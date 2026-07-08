@@ -7,6 +7,7 @@ import inha.gdgoc.domain.board.free.dto.response.PostResponse;
 import inha.gdgoc.domain.board.free.dto.response.PostSummaryResponse;
 import inha.gdgoc.domain.board.free.entity.Post;
 import inha.gdgoc.domain.board.free.exception.PostErrorCode;
+import inha.gdgoc.domain.board.free.like.repository.PostLikeRepository;
 import inha.gdgoc.domain.board.free.repository.PostRepository;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.UserRole;
@@ -26,6 +27,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
+    private final PostLikeRepository postLikeRepository;
 
     /* ---------- Create ---------- */
     public PostResponse create(Long authorId, PostCreateRequest req) {
@@ -65,8 +67,9 @@ public class PostService {
         Post post = findOrThrow(postId);
         requireEditable(post, requesterId, requesterRole);
 
-        // 게시글의 댓글을 먼저 제거
+        // 게시글의 댓글/좋아요를 먼저 제거
         commentRepository.deleteAllByPostId(postId);
+        postLikeRepository.deleteAllByPostId(postId);
         postRepository.delete(post);
     }
 
