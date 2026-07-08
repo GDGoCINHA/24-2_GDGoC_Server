@@ -1,5 +1,6 @@
-package inha.gdgoc.domain.board.free.entity;
+package inha.gdgoc.domain.board.free.comment.entity;
 
+import inha.gdgoc.domain.board.free.entity.Post;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.global.entity.BaseEntity;
 import jakarta.persistence.Column;
@@ -18,36 +19,40 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "posts", indexes = { @Index(name = "idx_posts_created_at", columnList = "created_at") })
+@Table(name = "comments", indexes = { @Index(name = "idx_comments_post_id", columnList = "post_id") })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Post extends BaseEntity {
+public class Comment extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id", nullable = false)
+    private Post post;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
-
-    @Column(nullable = false, length = 200)
-    private String title;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    public Post(User author, String title, String content) {
+    public Comment(Post post, User author, String content) {
+        this.post = post;
         this.author = author;
-        this.title = title;
         this.content = content;
     }
 
-    public void update(String title, String content) {
-        this.title = title;
+    public void update(String content) {
         this.content = content;
     }
 
     public boolean isAuthoredBy(Long userId) {
         return author != null && author.getId().equals(userId);
+    }
+
+    public boolean belongsToPost(Long postId) {
+        return post != null && post.getId().equals(postId);
     }
 }

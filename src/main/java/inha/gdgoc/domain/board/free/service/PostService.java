@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.board.free.service;
 
+import inha.gdgoc.domain.board.free.comment.repository.CommentRepository;
 import inha.gdgoc.domain.board.free.dto.request.PostCreateRequest;
 import inha.gdgoc.domain.board.free.dto.request.PostUpdateRequest;
 import inha.gdgoc.domain.board.free.dto.response.PostResponse;
@@ -24,8 +25,9 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
 
-    /* ===== 작성 ===== */
+    /* ---------- Create ---------- */
     public PostResponse create(Long authorId, PostCreateRequest req) {
         User author = userRepository.findById(authorId)
                 .orElseThrow(() -> new BusinessException(PostErrorCode.AUTHOR_NOT_FOUND));
@@ -34,21 +36,20 @@ public class PostService {
         return PostResponse.from(saved);
     }
 
-    /* ===== 목록 (최신순, 페이징) ===== */
+    /* ---------- Read ---------- */
     @Transactional(readOnly = true)
     public Page<PostSummaryResponse> list(Pageable pageable) {
         return postRepository.findAllByOrderByCreatedAtDesc(pageable)
                 .map(PostSummaryResponse::from);
     }
 
-    /* ===== 단건 조회 ===== */
     @Transactional(readOnly = true)
     public PostResponse get(Long postId) {
         Post post = findOrThrow(postId);
         return PostResponse.from(post);
     }
 
-    /* ===== 수정 ===== */
+    /* ---------- Update ---------- */
     public PostResponse update(Long requesterId, UserRole requesterRole, Long postId, PostUpdateRequest req) {
         Post post = findOrThrow(postId);
         requireEditable(post, requesterId, requesterRole);
@@ -59,15 +60,16 @@ public class PostService {
         return PostResponse.from(post);
     }
 
-    /* ===== 삭제 ===== */
+    /* ---------- Delete ---------- */
     public void delete(Long requesterId, UserRole requesterRole, Long postId) {
         Post post = findOrThrow(postId);
         requireEditable(post, requesterId, requesterRole);
 
+        // 게시글의 댓글을 먼저 제거
+        commentRepository.deleteAllByPostId(postId);
         postRepository.delete(post);
     }
 
-    /* ===== helpers ===== */
     private Post findOrThrow(Long postId) {
         return postRepository.findWithAuthorById(postId)
                 .orElseThrow(() -> new BusinessException(PostErrorCode.POST_NOT_FOUND));
