@@ -122,6 +122,13 @@ cp 24-2_GDGoC_Server/.claude/parent-settings.example.json .claude/settings.json
 스크립트 사본은 **리포 안에만** 둔다. 부모 설정은 그것을 경로로 가리킬 뿐이다.
 `--repo` 인자의 기본값이 `.` 이라 **리포 안에서 띄운 세션의 동작은 바뀌지 않는다.**
 
+`guard.mjs` 와 `migration-guard.mjs` 는 **Server 사본으로 한 번만** 부른다. 전자는 명령
+문자열만, 후자는 편집 대상 파일 경로만 보므로 리포에 무관하다 — 두 번 부르면 같은 차단
+메시지가 두 번 나온다. `lifecycle.mjs`·`verify.mjs` 만 리포별로 두 번 부른다.
+
+(설정 파일에는 주석을 달 수 없다. 스키마에 없는 키를 넣으면 거부될 수 있으므로
+`parent-settings.example.json` 은 설명 없이 두고, 설명은 여기 둔다.)
+
 복사한 뒤 **가리키는 파일이 전부 있는지 확인한다.** 없는 파일을 가리키는 훅은 조용히 죽는다.
 
 ```bash
