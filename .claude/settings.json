@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "./gradlew compileJava compileTestJava --offline -q 2>&1 || { echo '컴파일 실패 - 위 에러를 확인하세요.' >&2; exit 1; }"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/lifecycle.mjs retire"
           }
         ]
       }
@@ -18,6 +22,10 @@
           {
             "type": "command",
             "command": "node .claude/hooks/guard.mjs"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/lifecycle.mjs promote"
           }
         ]
       }
