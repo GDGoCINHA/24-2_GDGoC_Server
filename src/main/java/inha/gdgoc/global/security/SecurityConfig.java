@@ -40,7 +40,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/v1/auth/logout").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/board/events", "/api/v1/board/events/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/board/events").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/board/events/{id:[0-9]+}").permitAll()
                 .requestMatchers(
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
