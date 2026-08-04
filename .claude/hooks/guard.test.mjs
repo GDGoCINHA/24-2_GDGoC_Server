@@ -81,12 +81,51 @@ test("아는 구멍: 변수 치환은 셸이 한다", () => {
   assert.equal(judge(bash('eval "$DANGEROUS_CMD"')), null);
 });
 
-test("아는 구멍: PowerShell 은 아직 대상이 아니다", () => {
-  // settings.json 의 matcher 가 Bash 뿐이라 PowerShell 툴은 훅 자체가 안 뜬다.
-  // judge 에 직접 넣어도 Bash 문법 패턴이라 걸리지 않는다.
-  const ps = {
-    tool_name: "PowerShell",
-    tool_input: { command: "Remove-Item -Recurse -Force C:\\build" },
-  };
-  assert.equal(judge(ps), null);
+// --- PowerShell -----------------------------------------------------------
+//
+// 이 PC 의 주 셸이 PowerShell 이다. Bash 만 보면 `Remove-Item -Recurse` 로 그냥 지나간다.
+// 툴을 바꾸는 것만으로 벗어날 수 있으면 가드가 없는 것과 같다.
+
+const pwsh = (command) => ({ tool_name: "PowerShell", tool_input: { command } });
+
+test("PowerShell 의 재귀 삭제를 막는다", () => {
+  const blocked = [
+    "Remove-Item -Recurse -Force C:\\build",
+    "Remove-Item -Force -Recurse C:\\build",
+    "Remove-Item -Rec C:\\build",       // PowerShell 은 파라미터 축약을 허용한다
+    "ri -Recurse C:\\build",
+    "rmdir -Recurse C:\\build",
+  ];
+  for (const c of blocked) {
+    assert.ok(judge(pwsh(c)), `막아야 한다: ${c}`);
+  }
+});
+
+test("PowerShell 에서도 git·SQL·운영 패턴이 그대로 걸린다", () => {
+  // 명령 문자열이 같으므로 별도 패턴이 필요 없다.
+  for (const c of [
+    "git push origin main",
+    "git reset --hard HEAD~1",
+    "psql -c 'DROP TABLE users'",
+    "bash deploy.prod.sh",
+  ]) {
+    assert.ok(judge(pwsh(c)), `막아야 한다: ${c}`);
+  }
+});
+
+test("PowerShell 정상 명령은 통과시킨다", () => {
+  const allowed = [
+    "Remove-Item C:\\build\\tmp\\scratch.txt", // -Recurse 가 없다
+    "Get-ChildItem -Recurse -Filter *.java",   // 삭제가 아니다
+    "Select-String -Pattern 'Remove-Item' -Path notes.md",
+    "./gradlew compileJava",
+    "git push origin feature/eventboard",
+  ];
+  for (const c of allowed) {
+    assert.equal(judge(pwsh(c)), null, `통과해야 한다: ${c}`);
+  }
+});
+
+test("PowerShell 도 fail-closed 다", () => {
+  assert.ok(judge({ tool_name: "PowerShell" }), "command 가 없으면 차단");
 });

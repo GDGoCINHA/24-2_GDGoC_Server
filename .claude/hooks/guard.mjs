@@ -7,9 +7,18 @@
 //
 // 판정은 `judge()` 하나에 모아 두고 CLI 는 입출력만 한다 — 그래야 테스트가 붙는다.
 
+// 셸 툴 — 이 툴들은 command 를 못 읽으면 판정 불가로 보고 차단한다.
+const SHELL_TOOLS = new Set(["Bash", "PowerShell"]);
+
 const DESTRUCTIVE = [
   // rm -rf / -fr / -Rf / -rfv ... 플래그 뭉치에 r 과 f 가 함께 있으면 잡는다.
   [/\brm\s+-[a-zA-Z]*([rR][a-zA-Z]*[fF]|[fF][a-zA-Z]*[rR])/, "`rm -rf` 는 되돌릴 수 없다"],
+  // PowerShell 의 재귀 삭제. `-Force` 없이도 트리를 지운다.
+  // PowerShell 은 파라미터 축약을 허용하므로 `-Rec` 접두사로 본다.
+  [
+    /\b(Remove-Item|ri|rd|rmdir)\b[^\n]*\s-[Rr]ec/,
+    "`Remove-Item -Recurse` 는 되돌릴 수 없다",
+  ],
   [/\bgit\s+push\b[^\n]*\s(--force\b|-f\b)/, "force push 는 남의 커밋을 지운다"],
   [/\bgit\s+reset\s+--hard\b/, "`git reset --hard` 는 작업 트리를 버린다"],
   [/\bDROP\s+TABLE\b/i, "`DROP TABLE` 은 되돌릴 수 없다"],
@@ -35,8 +44,8 @@ export function judge(input) {
   }
 
   const command = input?.tool_input?.command;
-  if (input.tool_name === "Bash" && typeof command !== "string") {
-    return { reason: "Bash 호출인데 command 를 읽을 수 없다" };
+  if (SHELL_TOOLS.has(input.tool_name) && typeof command !== "string") {
+    return { reason: `${input.tool_name} 호출인데 command 를 읽을 수 없다` };
   }
   if (typeof command !== "string") return null;
 
