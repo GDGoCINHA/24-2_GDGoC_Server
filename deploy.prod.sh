@@ -22,12 +22,6 @@ fi
 # 기존 컨테이너 중지 및 삭제
 docker-compose -f docker-compose-prod.yml down
 
-# 사용되지 않는 컨테이너, 이미지, 네트워크, 볼륨 정리
-docker system prune -af
-
-# 불필요한 Docker 볼륨도 정리 (옵션)
-docker volume prune -f
-
 # 최신 이미지 가져오기
 # shellcheck disable=SC2046
 export $(grep -v '^#' .env | xargs)
@@ -36,3 +30,9 @@ docker pull ${DOCKER_HUB_USERNAME}/gdgoc-be-app:latest
 
 # 컨테이너 실행
 docker-compose -f docker-compose-prod.yml --env-file .env up -d
+
+# 정리는 컨테이너가 뜬 뒤에 한다.
+# 기동 전에 `prune -af` 를 돌리면 down 직후라 모든 이미지가 미사용으로 잡혀
+# redis·dozzle 까지 전부 삭제되고, 매 배포마다 이미지를 통째로 다시 받게 된다.
+# 여기서는 방금 교체된 구버전 앱 이미지(dangling)만 지워진다.
+docker image prune -f
