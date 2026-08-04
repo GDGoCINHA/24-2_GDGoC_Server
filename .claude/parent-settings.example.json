@@ -1,0 +1,76 @@
+{
+  "_설명": [
+    "두 리포를 나란히 둔 부모 폴더에서 Claude Code 를 띄울 때 쓰는 배선이다.",
+    "부모 폴더의 .claude/settings.json 으로 복사하라. 경로는 부모 폴더 기준이다.",
+    "부모는 git 리포가 아니므로 그 설정 자체는 어디에도 커밋되지 않는다 —",
+    "그래서 예시만 커밋한다. 자동 로드되지 않으므로 설치가 명시적 행위로 남는다.",
+    "",
+    "guard.mjs 와 migration-guard.mjs 를 Server 사본으로 한 번만 부르는 것이 의도다.",
+    "전자는 명령 문자열만, 후자는 편집 대상 파일 경로만 보므로 리포에 무관하다.",
+    "두 번 부르면 같은 차단 메시지가 두 번 나온다."
+  ],
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Server/.claude/hooks/session-start.mjs --repo 24-2_GDGoC_Server --repo 24-2_GDGoC_Web"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Server/.claude/hooks/guard.mjs"
+          },
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Server/.claude/hooks/lifecycle.mjs promote --repo 24-2_GDGoC_Server"
+          },
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Web/.claude/hooks/lifecycle.mjs promote --repo 24-2_GDGoC_Web"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Server/.claude/hooks/migration-guard.mjs"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Server/.claude/hooks/verify.mjs --repo 24-2_GDGoC_Server"
+          },
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Web/.claude/hooks/verify.mjs --repo 24-2_GDGoC_Web"
+          },
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Server/.claude/hooks/lifecycle.mjs retire --repo 24-2_GDGoC_Server"
+          },
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Web/.claude/hooks/lifecycle.mjs retire --repo 24-2_GDGoC_Web"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -16,7 +16,7 @@
 
 - CRITICAL: 도메인은 `domain/{도메인}/` 아래 `controller`·`service`·`repository`·`entity`·`dto`·`enums`로 분리한다. 도메인 간 직접 참조 대신 서비스 계층을 경유한다.
 - CRITICAL: 모든 응답은 `ApiResponse<T, M>`로 감싼다. 컨트롤러가 엔티티를 그대로 반환하지 않는다 — 반드시 DTO(record)로 변환한다.
-- CRITICAL: 스키마 변경은 **반드시 Flyway 마이그레이션**으로 한다. `ddl-auto`에 의존하지 않는다. 파일명은 `V{YYYYMMDD}__{설명}.sql`이며 **기존 파일을 수정하지 않는다**(체크섬 불일치로 부팅 실패).
+- CRITICAL: 스키마 변경은 **반드시 Flyway 마이그레이션**으로 한다. `ddl-auto`에 의존하지 않는다. 파일명은 `V{YYYYMMDD}__{설명}.sql`이며 **기존 파일을 수정하지 않는다**(체크섬 불일치로 부팅 실패). 이미 `origin/develop`·`origin/main`에 있는 마이그레이션은 `migration-guard.mjs` 훅이 편집을 차단한다 — 내 브랜치에서 방금 만든 파일은 아직 적용된 적이 없으므로 통과한다.
 - CRITICAL: 권한 검사는 `global/security/AccessGuard`를 사용한다. 직접 role을 비교하는 코드를 새로 만들지 않는다.
 - 엔티티는 `BaseEntity`를 상속해 `created_at`·`updated_at`을 자동 관리한다.
 - 예외는 `BusinessException` + `ErrorCode`로 던진다. HTTP 상태는 `ErrorCode`가 정한다.
