@@ -40,6 +40,19 @@ public class RecruitCoreControllerExceptionHandler {
         return ResponseEntity.status(code.getStatus()).body(body);
     }
 
+    @ExceptionHandler(RecruitCoreNotOpenException.class)
+    public ResponseEntity<RecruitCoreApplicationErrorResponse> handleNotOpen(
+        RecruitCoreNotOpenException ex
+    ) {
+        log.debug("RecruitCoreNotOpenException: {}", ex.getMessage());
+        var code = ex.getErrorCode();
+        RecruitCoreApplicationErrorResponse body = RecruitCoreApplicationErrorResponse.of(
+            code.getCode(),
+            code.getMessage()
+        );
+        return ResponseEntity.status(code.getStatus()).body(body);
+    }
+
     @ExceptionHandler(RecruitCoreApplicationNotFoundException.class)
     public ResponseEntity<RecruitCoreApplicationErrorResponse> handleNotFound(
         RecruitCoreApplicationNotFoundException ex

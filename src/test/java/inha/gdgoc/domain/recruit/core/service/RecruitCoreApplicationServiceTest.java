@@ -14,6 +14,7 @@ import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicantDetailRes
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreEligibilityResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicationCreateResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreMyApplicationResponse;
+import inha.gdgoc.domain.recruit.core.dto.response.RecruitCorePeriodResponse;
 import inha.gdgoc.domain.recruit.core.entity.RecruitCoreApplication;
 import inha.gdgoc.domain.recruit.core.enums.RecruitCorePeriodStatus;
 import inha.gdgoc.domain.recruit.core.exception.RecruitCoreAlreadyAppliedException;
@@ -252,6 +253,25 @@ class RecruitCoreApplicationServiceTest {
     void getPeriodStatus_afterClose_returnsClosed() {
         assertThat(serviceAt(AFTER_CLOSE).getPeriodStatus())
             .isEqualTo(RecruitCorePeriodStatus.CLOSED);
+    }
+
+    @Test
+    void getPeriod_returnsSessionAndBoundsAndStatus() {
+        RecruitCorePeriodResponse response = serviceAt(DURING_OPEN).getPeriod();
+
+        assertThat(response.session()).isEqualTo(SESSION);
+        assertThat(response.openAt()).isEqualTo(OPEN_AT);
+        assertThat(response.closeAt()).isEqualTo(CLOSE_AT);
+        assertThat(response.status()).isEqualTo(RecruitCorePeriodStatus.OPEN);
+    }
+
+    @Test
+    void getPeriod_beforeOpen_doesNotThrow() {
+        // 기간 조회는 게이트 앞에 있다. 시작 전에도 200 이어야 웹이 로그인을
+        // 요구하지 않고 안내를 띄울 수 있다.
+        RecruitCorePeriodResponse response = serviceAt(BEFORE_OPEN).getPeriod();
+
+        assertThat(response.status()).isEqualTo(RecruitCorePeriodStatus.BEFORE_OPEN);
     }
 
     @Test

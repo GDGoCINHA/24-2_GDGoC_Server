@@ -6,6 +6,7 @@ import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicantDetailRes
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicationCreateResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreEligibilityResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreMyApplicationResponse;
+import inha.gdgoc.domain.recruit.core.dto.response.RecruitCorePeriodResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCorePrefillResponse;
 import inha.gdgoc.domain.recruit.core.entity.RecruitCoreApplication;
 import inha.gdgoc.domain.recruit.core.enums.RecruitCorePeriodStatus;
@@ -215,6 +216,15 @@ public class RecruitCoreApplicationService {
         if (status == RecruitCorePeriodStatus.CLOSED) {
             throw new RecruitCoreClosedException(closeAt);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public RecruitCorePeriodResponse getPeriod() {
+        return new RecruitCorePeriodResponse(
+            recruitCoreSessionResolver.currentSession(),
+            openAt,
+            closeAt,
+            getPeriodStatus());
     }
 
     public RecruitCorePeriodStatus getPeriodStatus() {
