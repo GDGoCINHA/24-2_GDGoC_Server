@@ -20,14 +20,15 @@ import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.GlobalErrorCode;
 import inha.gdgoc.global.util.MajorNormalizer;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 public class RecruitCoreApplicationService {
 
     private static final Instant RECRUITMENT_DEADLINE = Instant.parse("2026-03-14T14:59:59Z");
@@ -37,6 +38,38 @@ public class RecruitCoreApplicationService {
     private final RecruitCoreSessionResolver recruitCoreSessionResolver;
     private final MajorNormalizer majorNormalizer;
     private final S3Service s3Service;
+    private final Clock clock;
+
+    // 시각을 주입받는다. `Instant.now()` 를 직접 부르면 마감일이 지나는 순간
+    // 테스트가 통째로 무너지고, 마감 동작 자체를 검증할 방법도 없다.
+    // SemesterCalculator·RecruitCoreSessionResolver 와 같은 방식이다.
+    @Autowired
+    public RecruitCoreApplicationService(
+        RecruitCoreApplicationRepository repository,
+        UserRepository userRepository,
+        RecruitCoreSessionResolver recruitCoreSessionResolver,
+        MajorNormalizer majorNormalizer,
+        S3Service s3Service
+    ) {
+        this(repository, userRepository, recruitCoreSessionResolver, majorNormalizer, s3Service,
+            Clock.system(ZoneId.of("Asia/Seoul")));
+    }
+
+    public RecruitCoreApplicationService(
+        RecruitCoreApplicationRepository repository,
+        UserRepository userRepository,
+        RecruitCoreSessionResolver recruitCoreSessionResolver,
+        MajorNormalizer majorNormalizer,
+        S3Service s3Service,
+        Clock clock
+    ) {
+        this.repository = repository;
+        this.userRepository = userRepository;
+        this.recruitCoreSessionResolver = recruitCoreSessionResolver;
+        this.majorNormalizer = majorNormalizer;
+        this.s3Service = s3Service;
+        this.clock = clock;
+    }
 
     @Transactional(readOnly = true)
     public RecruitCoreApplicantDetailResponse getApplicantDetail(Long id) {
@@ -151,7 +184,7 @@ public class RecruitCoreApplicationService {
     }
 
     private void validateRecruitmentOpen() {
-        if (Instant.now().isAfter(RECRUITMENT_DEADLINE)) {
+        if (Instant.now(clock).isAfter(RECRUITMENT_DEADLINE)) {
             throw new RecruitCoreClosedException(RECRUITMENT_DEADLINE);
         }
     }

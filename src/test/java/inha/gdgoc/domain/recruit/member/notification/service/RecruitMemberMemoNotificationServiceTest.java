@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -101,6 +102,12 @@ class RecruitMemberMemoNotificationServiceTest {
                 .build();
 
         when(notificationRepository.findPendingBatchForUpdate(anyInt())).thenReturn(List.of(success, fail));
+        // 성공 경로도 명시적으로 스텁한다. strict stubs 에서는 스텁이 걸린 메서드를
+        // 인자가 안 맞는 채로 호출하면 PotentialStubbingProblem 이 던져지는데,
+        // 서비스의 catch(Exception) 가 그것을 "메일 실패"로 삼켜 SENT 가 되지 않는다.
+        doNothing()
+                .when(mailService)
+                .sendPlainMail(eq("ok@test.com"), anyString(), anyString(), anyString());
         doThrow(new RuntimeException("smtp error"))
                 .when(mailService)
                 .sendPlainMail(eq("fail@test.com"), anyString(), anyString(), anyString());
