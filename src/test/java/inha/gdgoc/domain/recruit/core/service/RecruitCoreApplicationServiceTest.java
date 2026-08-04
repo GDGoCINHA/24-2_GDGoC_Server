@@ -17,20 +17,24 @@ import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreMyApplicationRespo
 import inha.gdgoc.domain.recruit.core.entity.RecruitCoreApplication;
 import inha.gdgoc.domain.recruit.core.exception.RecruitCoreAlreadyAppliedException;
 import inha.gdgoc.domain.recruit.core.exception.RecruitCoreApplicationNotFoundException;
+import inha.gdgoc.domain.recruit.core.exception.RecruitCoreClosedException;
 import inha.gdgoc.domain.recruit.core.repository.RecruitCoreApplicationRepository;
 import inha.gdgoc.domain.recruit.core.enums.RecruitCoreResultStatus;
+import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.exception.BusinessException;
+import inha.gdgoc.global.util.MajorNormalizer;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -39,6 +43,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 class RecruitCoreApplicationServiceTest {
 
     private static final String SESSION = "2026-1";
+
+    // 마감일(2026-03-14T14:59:59Z)을 기준으로 앞뒤를 고정한다.
+    // 벽시계를 쓰면 마감일이 지나는 순간 이 클래스 전체가 무너진다 — 실제로 그랬다.
+    private static final Instant BEFORE_DEADLINE = Instant.parse("2026-03-01T00:00:00Z");
+    private static final Instant AFTER_DEADLINE = Instant.parse("2026-03-15T00:00:00Z");
 
     @Mock
     private RecruitCoreApplicationRepository repository;
@@ -49,12 +58,28 @@ class RecruitCoreApplicationServiceTest {
     @Mock
     private RecruitCoreSessionResolver recruitCoreSessionResolver;
 
-    @InjectMocks
+    @Mock
+    private MajorNormalizer majorNormalizer;
+
+    @Mock
+    private S3Service s3Service;
+
     private RecruitCoreApplicationService service;
 
     @BeforeEach
     void setUp() {
         lenient().when(recruitCoreSessionResolver.currentSession()).thenReturn(SESSION);
+        service = serviceAt(BEFORE_DEADLINE);
+    }
+
+    private RecruitCoreApplicationService serviceAt(Instant now) {
+        return new RecruitCoreApplicationService(
+            repository,
+            userRepository,
+            recruitCoreSessionResolver,
+            majorNormalizer,
+            s3Service,
+            Clock.fixed(now, ZoneOffset.UTC));
     }
 
     @Test
@@ -87,6 +112,7 @@ class RecruitCoreApplicationServiceTest {
         RecruitCoreApplication saved = createApplication(55L, user, SESSION);
         when(repository.findByUserIdAndSession(1L, SESSION)).thenReturn(Optional.empty());
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(majorNormalizer.normalize("컴퓨터공학과")).thenReturn("컴퓨터공학과");
         when(repository.save(any())).thenReturn(saved);
 
         RecruitCoreApplicationCreateResponse response = service.submit(1L, request);
@@ -164,6 +190,24 @@ class RecruitCoreApplicationServiceTest {
 
         assertThat(response.name()).isEqualTo("홍길동");
         assertThat(response.email()).isEqualTo("hong@inha.edu");
+    }
+
+    @Test
+    void checkEligibility_afterDeadline_throwsClosedException() {
+        assertThatThrownBy(() -> serviceAt(AFTER_DEADLINE).checkEligibility(1L))
+            .isInstanceOf(RecruitCoreClosedException.class);
+    }
+
+    @Test
+    void prefill_afterDeadline_throwsClosedException() {
+        assertThatThrownBy(() -> serviceAt(AFTER_DEADLINE).prefill(1L))
+            .isInstanceOf(RecruitCoreClosedException.class);
+    }
+
+    @Test
+    void submit_afterDeadline_throwsClosedException() {
+        assertThatThrownBy(() -> serviceAt(AFTER_DEADLINE).submit(1L, sampleRequest()))
+            .isInstanceOf(RecruitCoreClosedException.class);
     }
 
     private RecruitCoreApplicationCreateRequest sampleRequest() {
