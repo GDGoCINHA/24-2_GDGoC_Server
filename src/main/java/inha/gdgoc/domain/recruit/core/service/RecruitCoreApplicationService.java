@@ -6,40 +6,100 @@ import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicantDetailRes
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicationCreateResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreEligibilityResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreMyApplicationResponse;
+import inha.gdgoc.domain.recruit.core.dto.response.RecruitCorePeriodResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCorePrefillResponse;
 import inha.gdgoc.domain.recruit.core.entity.RecruitCoreApplication;
+import inha.gdgoc.domain.recruit.core.enums.RecruitCorePeriodStatus;
 import inha.gdgoc.domain.recruit.core.enums.RecruitCoreResultStatus;
 import inha.gdgoc.domain.recruit.core.exception.RecruitCoreAlreadyAppliedException;
 import inha.gdgoc.domain.recruit.core.exception.RecruitCoreApplicationNotFoundException;
 import inha.gdgoc.domain.recruit.core.exception.RecruitCoreClosedException;
+import inha.gdgoc.domain.recruit.core.exception.RecruitCoreNotOpenException;
 import inha.gdgoc.domain.recruit.core.repository.RecruitCoreApplicationRepository;
+import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.GlobalErrorCode;
 import inha.gdgoc.global.util.MajorNormalizer;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 public class RecruitCoreApplicationService {
-
-    private static final Instant RECRUITMENT_DEADLINE = Instant.parse("2026-03-14T14:59:59Z");
 
     private final RecruitCoreApplicationRepository repository;
     private final UserRepository userRepository;
     private final RecruitCoreSessionResolver recruitCoreSessionResolver;
     private final MajorNormalizer majorNormalizer;
+    private final S3Service s3Service;
+    private final Instant openAt;
+    private final Instant closeAt;
+    private final Clock clock;
+
+    // 시각을 주입받는다. `Instant.now()` 를 직접 부르면 마감일이 지나는 순간
+    // 테스트가 통째로 무너지고, 마감 동작 자체를 검증할 방법도 없다.
+    // SemesterCalculator·RecruitCoreSessionResolver 와 같은 방식이다.
+    //
+    // 기간도 코드가 아니라 설정에서 받는다. 코드에 박으면 마감일이 지나는 순간
+    // 아무도 모르게 API 가 막힌다 — 실제로 2026-03-14 부터 5개월간 그랬다.
+    // 다음 모집은 환경변수만 바꾸면 된다.
+    //
+    // Instant 가 아니라 String 으로 받는 이유: Instant.parse() 는 'Z' 형식만 받아
+    // '+09:00' 을 거부한다. .env 에 KST 를 그대로 적을 수 있어야 오프셋 계산 실수가 안 난다.
+    @Autowired
+    public RecruitCoreApplicationService(
+        RecruitCoreApplicationRepository repository,
+        UserRepository userRepository,
+        RecruitCoreSessionResolver recruitCoreSessionResolver,
+        MajorNormalizer majorNormalizer,
+        S3Service s3Service,
+        @Value("${app.recruit.core.open-at}") String openAt,
+        @Value("${app.recruit.core.close-at}") String closeAt
+    ) {
+        this(repository, userRepository, recruitCoreSessionResolver, majorNormalizer, s3Service,
+            OffsetDateTime.parse(openAt).toInstant(),
+            OffsetDateTime.parse(closeAt).toInstant(),
+            Clock.system(ZoneId.of("Asia/Seoul")));
+    }
+
+    public RecruitCoreApplicationService(
+        RecruitCoreApplicationRepository repository,
+        UserRepository userRepository,
+        RecruitCoreSessionResolver recruitCoreSessionResolver,
+        MajorNormalizer majorNormalizer,
+        S3Service s3Service,
+        Instant openAt,
+        Instant closeAt,
+        Clock clock
+    ) {
+        if (!openAt.isBefore(closeAt)) {
+            throw new IllegalArgumentException(
+                "app.recruit.core.open-at 은 close-at 보다 앞서야 한다: openAt=" + openAt
+                    + ", closeAt=" + closeAt);
+        }
+        this.repository = repository;
+        this.userRepository = userRepository;
+        this.recruitCoreSessionResolver = recruitCoreSessionResolver;
+        this.majorNormalizer = majorNormalizer;
+        this.s3Service = s3Service;
+        this.openAt = openAt;
+        this.closeAt = closeAt;
+        this.clock = clock;
+    }
 
     @Transactional(readOnly = true)
     public RecruitCoreApplicantDetailResponse getApplicantDetail(Long id) {
         RecruitCoreApplication app = getApplication(id);
-        return RecruitCoreApplicantDetailResponse.from(app);
+        return RecruitCoreApplicantDetailResponse.from(app, toS3FileUrls(app.getFileUrls()));
     }
 
     @Transactional(readOnly = true)
@@ -119,7 +179,23 @@ public class RecruitCoreApplicationService {
         if (!privileged && !application.isOwnedBy(viewerId)) {
             throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER);
         }
-        return RecruitCoreApplicantDetailResponse.from(application);
+        return RecruitCoreApplicantDetailResponse.from(application, toS3FileUrls(application.getFileUrls()));
+    }
+
+    private List<String> toS3FileUrls(List<String> fileKeys) {
+        if (fileKeys == null || fileKeys.isEmpty()) {
+            return List.of();
+        }
+        return fileKeys.stream()
+            .map(this::toS3FileUrl)
+            .toList();
+    }
+
+    private String toS3FileUrl(String fileKey) {
+        if (fileKey.startsWith("http://") || fileKey.startsWith("https://")) {
+            return fileKey;
+        }
+        return s3Service.getS3FileUrl(fileKey);
     }
 
     private RecruitCoreApplication getApplication(Long id) {
@@ -133,9 +209,33 @@ public class RecruitCoreApplicationService {
     }
 
     private void validateRecruitmentOpen() {
-        if (Instant.now().isAfter(RECRUITMENT_DEADLINE)) {
-            throw new RecruitCoreClosedException(RECRUITMENT_DEADLINE);
+        RecruitCorePeriodStatus status = getPeriodStatus();
+        if (status == RecruitCorePeriodStatus.BEFORE_OPEN) {
+            throw new RecruitCoreNotOpenException(openAt);
         }
+        if (status == RecruitCorePeriodStatus.CLOSED) {
+            throw new RecruitCoreClosedException(closeAt);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public RecruitCorePeriodResponse getPeriod() {
+        return new RecruitCorePeriodResponse(
+            recruitCoreSessionResolver.currentSession(),
+            openAt,
+            closeAt,
+            getPeriodStatus());
+    }
+
+    public RecruitCorePeriodStatus getPeriodStatus() {
+        Instant now = Instant.now(clock);
+        if (now.isBefore(openAt)) {
+            return RecruitCorePeriodStatus.BEFORE_OPEN;
+        }
+        if (now.isAfter(closeAt)) {
+            return RecruitCorePeriodStatus.CLOSED;
+        }
+        return RecruitCorePeriodStatus.OPEN;
     }
 
 }

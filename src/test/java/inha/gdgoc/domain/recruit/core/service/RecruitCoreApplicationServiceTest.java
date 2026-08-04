@@ -14,23 +14,30 @@ import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicantDetailRes
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreEligibilityResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicationCreateResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreMyApplicationResponse;
+import inha.gdgoc.domain.recruit.core.dto.response.RecruitCorePeriodResponse;
 import inha.gdgoc.domain.recruit.core.entity.RecruitCoreApplication;
+import inha.gdgoc.domain.recruit.core.enums.RecruitCorePeriodStatus;
 import inha.gdgoc.domain.recruit.core.exception.RecruitCoreAlreadyAppliedException;
 import inha.gdgoc.domain.recruit.core.exception.RecruitCoreApplicationNotFoundException;
+import inha.gdgoc.domain.recruit.core.exception.RecruitCoreClosedException;
+import inha.gdgoc.domain.recruit.core.exception.RecruitCoreNotOpenException;
 import inha.gdgoc.domain.recruit.core.repository.RecruitCoreApplicationRepository;
 import inha.gdgoc.domain.recruit.core.enums.RecruitCoreResultStatus;
+import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.exception.BusinessException;
+import inha.gdgoc.global.util.MajorNormalizer;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -39,6 +46,15 @@ import org.springframework.test.util.ReflectionTestUtils;
 class RecruitCoreApplicationServiceTest {
 
     private static final String SESSION = "2026-1";
+
+    // 기간은 테스트가 스스로 정한다. 운영 기본값(app.recruit.core.*)을 참조하면
+    // 모집 일정이 바뀔 때마다 이 클래스가 다시 무너진다 — 실제로 그랬다.
+    private static final Instant OPEN_AT = Instant.parse("2026-08-09T15:00:00Z");
+    private static final Instant CLOSE_AT = Instant.parse("2026-08-30T14:59:59Z");
+
+    private static final Instant BEFORE_OPEN = Instant.parse("2026-08-01T00:00:00Z");
+    private static final Instant DURING_OPEN = Instant.parse("2026-08-20T00:00:00Z");
+    private static final Instant AFTER_CLOSE = Instant.parse("2026-09-01T00:00:00Z");
 
     @Mock
     private RecruitCoreApplicationRepository repository;
@@ -49,12 +65,30 @@ class RecruitCoreApplicationServiceTest {
     @Mock
     private RecruitCoreSessionResolver recruitCoreSessionResolver;
 
-    @InjectMocks
+    @Mock
+    private MajorNormalizer majorNormalizer;
+
+    @Mock
+    private S3Service s3Service;
+
     private RecruitCoreApplicationService service;
 
     @BeforeEach
     void setUp() {
         lenient().when(recruitCoreSessionResolver.currentSession()).thenReturn(SESSION);
+        service = serviceAt(DURING_OPEN);
+    }
+
+    private RecruitCoreApplicationService serviceAt(Instant now) {
+        return new RecruitCoreApplicationService(
+            repository,
+            userRepository,
+            recruitCoreSessionResolver,
+            majorNormalizer,
+            s3Service,
+            OPEN_AT,
+            CLOSE_AT,
+            Clock.fixed(now, ZoneOffset.UTC));
     }
 
     @Test
@@ -87,6 +121,7 @@ class RecruitCoreApplicationServiceTest {
         RecruitCoreApplication saved = createApplication(55L, user, SESSION);
         when(repository.findByUserIdAndSession(1L, SESSION)).thenReturn(Optional.empty());
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(majorNormalizer.normalize("컴퓨터공학과")).thenReturn("컴퓨터공학과");
         when(repository.save(any())).thenReturn(saved);
 
         RecruitCoreApplicationCreateResponse response = service.submit(1L, request);
@@ -164,6 +199,88 @@ class RecruitCoreApplicationServiceTest {
 
         assertThat(response.name()).isEqualTo("홍길동");
         assertThat(response.email()).isEqualTo("hong@inha.edu");
+    }
+
+    @Test
+    void checkEligibility_afterDeadline_throwsClosedException() {
+        assertThatThrownBy(() -> serviceAt(AFTER_CLOSE).checkEligibility(1L))
+            .isInstanceOf(RecruitCoreClosedException.class);
+    }
+
+    @Test
+    void prefill_afterDeadline_throwsClosedException() {
+        assertThatThrownBy(() -> serviceAt(AFTER_CLOSE).prefill(1L))
+            .isInstanceOf(RecruitCoreClosedException.class);
+    }
+
+    @Test
+    void submit_afterDeadline_throwsClosedException() {
+        assertThatThrownBy(() -> serviceAt(AFTER_CLOSE).submit(1L, sampleRequest()))
+            .isInstanceOf(RecruitCoreClosedException.class);
+    }
+
+    @Test
+    void checkEligibility_beforeOpen_throwsNotOpen() {
+        assertThatThrownBy(() -> serviceAt(BEFORE_OPEN).checkEligibility(1L))
+            .isInstanceOf(RecruitCoreNotOpenException.class);
+    }
+
+    @Test
+    void prefill_beforeOpen_throwsNotOpen() {
+        assertThatThrownBy(() -> serviceAt(BEFORE_OPEN).prefill(1L))
+            .isInstanceOf(RecruitCoreNotOpenException.class);
+    }
+
+    @Test
+    void submit_beforeOpen_throwsNotOpen() {
+        assertThatThrownBy(() -> serviceAt(BEFORE_OPEN).submit(1L, sampleRequest()))
+            .isInstanceOf(RecruitCoreNotOpenException.class);
+    }
+
+    @Test
+    void getPeriodStatus_beforeOpen_returnsBeforeOpen() {
+        assertThat(serviceAt(BEFORE_OPEN).getPeriodStatus())
+            .isEqualTo(RecruitCorePeriodStatus.BEFORE_OPEN);
+    }
+
+    @Test
+    void getPeriodStatus_duringOpen_returnsOpen() {
+        assertThat(serviceAt(DURING_OPEN).getPeriodStatus())
+            .isEqualTo(RecruitCorePeriodStatus.OPEN);
+    }
+
+    @Test
+    void getPeriodStatus_afterClose_returnsClosed() {
+        assertThat(serviceAt(AFTER_CLOSE).getPeriodStatus())
+            .isEqualTo(RecruitCorePeriodStatus.CLOSED);
+    }
+
+    @Test
+    void getPeriod_returnsSessionAndBoundsAndStatus() {
+        RecruitCorePeriodResponse response = serviceAt(DURING_OPEN).getPeriod();
+
+        assertThat(response.session()).isEqualTo(SESSION);
+        assertThat(response.openAt()).isEqualTo(OPEN_AT);
+        assertThat(response.closeAt()).isEqualTo(CLOSE_AT);
+        assertThat(response.status()).isEqualTo(RecruitCorePeriodStatus.OPEN);
+    }
+
+    @Test
+    void getPeriod_beforeOpen_doesNotThrow() {
+        // 기간 조회는 게이트 앞에 있다. 시작 전에도 200 이어야 웹이 로그인을
+        // 요구하지 않고 안내를 띄울 수 있다.
+        RecruitCorePeriodResponse response = serviceAt(BEFORE_OPEN).getPeriod();
+
+        assertThat(response.status()).isEqualTo(RecruitCorePeriodStatus.BEFORE_OPEN);
+    }
+
+    @Test
+    void constructor_whenOpenAtNotBeforeCloseAt_throws() {
+        assertThatThrownBy(() -> new RecruitCoreApplicationService(
+            repository, userRepository, recruitCoreSessionResolver, majorNormalizer, s3Service,
+            CLOSE_AT, OPEN_AT, Clock.fixed(DURING_OPEN, ZoneOffset.UTC)))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("open-at");
     }
 
     private RecruitCoreApplicationCreateRequest sampleRequest() {

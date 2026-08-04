@@ -67,6 +67,12 @@ app:
     password: ${ADMIN_LOGIN_PASSWORD}
   mail:
     recruit-from: ${APP_MAIL_RECRUIT_FROM:}
+  recruit:
+    core:
+      # 모집 기간. 코드가 아니라 여기서 바꾼다 — 2차 모집은 환경변수만 고치면 된다.
+      # KST 오프셋을 그대로 쓴다 (OffsetDateTime.parse 로 읽는다).
+      open-at: ${RECRUIT_CORE_OPEN_AT:2026-08-10T00:00:00+09:00}
+      close-at: ${RECRUIT_CORE_CLOSE_AT:2026-08-30T23:59:59+09:00}
 
 google:
   client-id: ${GOOGLE_CLIENT_ID}

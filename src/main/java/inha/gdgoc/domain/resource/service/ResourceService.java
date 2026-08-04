@@ -1,6 +1,8 @@
 package inha.gdgoc.domain.resource.service;
 
 import inha.gdgoc.domain.auth.service.AuthService;
+import inha.gdgoc.domain.resource.dto.request.PresignedUploadRequest;
+import inha.gdgoc.domain.resource.dto.response.PresignedUploadResponse;
 import inha.gdgoc.domain.resource.dto.response.S3ResultResponse;
 import inha.gdgoc.domain.resource.enums.S3KeyType;
 import inha.gdgoc.domain.resource.exception.ResourceErrorCode;
@@ -34,5 +36,24 @@ public class ResourceService {
         } catch (IOException e) {
             throw new ResourceException(ResourceErrorCode.RESOURCE_UPLOAD_FAILED);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public PresignedUploadResponse createPresignedUpload(
+        Authentication authentication,
+        PresignedUploadRequest request
+    ) {
+        if (request.fileSize() > MAX_FILE_SIZE) {
+            throw new ResourceException(ResourceErrorCode.INVALID_BIG_FILE);
+        }
+
+        Long userId = authService.getAuthenticationUserId(authentication);
+        S3Service.PresignedUpload presignedUpload = s3Service.createPresignedUpload(
+            userId,
+            request.s3key(),
+            request.fileName(),
+            request.contentType()
+        );
+        return new PresignedUploadResponse(presignedUpload.key(), presignedUpload.uploadUrl());
     }
 }

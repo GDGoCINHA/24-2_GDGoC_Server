@@ -20,6 +20,7 @@ import inha.gdgoc.domain.recruit.member.dto.response.CheckPhoneNumberResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckStudentIdResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.RecruitMemberSummaryResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.SpecifiedMemberResponse;
+import inha.gdgoc.domain.resource.dto.response.PresignedUploadResponse;
 import inha.gdgoc.domain.recruit.member.entity.RecruitMember;
 import inha.gdgoc.domain.recruit.member.service.RecruitMemberService;
 import inha.gdgoc.global.dto.response.ApiResponse;
@@ -29,6 +30,9 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -67,6 +71,13 @@ public class RecruitMemberController {
 
     private final RecruitMemberService recruitMemberService;
 
+    public record ProofFilePresignedUploadRequest(
+            @NotBlank String fileName,
+            @NotBlank String contentType,
+            @NotNull @PositiveOrZero Long fileSize
+    ) {
+    }
+
     @PostMapping(value = "/apply", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Void, Void>> recruitMemberAdd(
             @RequestBody Map<String, Object> applicationRequest
@@ -84,6 +95,19 @@ public class RecruitMemberController {
         recruitMemberService.addRecruitMember(applicationRequest, file);
 
         return ResponseEntity.ok(ApiResponse.ok(MEMBER_SAVE_SUCCESS));
+    }
+
+    @PostMapping("/apply/proof-file/presigned-upload")
+    public ResponseEntity<ApiResponse<PresignedUploadResponse, Void>> createProofFilePresignedUpload(
+            @Valid @RequestBody ProofFilePresignedUploadRequest request
+    ) {
+        PresignedUploadResponse response = recruitMemberService.createProofFilePresignedUpload(
+                request.fileName(),
+                request.contentType(),
+                request.fileSize()
+        );
+
+        return ResponseEntity.ok(ApiResponse.ok("증빙 파일 업로드 URL을 발급했습니다.", response));
     }
 
     @PostMapping("/memo")

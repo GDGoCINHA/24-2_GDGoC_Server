@@ -40,6 +40,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/v1/auth/logout").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/board/events").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/board/events/{id:[0-9]+}").permitAll()
                 .requestMatchers(
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
@@ -50,6 +52,7 @@ public class SecurityConfig {
                     "/api/v1/recruit/member/apply/**",
                     "/api/v1/recruit/member/check/**",
                     "/api/v1/recruit/member/memo",
+                    "/api/v1/recruit/core/period",
                     "/api/v1/fileupload",
                     "/api/v1/manito/verify")
                 .permitAll()
