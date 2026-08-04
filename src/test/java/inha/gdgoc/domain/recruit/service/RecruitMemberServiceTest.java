@@ -20,11 +20,9 @@ class RecruitMemberServiceTest {
         // given
         RecruitMemberRequest recruitMemberRequest = RecruitMemberRequest.builder()
                 .name("김소연")
-                .grade("4")
                 .studentId("122123388")
                 .enrolledClassification("재학")
                 .phoneNumber("010-1111-2332")
-                .nationality("대한민국")
                 .email("abc@gmail.com")
                 .gender("여성")
                 .birth(LocalDate.of(2002, 8, 18))
@@ -47,11 +45,9 @@ class RecruitMemberServiceTest {
         RecruitMember savedMember = RecruitMember.builder()
                 .id(1L) // 저장될 ID
                 .name("김소연")
-                .grade("4")
                 .studentId("122123388")
                 .enrolledClassification(EnrolledClassification.FULL_REGISTRATION)
                 .phoneNumber("010-1111-2332")
-                .nationality("대한민국")
                 .email("abc@gmail.com")
                 .gender(Gender.FEMALE)
                 .birth(LocalDate.of(2002, 8, 18))
