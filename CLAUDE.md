@@ -62,14 +62,40 @@
 
 승인 단계나 수동 트리거가 없다.
 
-| 브랜치 | 결과 |
-|---|---|
-| `develop` push | CD-DEV → 개발 서버 자동 배포 |
-| `main` push | **CD-PROD → 운영 서버 자동 배포** |
+| 브랜치 | 결과 | 서버 |
+|---|---|---|
+| `develop` push | CD-DEV → 개발 서버 자동 배포 | `https://dev-api.gdgocinha.com` |
+| `main` push | **CD-PROD → 운영 서버 자동 배포** | `https://api.gdgocinha.com` |
 
 - 배포는 `docker-compose down` → `up` 방식이라 **다운타임이 발생**한다 (블루/그린 아님).
 - **Flyway 마이그레이션은 되돌릴 수 없다.** down 스크립트가 없어 코드를 롤백해도 스키마는 남는다.
 - 롤백은 이전 커밋을 `main`에 다시 push하는 것이 사실상 유일한 수단이다 (`deploy.prod.sh`가 `:latest`만 pull).
+
+### 배포 워크플로우의 초록불은 "요청 성공"일 뿐이다
+
+`deploy-dev.yml`·`deploy-prod.yml`의 마지막 스텝은 `aws deploy create-deployment`이며, **`wait`이 없다.** CodeDeploy에 배포를 *요청*하면 워크플로우는 즉시 성공으로 끝난다.
+
+따라서 **Actions가 초록불이어도 서버에는 이전 버전이 떠 있을 수 있고, CodeDeploy가 실패해도 알 수 없다.** 실제 반영까지는 `docker pull` → 컨테이너 기동 → Flyway 마이그레이션 순으로 수 분이 걸린다.
+
+**배포 후에는 반드시 실제 엔드포인트로 확인하라.**
+
+```bash
+# 반영 확인 (공개 GET이므로 인증 불필요)
+curl -s -o /dev/null -w "%{http_code}\n" \
+  "https://dev-api.gdgocinha.com/api/v1/board/events?page=0&size=1"
+```
+
+`200`이면 반영 완료. `401`이면 아직 구버전이다 — 구버전에는 해당 경로가 `permitAll` 목록에 없어 인증을 요구하기 때문이다.
+
+**구버전 판별 요령**: 대조군으로 예전부터 공개였던 경로를 함께 호출한다. `/api/v1/auth/login`이 `400`(시큐리티 통과)인데 확인 대상만 `401`이라면, 시큐리티는 정상 동작하는데 그 경로가 아직 없는 것 — 즉 배포 미반영이다.
+
+### 개발 서버는 디스크 여유가 거의 없다
+
+dev 인스턴스(t2.micro)의 루트 볼륨은 6.8G인데 OS 2.5G + `/var` 2.0G + 스왑 2.0G로 이미 6.4G를 쓴다. 여유는 500~800MB 수준이다.
+
+**디스크가 차면 배포가 스스로를 구제하지 못한다.** 정리 코드는 `AfterInstall`의 `deploy.dev.sh` 안에 있는데, 디스크가 차면 그 앞 단계인 `ApplicationStop`에서 죽어 도달하지 못한다. 이후 모든 단계가 `Skipped`로 남고 구버전이 계속 응답한다.
+
+2026-08-04에 실제로 발생했다. 더 나쁜 건 **SSM 에이전트도 같이 죽어서**(`PingStatus`는 `Online`인데 명령이 0초 만에 빈 출력으로 실패) 원격 진단조차 막혔고, 콘솔에서 EC2 Instance Connect로 직접 붙어야 했다. 이때 공간을 만든 건 `apt-get clean`(330M)과 `journalctl --vacuum-size`(35M)였다 — `docker system prune`은 0B였다.
 
 ### 인증 경로 설정에 와일드카드를 쓰지 마라
 
