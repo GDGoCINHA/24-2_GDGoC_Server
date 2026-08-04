@@ -5,6 +5,7 @@ import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicantDetailRes
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicationCreateResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreEligibilityResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreMyApplicationResponse;
+import inha.gdgoc.domain.recruit.core.dto.response.RecruitCorePeriodResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCorePrefillResponse;
 import inha.gdgoc.domain.recruit.core.service.RecruitCoreApplicationService;
 import inha.gdgoc.global.config.jwt.TokenProvider.CustomUserDetails;
@@ -31,6 +32,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class RecruitCoreController {
 
     private final RecruitCoreApplicationService service;
+
+    // 인증을 걸지 않는다. 모집 시작 전에도 200 이어야 웹이 로그인을 요구하지 않고
+    // "아직 시작 전" 안내를 띄울 수 있다.
+    @Operation(summary = "모집 기간 조회 (공개)")
+    @GetMapping("/period")
+    public ResponseEntity<RecruitCorePeriodResponse> period() {
+        return ResponseEntity.ok(service.getPeriod());
+    }
 
     @Operation(summary = "지원 가능 여부 확인", security = {@SecurityRequirement(name = "BearerAuth")})
     @PreAuthorize("isAuthenticated()")

@@ -14,10 +14,13 @@ import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicantDetailRes
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreEligibilityResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicationCreateResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreMyApplicationResponse;
+import inha.gdgoc.domain.recruit.core.dto.response.RecruitCorePeriodResponse;
 import inha.gdgoc.domain.recruit.core.entity.RecruitCoreApplication;
+import inha.gdgoc.domain.recruit.core.enums.RecruitCorePeriodStatus;
 import inha.gdgoc.domain.recruit.core.exception.RecruitCoreAlreadyAppliedException;
 import inha.gdgoc.domain.recruit.core.exception.RecruitCoreApplicationNotFoundException;
 import inha.gdgoc.domain.recruit.core.exception.RecruitCoreClosedException;
+import inha.gdgoc.domain.recruit.core.exception.RecruitCoreNotOpenException;
 import inha.gdgoc.domain.recruit.core.repository.RecruitCoreApplicationRepository;
 import inha.gdgoc.domain.recruit.core.enums.RecruitCoreResultStatus;
 import inha.gdgoc.domain.resource.service.S3Service;
@@ -44,10 +47,14 @@ class RecruitCoreApplicationServiceTest {
 
     private static final String SESSION = "2026-1";
 
-    // 마감일(2026-03-14T14:59:59Z)을 기준으로 앞뒤를 고정한다.
-    // 벽시계를 쓰면 마감일이 지나는 순간 이 클래스 전체가 무너진다 — 실제로 그랬다.
-    private static final Instant BEFORE_DEADLINE = Instant.parse("2026-03-01T00:00:00Z");
-    private static final Instant AFTER_DEADLINE = Instant.parse("2026-03-15T00:00:00Z");
+    // 기간은 테스트가 스스로 정한다. 운영 기본값(app.recruit.core.*)을 참조하면
+    // 모집 일정이 바뀔 때마다 이 클래스가 다시 무너진다 — 실제로 그랬다.
+    private static final Instant OPEN_AT = Instant.parse("2026-08-09T15:00:00Z");
+    private static final Instant CLOSE_AT = Instant.parse("2026-08-30T14:59:59Z");
+
+    private static final Instant BEFORE_OPEN = Instant.parse("2026-08-01T00:00:00Z");
+    private static final Instant DURING_OPEN = Instant.parse("2026-08-20T00:00:00Z");
+    private static final Instant AFTER_CLOSE = Instant.parse("2026-09-01T00:00:00Z");
 
     @Mock
     private RecruitCoreApplicationRepository repository;
@@ -69,7 +76,7 @@ class RecruitCoreApplicationServiceTest {
     @BeforeEach
     void setUp() {
         lenient().when(recruitCoreSessionResolver.currentSession()).thenReturn(SESSION);
-        service = serviceAt(BEFORE_DEADLINE);
+        service = serviceAt(DURING_OPEN);
     }
 
     private RecruitCoreApplicationService serviceAt(Instant now) {
@@ -79,6 +86,8 @@ class RecruitCoreApplicationServiceTest {
             recruitCoreSessionResolver,
             majorNormalizer,
             s3Service,
+            OPEN_AT,
+            CLOSE_AT,
             Clock.fixed(now, ZoneOffset.UTC));
     }
 
@@ -194,20 +203,84 @@ class RecruitCoreApplicationServiceTest {
 
     @Test
     void checkEligibility_afterDeadline_throwsClosedException() {
-        assertThatThrownBy(() -> serviceAt(AFTER_DEADLINE).checkEligibility(1L))
+        assertThatThrownBy(() -> serviceAt(AFTER_CLOSE).checkEligibility(1L))
             .isInstanceOf(RecruitCoreClosedException.class);
     }
 
     @Test
     void prefill_afterDeadline_throwsClosedException() {
-        assertThatThrownBy(() -> serviceAt(AFTER_DEADLINE).prefill(1L))
+        assertThatThrownBy(() -> serviceAt(AFTER_CLOSE).prefill(1L))
             .isInstanceOf(RecruitCoreClosedException.class);
     }
 
     @Test
     void submit_afterDeadline_throwsClosedException() {
-        assertThatThrownBy(() -> serviceAt(AFTER_DEADLINE).submit(1L, sampleRequest()))
+        assertThatThrownBy(() -> serviceAt(AFTER_CLOSE).submit(1L, sampleRequest()))
             .isInstanceOf(RecruitCoreClosedException.class);
+    }
+
+    @Test
+    void checkEligibility_beforeOpen_throwsNotOpen() {
+        assertThatThrownBy(() -> serviceAt(BEFORE_OPEN).checkEligibility(1L))
+            .isInstanceOf(RecruitCoreNotOpenException.class);
+    }
+
+    @Test
+    void prefill_beforeOpen_throwsNotOpen() {
+        assertThatThrownBy(() -> serviceAt(BEFORE_OPEN).prefill(1L))
+            .isInstanceOf(RecruitCoreNotOpenException.class);
+    }
+
+    @Test
+    void submit_beforeOpen_throwsNotOpen() {
+        assertThatThrownBy(() -> serviceAt(BEFORE_OPEN).submit(1L, sampleRequest()))
+            .isInstanceOf(RecruitCoreNotOpenException.class);
+    }
+
+    @Test
+    void getPeriodStatus_beforeOpen_returnsBeforeOpen() {
+        assertThat(serviceAt(BEFORE_OPEN).getPeriodStatus())
+            .isEqualTo(RecruitCorePeriodStatus.BEFORE_OPEN);
+    }
+
+    @Test
+    void getPeriodStatus_duringOpen_returnsOpen() {
+        assertThat(serviceAt(DURING_OPEN).getPeriodStatus())
+            .isEqualTo(RecruitCorePeriodStatus.OPEN);
+    }
+
+    @Test
+    void getPeriodStatus_afterClose_returnsClosed() {
+        assertThat(serviceAt(AFTER_CLOSE).getPeriodStatus())
+            .isEqualTo(RecruitCorePeriodStatus.CLOSED);
+    }
+
+    @Test
+    void getPeriod_returnsSessionAndBoundsAndStatus() {
+        RecruitCorePeriodResponse response = serviceAt(DURING_OPEN).getPeriod();
+
+        assertThat(response.session()).isEqualTo(SESSION);
+        assertThat(response.openAt()).isEqualTo(OPEN_AT);
+        assertThat(response.closeAt()).isEqualTo(CLOSE_AT);
+        assertThat(response.status()).isEqualTo(RecruitCorePeriodStatus.OPEN);
+    }
+
+    @Test
+    void getPeriod_beforeOpen_doesNotThrow() {
+        // 기간 조회는 게이트 앞에 있다. 시작 전에도 200 이어야 웹이 로그인을
+        // 요구하지 않고 안내를 띄울 수 있다.
+        RecruitCorePeriodResponse response = serviceAt(BEFORE_OPEN).getPeriod();
+
+        assertThat(response.status()).isEqualTo(RecruitCorePeriodStatus.BEFORE_OPEN);
+    }
+
+    @Test
+    void constructor_whenOpenAtNotBeforeCloseAt_throws() {
+        assertThatThrownBy(() -> new RecruitCoreApplicationService(
+            repository, userRepository, recruitCoreSessionResolver, majorNormalizer, s3Service,
+            CLOSE_AT, OPEN_AT, Clock.fixed(DURING_OPEN, ZoneOffset.UTC)))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("open-at");
     }
 
     private RecruitCoreApplicationCreateRequest sampleRequest() {
