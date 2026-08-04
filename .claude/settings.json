@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./gradlew compileJava compileTestJava --offline -q 2>&1 || { echo '컴파일 실패 - 위 에러를 확인하세요.' >&2; exit 1; }"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -qE 'rm\\s+-rf|git\\s+push\\s+--force|git\\s+push\\s+.*\\s-f\\b|git\\s+reset\\s+--hard|DROP\\s+TABLE|TRUNCATE\\s'; then echo 'BLOCKED: 위험한 명령어가 감지되었습니다.' >&2; exit 1; fi"
+          },
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -qE 'deploy\\.prod\\.sh|docker-compose-prod\\.yml|git\\s+push\\s+\\S+\\s+(HEAD:)?main\\b'; then echo 'BLOCKED: 운영 배포는 머지 즉시 자동 실행됩니다. 사용자 확인 없이 실행하지 마세요.' >&2; exit 1; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
