@@ -13,16 +13,21 @@ paths:
 
 실제로 2026-02-14부터 8월까지 테스트가 컴파일조차 안 되는 상태였으나 CI는 매번 "✅ Test 성공"을 찍었다. 테스트 상태는 CI 배지가 아니라 **`Test Results` 체크나 로컬 실행 결과**로 확인해야 한다.
 
-수정하려면 스텝에 `set -o pipefail`을 추가하면 되지만, 그러면 아래 기존 실패로 모든 PR이 막힌다. **기존 실패를 먼저 정리한 뒤 게이트를 살릴 것.**
+수정하려면 스텝에 `set -o pipefail`을 추가하면 된다. 오래 막고 있던 기존 실패 6건은 해결됐으므로(아래) **게이트를 살릴 수 있는 상태다.**
 
 **검증 명령을 파이프로 감싸지 마라.** `cmd | tail`은 종료 코드를 가려 실패를 성공으로 보이게 한다 — 이 리포 CI가 6개월간 당한 문제가 정확히 그것이다.
 
-## 기존 테스트 실패가 있다 — 내가 만든 것인지 먼저 확인하라
+## 실패가 나오면 내가 만든 것인지 먼저 확인하라
 
-> ⏱ **스냅샷 2026-08-04** — 이후 수정되었을 수 있다. `./gradlew test`로 현재 상태를 먼저 확인하라.
+> ⏱ **2026-08-05 실측: 38/38 통과, 실패 0.** 2026-08-04에 기록됐던 아래 6건은 그 사이 해결됐다.
 
-- `RecruitCoreApplicationServiceTest` 5건 — `RecruitCoreApplicationService.java`의 `RECRUITMENT_DEADLINE`이 `2026-03-14`로 하드코딩되어 `Instant.now()`와 비교한다. 마감일이 지나 실패한다. **운영에서도 코어 지원 API가 계속 차단된 상태**이며, 다음 모집 시 코드 수정·재배포가 필요하다.
-- `RecruitMemberMemoNotificationServiceTest` 1건 — 알림 상태가 `SENT` 대신 `PENDING`.
+**`./gradlew test`만 실행하면 `UP-TO-DATE`로 건너뛰고 캐시된 결과를 보여준다.** 현재 상태를 실제로 알려면 `./gradlew cleanTest test`를 쓴다.
+
+해결된 과거 실패 — 같은 증상을 다시 만나면 참고할 것:
+
+- `RecruitCoreApplicationServiceTest` 5건 — `RECRUITMENT_DEADLINE`이 `2026-03-14`로 하드코딩되어 마감이 지나자 실패했다. `Instant.now(clock)`으로 **`Clock`을 주입받게 바뀌어** 테스트가 시간을 고정할 수 있게 되면서 해결됐다.
+  **다만 상수는 그대로다.** 테스트만 시간에서 풀렸을 뿐, 운영에서는 여전히 코어 지원 API가 마감 상태이며 다음 모집 시 코드 수정·재배포가 필요하다.
+- `RecruitMemberMemoNotificationServiceTest` 1건 — 알림 상태가 `SENT` 대신 `PENDING`이었다.
 
 ## 버그 수정은 재현 테스트를 먼저 쓴다
 
@@ -31,6 +36,6 @@ paths:
 ## 명령어
 
 ```bash
-./gradlew test             # 테스트
+./gradlew cleanTest test   # 테스트 (캐시를 건너뛰지 않으려면 cleanTest 를 붙인다)
 ./gradlew compileTestJava  # 테스트 컴파일만 확인
 ```
