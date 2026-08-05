@@ -25,7 +25,12 @@ export function isTestGateTrigger(command) {
   if (/\bgh\s+pr\s+create\b/.test(command)) return true;
   if (!/\bgit\s+push\b/.test(command)) return false;
   // main·master 는 guard 영역이다. 여기서 판정하지 않는다.
-  if (/\b(main|master)["']?(\s|$)/.test(command)) return false;
+  //
+  // `git push` **뒤**만 본다 — guard.mjs 의 PRODUCTION 패턴과 같은 앵커링이다.
+  // 예전엔 명령 전체에서 main/master 를 찾아 `git merge main && git push origin develop`
+  // 처럼 커밋 메시지·이전 명령에 "main"이 섞이기만 해도 게이트가 조용히 빠졌다.
+  // 이 위치에 고정해야 두 훅이 push 경로에서 정확히 상보가 된다.
+  if (/\bgit\s+push\b.*\b(main|master)["']?(\s|$)/.test(command)) return false;
   return /\bdevelop["']?(\s|$)/.test(command);
 }
 

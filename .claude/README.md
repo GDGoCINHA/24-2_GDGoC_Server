@@ -8,6 +8,7 @@
 |---|---|---|
 | `settings.json` | 훅 등록 | O |
 | `hooks/guard.mjs` | 되돌릴 수 없는 **명령** 차단 (PreToolUse) | O |
+| `hooks/test-gate.mjs` | 테스트 실패 상태로 develop push·PR 생성 차단 (PreToolUse) | O |
 | `hooks/migration-guard.mjs` | 공유된 Flyway **파일** 수정 차단 (PreToolUse) | O |
 | `hooks/lifecycle.mjs` | 산출물 수명 — 승격·회수 안내 | O |
 | `hooks/verify.mjs` | 턴 종료 검증 — 변경이 있을 때만 (Stop) | O |
@@ -25,6 +26,7 @@
 |---|---|
 | 세션 시작 | `session-start.mjs` — 훅 활성 여부와 리포 상태 한 줄 |
 | Bash·PowerShell 실행 전 | `guard.mjs` — `rm -rf`·force push·`reset --hard`·`DROP TABLE`·운영 배포(`main`·`master`) 차단 |
+| Bash·PowerShell 실행 전 | `test-gate.mjs` — develop push·`gh pr create` 직전에 `gradlew test` 를 돌려 실패 상태면 차단. main·master 는 guard 영역이라 대상이 아니다. 판정 불가(오프라인·gradlew 실행 실패 등)는 막지 않고 **경고만 하고 통과**시킨다(fail-open) |
 | Edit·Write 실행 전 | `migration-guard.mjs` — 이미 공유된 Flyway 마이그레이션 수정 차단 |
 | `gh pr create` 직전 | `lifecycle.mjs promote` — `work/` 에 남은 산출물의 승격 여부를 묻는다 |
 | 턴 종료 | `verify.mjs` — 변경이 있으면 컴파일 확인 |
@@ -130,6 +132,12 @@ cp 24-2_GDGoC_Server/.claude/parent-settings.example.json .claude/settings.json
 `guard.mjs` 와 `migration-guard.mjs` 는 **Server 사본으로 한 번만** 부른다. 전자는 명령
 문자열만, 후자는 편집 대상 파일 경로만 보므로 리포에 무관하다 — 두 번 부르면 같은 차단
 메시지가 두 번 나온다. `lifecycle.mjs`·`verify.mjs` 만 리포별로 두 번 부른다.
+
+`test-gate.mjs` 도 **Server 사본으로 한 번만** 걸지만 이유가 다르다 — 앞의 둘과 달리
+리포에 무관하지 않다. 게이트는 지금 Server 만 대상이다. Web 은 테스트 인프라가 없어
+`--repo` 로 Server 를 명시해 한 번만 건다. **알려진 한계:** 부모 세션에서 Web 리포의
+develop push 를 해도 게이트는 Server 의 테스트 결과로 판정한다 — Web 리포에 실제
+관련된 검증은 아니다. Web 에 테스트 인프라가 생기기 전까지는 고치지 않는다.
 
 (설정 파일에는 주석을 달 수 없다. 스키마에 없는 키를 넣으면 거부될 수 있으므로
 `parent-settings.example.json` 은 설명 없이 두고, 설명은 여기 둔다.)

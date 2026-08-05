@@ -41,6 +41,23 @@ test("main·master 는 guard 영역이라 잡지 않는다", () => {
   assert.equal(isTestGateTrigger("git push origin master"), false);
 });
 
+test("push 앞에 main/master 가 섞여도 develop push 는 잡는다", () => {
+  // 회귀 고정: 예전 패턴은 명령 전체에서 main/master 를 찾아 이런 명령들을
+  // 조용히 제외시켰다(실측 확인됨). git push 뒤만 보도록 앵커링을 옮긴 뒤의 동작이다.
+  assert.equal(isTestGateTrigger("git merge main && git push origin develop"), true);
+  assert.equal(
+    isTestGateTrigger('git commit -m "sync with main" && git push origin develop'),
+    true
+  );
+  assert.equal(isTestGateTrigger("git fetch origin master && git push origin develop"), true);
+});
+
+test("gh pr create --base main 은 조기 반환 자리를 유지해 여전히 잡힌다", () => {
+  // main/master 제외 조건을 gh pr create 반환보다 뒤에 두면 안 된다 — 옮기면
+  // `gh pr create --base main` 이 게이트를 빠져나가는 더 큰 구멍이 생긴다.
+  assert.equal(isTestGateTrigger("gh pr create --base main --fill"), true);
+});
+
 test("ref 끝이 develop 이 아니면 잡지 않는다", () => {
   // `feature/develop-tools` 는 대상이 아니다. guard.mjs 가 `feature/main-menu` 를 다루는 방식과 같다.
   assert.equal(isTestGateTrigger("git push origin feature/develop-tools"), false);
