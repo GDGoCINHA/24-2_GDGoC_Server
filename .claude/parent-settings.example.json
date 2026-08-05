@@ -1,0 +1,71 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Server/.claude/hooks/session-start.mjs --repo 24-2_GDGoC_Server --repo 24-2_GDGoC_Web"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Server/.claude/hooks/guard.mjs"
+          },
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Server/.claude/hooks/test-gate.mjs --repo 24-2_GDGoC_Server",
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Server/.claude/hooks/lifecycle.mjs promote --repo 24-2_GDGoC_Server"
+          },
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Web/.claude/hooks/lifecycle.mjs promote --repo 24-2_GDGoC_Web"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Server/.claude/hooks/migration-guard.mjs"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Server/.claude/hooks/verify.mjs --repo 24-2_GDGoC_Server"
+          },
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Web/.claude/hooks/verify.mjs --repo 24-2_GDGoC_Web"
+          },
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Server/.claude/hooks/lifecycle.mjs retire --repo 24-2_GDGoC_Server"
+          },
+          {
+            "type": "command",
+            "command": "node 24-2_GDGoC_Web/.claude/hooks/lifecycle.mjs retire --repo 24-2_GDGoC_Web"
+          }
+        ]
+      }
+    ]
+  }
+}

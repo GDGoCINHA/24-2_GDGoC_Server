@@ -29,8 +29,18 @@ const PRODUCTION = [
   [/\bdeploy\.prod\.sh\b/, "운영 배포 스크립트다"],
   [/\bdocker-compose-prod\.yml\b/, "운영 컴포즈 파일이다"],
   // `git push -u origin main` 처럼 플래그가 끼어도 잡히도록 위치를 고정하지 않는다.
-  // 단 ref 끝이 main 일 때만 — `feature/main-menu` 는 대상이 아니다.
-  [/\bgit\s+push\b.*\bmain(\s|$)/, "main 푸시는 운영 자동 배포를 트리거한다"],
+  // 단 ref 끝이 main·master 일 때만 — `feature/main-menu` 는 대상이 아니다.
+  //
+  // 두 이름을 모두 막는 이유: Server 의 운영 브랜치는 main, Web 은 master 다.
+  // 둘 다 막으면 이 파일이 리포에 무관해져 사본이 어느 쪽이든 판정이 같고,
+  // 부모 폴더 배선에서 가드를 한 번만 호출하면 된다.
+  //
+  // 닫는 따옴표를 허용하는 이유: `git push origin "master"` 는 정상적인 셸 표현인데
+  // 예전 패턴은 뒤에 공백이나 끝만 봐서 `master"` 로 **그대로 새어나갔다.**
+  [
+    /\bgit\s+push\b.*\b(main|master)["']?(\s|$)/,
+    "main·master 푸시는 운영 자동 배포를 트리거한다",
+  ],
 ];
 
 /**
