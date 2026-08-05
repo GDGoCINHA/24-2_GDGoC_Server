@@ -76,6 +76,7 @@ curl -s -o /dev/null -w "%{http_code}\n" \
 - `docs/ARCHITECTURE.md` — 새 도메인을 추가하거나 레이어 경계가 헷갈릴 때
 - `docs/ADR.md` — 기존 설계를 바꾸려 할 때. "왜 이렇게 됐나"의 답
 - `.claude/README.md` — 훅이 안 뜨거나 이상하게 동작할 때
+- `.claude/HACKING.md` — 훅을 고치거나 부모 폴더에 설치할 때
 
 ## 작업 산출물을 어디에 쓰나
 
