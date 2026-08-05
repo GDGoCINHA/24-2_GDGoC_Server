@@ -8,7 +8,8 @@
 // | `console.log` (평문 stdout) | `content` 까지 감 | **안 닿음** |
 // | `hookSpecificOutput.additionalContext` | — | **닿음** |
 //
-// 세 번째만 통한다. 프로브 원문은 `.claude/work/harness-multirepo/verification.md`.
+// 세 번째만 통한다. 프로브 원문은 Server 리포의
+// `.claude/work/harness-multirepo/verification.md` 에 있다.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { agentMessage } from "./agent-message.mjs";
