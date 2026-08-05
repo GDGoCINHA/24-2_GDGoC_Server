@@ -4,7 +4,18 @@
 // 여기서 다시 판정하지 않는다 — 같은 명령을 두 훅이 막으면 어느 쪽이 막았는지 흐려진다.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isTestGateTrigger, decideResponse } from "./test-gate.mjs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, utimesSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { isTestGateTrigger, decideResponse, parseRepo, failureSummary, testsRanSince } from "./test-gate.mjs";
+
+/** `build/test-results/test/<name>` 를 가진 임시 리포를 만들고, 정리 함수를 함께 준다. */
+function tempRepoWithResults() {
+  const repo = mkdtempSync(join(tmpdir(), "test-gate-"));
+  const dir = join(repo, "build/test-results/test");
+  mkdirSync(dir, { recursive: true });
+  return { repo, dir, cleanup: () => rmSync(repo, { recursive: true, force: true }) };
+}
 
 test("develop push 는 트리거다", () => {
   // develop push 는 개발 서버 자동 배포이고 Flyway 마이그레이션이 자동 실행된다.
@@ -80,4 +91,97 @@ test("판정 불가는 통과시키되 알린다", () => {
 test("판정 불가는 실패보다 우선한다", () => {
   // 테스트를 못 돌렸으면 ok 값은 의미가 없다. 판정 못 한 것과 실패한 것은 다르다.
   assert.equal(decideResponse({ ok: false, undecidable: true, summary: "x" }).action, "warn");
+});
+
+// --- parseRepo --------------------------------------------------------------
+
+test("parseRepo: --repo 가 없으면 현재 디렉터리다", () => {
+  assert.equal(parseRepo([]), ".");
+  assert.equal(parseRepo(["--repo"]), ".");
+});
+
+test("parseRepo: --repo 값을 읽는다", () => {
+  assert.equal(parseRepo(["--repo", "24-2_GDGoC_Server"]), "24-2_GDGoC_Server");
+});
+
+// --- failureSummary -----------------------------------------------------------
+// 리뷰 지적(Important B): 이 판정 로직이 테스트 없이 배선만 됐었다.
+
+test("failureSummary: 실패가 섞인 XML 을 정확히 집계한다", () => {
+  const { repo, dir, cleanup } = tempRepoWithResults();
+  try {
+    writeFileSync(
+      join(dir, "TEST-FooTest.xml"),
+      `<testsuite name="FooTest" tests="3" failures="2" errors="1"></testsuite>`
+    );
+    writeFileSync(
+      join(dir, "TEST-BarTest.xml"),
+      `<testsuite name="BarTest" tests="2" failures="0" errors="0"></testsuite>`
+    );
+    const summary = failureSummary(repo);
+    assert.match(summary, /테스트 실패 3건/);
+    assert.match(summary, /FooTest 3건/);
+    assert.doesNotMatch(summary, /BarTest/); // 실패 0건인 클래스는 집계에서 빠진다
+  } finally {
+    cleanup();
+  }
+});
+
+test("failureSummary: 실패 0건이면 null 을 반환한다", () => {
+  const { repo, dir, cleanup } = tempRepoWithResults();
+  try {
+    writeFileSync(
+      join(dir, "TEST-BarTest.xml"),
+      `<testsuite name="BarTest" tests="2" failures="0" errors="0"></testsuite>`
+    );
+    assert.equal(failureSummary(repo), null);
+  } finally {
+    cleanup();
+  }
+});
+
+test("failureSummary: 결과 디렉터리가 없으면 null 이다", () => {
+  const repo = mkdtempSync(join(tmpdir(), "test-gate-"));
+  try {
+    assert.equal(failureSummary(repo), null);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+// --- testsRanSince ------------------------------------------------------------
+// 리뷰 지적(Critical): 종료 코드만으로는 "테스트 실패"와 "애초에 못 돌았다"를 못 가른다.
+// XML 이 이번 실행 동안 갱신됐는지로 가른다.
+
+test("testsRanSince: 기준 시각 이후에 쓰인 XML 이 있으면 true 다", () => {
+  const { repo, dir, cleanup } = tempRepoWithResults();
+  try {
+    const since = Date.now();
+    writeFileSync(join(dir, "TEST-FooTest.xml"), `<testsuite name="FooTest"></testsuite>`);
+    assert.equal(testsRanSince(repo, since), true);
+  } finally {
+    cleanup();
+  }
+});
+
+test("testsRanSince: XML 이 기준 시각보다 훨씬 예전이면 false 다 (오래된 결과)", () => {
+  const { repo, dir, cleanup } = tempRepoWithResults();
+  try {
+    const oldFile = join(dir, "TEST-FooTest.xml");
+    writeFileSync(oldFile, `<testsuite name="FooTest"></testsuite>`);
+    const old = new Date(Date.now() - 60_000); // 1분 전
+    utimesSync(oldFile, old, old);
+    assert.equal(testsRanSince(repo, Date.now()), false);
+  } finally {
+    cleanup();
+  }
+});
+
+test("testsRanSince: 결과 디렉터리가 없으면 false 다", () => {
+  const repo = mkdtempSync(join(tmpdir(), "test-gate-"));
+  try {
+    assert.equal(testsRanSince(repo, Date.now()), false);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
 });

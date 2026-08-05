@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tellAgent } from "./agent-message.mjs";
 // PreToolUse 게이트 — 깨진 테스트를 둔 채 코드가 공유·배포되는 것을 막는다.
@@ -59,8 +59,10 @@ export function parseRepo(argv) {
 /**
  * 실패한 테스트를 XML 에서 센다. 못 읽으면 null — 종료 코드는 이미 확정된 사실이므로
  * **집계에 실패했다고 게이트를 열지는 않는다.**
+ *
+ * export 하는 이유: 리뷰 지적사항 — 이 판정 로직 자체가 테스트 없이 배선만 됐었다.
  */
-function failureSummary(repo) {
+export function failureSummary(repo) {
   const dir = join(repo, "build/test-results/test");
   if (!existsSync(dir)) return null;
   const classes = [];
@@ -81,6 +83,31 @@ function failureSummary(repo) {
     return null;
   }
   return total > 0 ? `테스트 실패 ${total}건 — ${classes.join(", ")}` : null;
+}
+
+/**
+ * XML 결과가 **이번 실행 동안** 실제로 갱신됐는지 본다.
+ *
+ * 리뷰 지적(Critical): 종료 코드가 0 이 아니라고 곧장 "테스트 실패"로 보면 안 된다 —
+ * gradlew.bat 부재·JAVA_HOME 무효·`--offline` 캐시 미스는 전부 exit 1 을 내지만 test
+ * 태스크 자체가 안 돈 것이다. test 태스크가 실제로 돌았다면 XML 은 이번 실행 중에
+ * 새로 쓰인다 — 그 여부로 "테스트가 실패했다"와 "테스트를 못 돌렸다"를 가른다.
+ * (부수 효과로 Important A 도 같이 풀린다: 직전 실행의 오래된 XML 은 mtime 이 기준보다
+ * 예전이므로 이번 실행의 실패로 오인되지 않는다.)
+ *
+ * 파일시스템 타임스탬프 해상도 오차를 감안해 2초 여유를 둔다.
+ */
+export function testsRanSince(repo, since) {
+  const dir = join(repo, "build/test-results/test");
+  if (!existsSync(dir)) return false;
+  const cutoff = since - 2000;
+  try {
+    return readdirSync(dir).some(
+      (f) => f.endsWith(".xml") && statSync(join(dir, f)).mtimeMs >= cutoff
+    );
+  } catch {
+    return false;
+  }
 }
 
 const isMain =
@@ -106,6 +133,7 @@ if (isMain) {
     const wrapper = process.platform === "win32" ? "gradlew.bat" : "gradlew";
     // cleanTest 를 붙이지 않는다 — Gradle 의 UP-TO-DATE 는 입력 해시 기반이라 신뢰할 수 있고,
     // 매번 붙이면 안 바뀐 코드도 29초를 낸다.
+    const startedAt = Date.now(); // XML 이 이번 실행으로 갱신됐는지 판별하는 기준선
     const res = spawnSync(`"${resolve(repo, wrapper)}" test --offline -q`, {
       cwd: repo,
       shell: true,
@@ -114,11 +142,20 @@ if (isMain) {
       encoding: "utf8",
     });
 
-    // spawnSync 는 타임아웃·실행 실패에서 status 가 null 이다. 종료 코드가 없으면 판정 불가다.
-    const undecidable = res.status === null;
-    const summary = undecidable
-      ? `${repo}: gradlew 를 실행하지 못했다(${res.error?.code ?? "타임아웃"}).`
-      : (failureSummary(repo) ?? `${repo}: 테스트 실패(종료 코드 ${res.status})`);
+    // spawnSync 는 타임아웃·실행 자체 실패에서 status 가 null 이다 — 이건 무조건 판정 불가다.
+    // status 가 0 이 아니어도 "테스트가 실패해서"인지 "애초에 못 돌아서"인지는 종료 코드
+    // 만으로 구별되지 않는다(리뷰 지적, Critical). test 태스크가 실제로 돌았는지는 XML 이
+    // 이번 실행 동안 갱신됐는지로 판별한다 — 헤더의 "판정 불가는 fail-open" 원칙을
+    // 여기까지 넓힌 것이다.
+    const ranTests = res.status === 0 || testsRanSince(repo, startedAt);
+    const undecidable = res.status === null || !ranTests;
+    const summary =
+      res.status === null
+        ? `${repo}: gradlew 를 실행하지 못했다(${res.error?.code ?? res.signal ?? "알 수 없는 오류"}).`
+        : !ranTests
+        ? `${repo}: gradlew 가 종료 코드 ${res.status} 로 끝났지만 테스트 결과가 갱신되지 않았다 — ` +
+          `테스트가 실행되지 못한 것으로 본다(컴파일 에러·래퍼·환경 문제로 추정).`
+        : (failureSummary(repo) ?? `${repo}: 테스트 실패(종료 코드 ${res.status})`);
 
     const r = decideResponse({ ok: res.status === 0, undecidable, summary });
     if (r.action === "pass") process.exit(0);
