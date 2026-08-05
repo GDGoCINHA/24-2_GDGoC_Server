@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+import { spawnSync } from "node:child_process";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { tellAgent } from "./agent-message.mjs";
 // PreToolUse 게이트 — 깨진 테스트를 둔 채 코드가 공유·배포되는 것을 막는다.
 //
 // **대상은 develop push 와 PR 생성뿐이다.** main·master 는 guard.mjs 가 무조건 막는다.
@@ -42,4 +46,95 @@ export function decideResponse({ ok, undecidable, summary }) {
   }
   if (ok) return { action: "pass" };
   return { action: "deny", message: `[테스트 게이트] ${summary}. ${FAIL_HINT}` };
+}
+
+// --- CLI ------------------------------------------------------------------
+
+/** `--repo <path>` 의 값. 없으면 현재 디렉터리 — 리포 안 세션은 인자가 필요 없다. */
+export function parseRepo(argv) {
+  const i = argv.indexOf("--repo");
+  return i >= 0 && argv[i + 1] ? argv[i + 1] : ".";
+}
+
+/**
+ * 실패한 테스트를 XML 에서 센다. 못 읽으면 null — 종료 코드는 이미 확정된 사실이므로
+ * **집계에 실패했다고 게이트를 열지는 않는다.**
+ */
+function failureSummary(repo) {
+  const dir = join(repo, "build/test-results/test");
+  if (!existsSync(dir)) return null;
+  const classes = [];
+  let total = 0;
+  try {
+    for (const f of readdirSync(dir)) {
+      if (!f.endsWith(".xml")) continue;
+      const head = readFileSync(join(dir, f), "utf8").slice(0, 2000);
+      const fails = Number(/failures="(\d+)"/.exec(head)?.[1] ?? 0);
+      const errors = Number(/errors="(\d+)"/.exec(head)?.[1] ?? 0);
+      const n = fails + errors;
+      if (n > 0) {
+        classes.push(`${/name="([^"]+)"/.exec(head)?.[1] ?? f} ${n}건`);
+        total += n;
+      }
+    }
+  } catch {
+    return null;
+  }
+  return total > 0 ? `테스트 실패 ${total}건 — ${classes.join(", ")}` : null;
+}
+
+const isMain =
+  process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
+
+if (isMain) {
+  const repo = parseRepo(process.argv);
+  let raw = "";
+  process.stdin.setEncoding("utf8");
+  process.stdin.on("data", (d) => (raw += d));
+  process.stdin.on("end", () => {
+    let command = "";
+    try {
+      command = JSON.parse(raw)?.tool_input?.command ?? "";
+    } catch {
+      // 입력을 못 읽으면 조용히 넘어간다. 게이트는 조건부이지 가드가 아니다.
+      process.exit(0);
+    }
+    if (!isTestGateTrigger(command)) process.exit(0);
+
+    // 래퍼는 **절대 경로로** 부른다. 이 PC 는 NoDefaultCurrentDirectoryInExePath=1 이라
+    // cmd 가 현재 디렉터리를 탐색하지 않는다.
+    const wrapper = process.platform === "win32" ? "gradlew.bat" : "gradlew";
+    // cleanTest 를 붙이지 않는다 — Gradle 의 UP-TO-DATE 는 입력 해시 기반이라 신뢰할 수 있고,
+    // 매번 붙이면 안 바뀐 코드도 29초를 낸다.
+    const res = spawnSync(`"${resolve(repo, wrapper)}" test --offline -q`, {
+      cwd: repo,
+      shell: true,
+      timeout: 90_000, // 실측 29초의 3배. 배선 timeout(120초)보다 먼저 걸려야 침묵하지 않는다.
+      stdio: ["ignore", "ignore", "pipe"],
+      encoding: "utf8",
+    });
+
+    // spawnSync 는 타임아웃·실행 실패에서 status 가 null 이다. 종료 코드가 없으면 판정 불가다.
+    const undecidable = res.status === null;
+    const summary = undecidable
+      ? `${repo}: gradlew 를 실행하지 못했다(${res.error?.code ?? "타임아웃"}).`
+      : (failureSummary(repo) ?? `${repo}: 테스트 실패(종료 코드 ${res.status})`);
+
+    const r = decideResponse({ ok: res.status === 0, undecidable, summary });
+    if (r.action === "pass") process.exit(0);
+    if (r.action === "warn") {
+      tellAgent("PreToolUse", r.message);
+      process.exit(0);
+    }
+    process.stdout.write(
+      JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: "PreToolUse",
+          permissionDecision: "deny",
+          permissionDecisionReason: r.message,
+        },
+      }) + "\n"
+    );
+    process.exit(0); // JSON 은 exit 0 에서만 파싱된다.
+  });
 }
