@@ -13,6 +13,7 @@
         "matcher": "Bash|PowerShell",
         "hooks": [
           { "type": "command", "command": "node .claude/hooks/guard.mjs" },
+          { "type": "command", "command": "node .claude/hooks/test-gate.mjs", "timeout": 120 },
           { "type": "command", "command": "node .claude/hooks/lifecycle.mjs promote" }
         ]
       },

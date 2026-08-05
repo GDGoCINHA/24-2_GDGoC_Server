@@ -21,6 +21,11 @@
           },
           {
             "type": "command",
+            "command": "node 24-2_GDGoC_Server/.claude/hooks/test-gate.mjs --repo 24-2_GDGoC_Server",
+            "timeout": 120
+          },
+          {
+            "type": "command",
             "command": "node 24-2_GDGoC_Server/.claude/hooks/lifecycle.mjs promote --repo 24-2_GDGoC_Server"
           },
           {
