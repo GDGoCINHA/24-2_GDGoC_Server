@@ -77,7 +77,7 @@ jobs:
           SPRING_FLYWAY_ENABLED: "false"
           SPRING_DATA_REDIS_HOST: localhost
           SPRING_DATA_REDIS_PORT: 6379
-        run: ./gradlew test --no-daemon --stacktrace --info --no-watch-fs | tee test.log
+        run: ./gradlew test --no-daemon --stacktrace --info --no-watch-fs
 
       - name: Publish unit-test results (check UI)
         id: publish
