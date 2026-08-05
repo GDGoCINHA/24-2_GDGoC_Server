@@ -24,3 +24,22 @@ export function isTestGateTrigger(command) {
   if (/\b(main|master)["']?(\s|$)/.test(command)) return false;
   return /\bdevelop["']?(\s|$)/.test(command);
 }
+
+/** 실패했을 때 에이전트가 다음에 무엇을 할지 정할 수 있어야 한다. */
+const FAIL_HINT =
+  "고치기 전에는 push 하지 마라. 재현: `./gradlew cleanTest test` " +
+  "(cleanTest 없이 test 만 하면 UP-TO-DATE 로 캐시된 결과가 나온다). " +
+  "**기존 실패일 수 있으니 내 변경이 만든 것인지 먼저 확인하라** — 이 리포는 기존 실패를 오래 안고 있던 이력이 있다.";
+
+/**
+ * @param {{ok: boolean, undecidable: boolean, summary?: string}} result
+ * @returns {{action: "pass"|"deny"|"warn", message?: string}}
+ */
+export function decideResponse({ ok, undecidable, summary }) {
+  // 판정 불가가 먼저다. 테스트를 못 돌렸으면 ok 는 의미가 없다.
+  if (undecidable) {
+    return { action: "warn", message: `[테스트 게이트] ${summary} 테스트를 확인하지 못한 채 통과시킨다.` };
+  }
+  if (ok) return { action: "pass" };
+  return { action: "deny", message: `[테스트 게이트] ${summary}. ${FAIL_HINT}` };
+}
