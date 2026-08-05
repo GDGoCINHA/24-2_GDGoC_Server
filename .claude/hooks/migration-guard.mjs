@@ -17,6 +17,7 @@
 import { spawnSync } from "node:child_process";
 import { basename, dirname } from "node:path";
 import { tellAgent } from "./agent-message.mjs";
+import { isMainModule } from "./is-main.mjs";
 
 const SHARED_REFS = ["origin/develop", "origin/main"];
 
@@ -96,8 +97,7 @@ function sharedState(dir, relPath) {
 // --- CLI ------------------------------------------------------------------
 // 이 파일이 직접 실행될 때만 stdin 을 읽는다. import 하는 테스트는 여기 오지 않는다.
 
-const isMain =
-  process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
+const isMain = isMainModule(import.meta.url, process.argv[1]);
 
 if (isMain) {
   let raw = "";

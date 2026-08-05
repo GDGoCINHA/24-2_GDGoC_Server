@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tellAgent } from "./agent-message.mjs";
+import { isMainModule } from "./is-main.mjs";
 // PreToolUse 게이트 — 깨진 테스트를 둔 채 코드가 공유·배포되는 것을 막는다.
 //
 // **대상은 develop push 와 PR 생성뿐이다.** main·master 는 guard.mjs 가 무조건 막는다.
@@ -115,8 +116,7 @@ export function testsRanSince(repo, since) {
   }
 }
 
-const isMain =
-  process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
+const isMain = isMainModule(import.meta.url, process.argv[1]);
 
 if (isMain) {
   const repo = parseRepo(process.argv);
