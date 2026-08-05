@@ -16,6 +16,7 @@
 
 import { spawnSync } from "node:child_process";
 import { basename, dirname } from "node:path";
+import { tellAgent } from "./agent-message.mjs";
 
 const SHARED_REFS = ["origin/develop", "origin/main"];
 
@@ -108,7 +109,8 @@ if (isMain) {
       filePath = JSON.parse(raw)?.tool_input?.file_path ?? null;
     } catch {
       // 파싱 실패를 조용히 넘기지 않는다. 가드가 죽은 것과 통과가 구별되어야 한다.
-      console.error("[마이그레이션 가드] 훅 입력을 파싱하지 못해 판정을 건너뛴다.");
+      // stderr 는 에이전트에 닿지 않는다 — `agent-message.mjs` 주석 참조.
+      tellAgent("PreToolUse", "[마이그레이션 가드] 훅 입력을 파싱하지 못해 판정을 건너뛴다.");
       process.exit(0);
     }
     if (typeof filePath !== "string") process.exit(0);
@@ -120,7 +122,8 @@ if (isMain) {
       // 경로만 봐도 마이그레이션이면 **조용히 넘어가면 안 된다** — 판정하지 못한
       // 것과 안전한 것은 다르다. (`git -C` 가 셸 고유 경로 형식을 못 읽는 경우)
       if (isMigrationPath(filePath)) {
-        console.error(
+        tellAgent(
+          "PreToolUse",
           `[마이그레이션 가드] ${filePath} 의 리포를 찾지 못해 판정하지 못했다. ` +
             "이미 적용된 파일이면 수정하지 마라."
         );
@@ -133,7 +136,7 @@ if (isMain) {
     if (!verdict) process.exit(0);
 
     if (verdict.decision === "warn") {
-      console.error(`[마이그레이션 가드] ${verdict.reason}`);
+      tellAgent("PreToolUse", `[마이그레이션 가드] ${verdict.reason}`);
       process.exit(0);
     }
 
