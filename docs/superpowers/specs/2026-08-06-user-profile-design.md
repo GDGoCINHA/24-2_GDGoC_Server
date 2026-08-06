@@ -250,7 +250,7 @@ DB에는 학과가 **코드로 저장된다**(`디자인테크놀로지학과` �
 6. **타인의 프로필을 수정할 수 있는 경로가 없다** (userId를 토큰에서만 취함)
 7. 권한별 태그 색과 배너 문구가 디자인 매핑표와 일치한다
 8. `./gradlew compileJava compileTestJava` 통과, 신규 테스트 통과
-9. `yarn build` 통과
+9. `npm run build` 통과 — 이 머신에는 yarn이 설치돼 있지 않다(`node`·`npm`·`npx`·`corepack`만 존재). 리포에 `yarn.lock`이 있고 CLAUDE.md도 yarn을 말하지만 실행할 수단이 없어 npm이 유일한 검증 경로다
 
 # 테스트 전략
 
@@ -267,10 +267,15 @@ DB에는 학과가 **코드로 저장된다**(`디자인테크놀로지학과` �
 
 1. Server `develop` 머지 → 개발 서버 자동 배포
 2. **실제 엔드포인트로 반영 확인.** Actions 초록불은 반영 근거가 아니다 — 워크플로우는 CodeDeploy에 요청만 하고 `wait`이 없다
+
+   **401로는 판별할 수 없다.** `SecurityConfig`가 `.anyRequest().authenticated()`이므로 **존재하지 않는 경로도 401을 반환한다** — 인증 필터가 `DispatcherServlet`의 핸들러 조회보다 먼저 돌기 때문이다. Task 5 리뷰에서 확인됐고, 같은 이유로 보안 테스트 4개가 컨트롤러 없이도 통과했다.
+
+   대신 `/v3/api-docs/**`가 `permitAll`이므로 springdoc이 실제로 매핑한 경로 목록으로 판별한다.
+
    ```bash
-   curl -s -o /dev/null -w "%{http_code}\n" \
-     "https://dev-api.gdgocinha.com/api/v1/users/me"
-   # 미인증 401 = 라우트 존재(반영됨) / 403·404 = 미반영 의심
+   curl -s "https://dev-api.gdgocinha.com/v3/api-docs" > /tmp/api-docs.json; echo "exit=$?"
+   grep -c '/api/v1/users/me' /tmp/api-docs.json
+   # 0 = 미반영 / 1 이상 = 반영 완료
    ```
 3. Web `develop` 머지 → S3 sync + CloudFront 무효화 (전파에 시간 소요)
 4. `dev.gdgocinha.com`에서 수동 확인
