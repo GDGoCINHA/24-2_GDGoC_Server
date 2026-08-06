@@ -49,9 +49,18 @@ class RecruitMemberPeriodServiceTest {
     }
 
     @Test
+    @DisplayName("마감 시각 그 순간까지는 열려 있다")
+    void remainsOpenExactlyAtCloseAt() {
+        RecruitMemberPeriodService service = serviceAt("2026-09-09T14:59:59Z"); // KST 9/9 23:59:59
+
+        assertThat(service.getPeriodStatus()).isEqualTo(RecruitMemberPeriodStatus.OPEN);
+        assertThatCode(service::validateOpen).doesNotThrowAnyException();
+    }
+
+    @Test
     @DisplayName("마감 후에는 CLOSED 이고 지원이 막힌다")
     void afterCloseIsBlocked() {
-        RecruitMemberPeriodService service = serviceAt("2026-09-10T00:00:00Z");
+        RecruitMemberPeriodService service = serviceAt("2026-09-09T15:00:00Z"); // KST 9/10 00:00:00
 
         assertThat(service.getPeriodStatus()).isEqualTo(RecruitMemberPeriodStatus.CLOSED);
         assertThatThrownBy(service::validateOpen)
