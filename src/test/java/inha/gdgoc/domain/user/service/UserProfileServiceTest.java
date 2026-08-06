@@ -111,6 +111,19 @@ class UserProfileServiceTest {
     }
 
     @Test
+    void updateMyProfile_accepts10DigitPhoneNumber() {
+        User user = createUser();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        UserProfileResponse response = userProfileService.updateMyProfile(
+                1L,
+                new UpdateUserProfileRequest("홍길동", "DTE", "0111234567")
+        );
+
+        assertThat(response.phoneNumber()).isEqualTo("0111234567");
+    }
+
+    @Test
     void updateMyProfile_doesNotTouchStudentIdOrEmail() {
         User user = createUser();
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
