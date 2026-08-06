@@ -41,6 +41,7 @@ class UserProfileServiceTest {
 
         UserProfileResponse response = userProfileService.getMyProfile(1L);
 
+        assertThat(response.id()).isEqualTo(1L);
         assertThat(response.name()).isEqualTo("홍길동");
         assertThat(response.major()).isEqualTo("DTE");
         assertThat(response.studentId()).isEqualTo("12201234");
@@ -48,6 +49,8 @@ class UserProfileServiceTest {
         assertThat(response.email()).isEqualTo("hong@inha.edu");
         assertThat(response.userRole()).isEqualTo(UserRole.CORE);
         assertThat(response.team()).isEqualTo(TeamType.TECH);
+        assertThat(response.membershipStatus()).isEqualTo(User.MembershipStatus.PENDING);
+        assertThat(response.image()).isNull();
     }
 
     @Test
@@ -59,7 +62,7 @@ class UserProfileServiceTest {
     }
 
     static User createUser() {
-        return User.builder()
+        User user = User.builder()
                 .name("홍길동")
                 .major("DTE")
                 .studentId("12201234")
@@ -71,5 +74,17 @@ class UserProfileServiceTest {
                 .social(null)
                 .careers(null)
                 .build();
+        setId(user, 1L);
+        return user;
+    }
+
+    private static void setId(Object target, Long id) {
+        try {
+            java.lang.reflect.Field field = target.getClass().getDeclaredField("id");
+            field.setAccessible(true);
+            field.set(target, id);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
