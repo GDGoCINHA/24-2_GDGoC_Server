@@ -2,9 +2,13 @@ package inha.gdgoc.domain.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import inha.gdgoc.domain.resource.enums.S3KeyType;
 import inha.gdgoc.domain.user.dto.request.UpdateUserProfileRequest;
+import inha.gdgoc.domain.user.dto.response.UserImageResponse;
 import inha.gdgoc.domain.user.dto.response.UserProfileResponse;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.TeamType;
@@ -20,6 +24,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
 class UserProfileServiceTest {
@@ -152,6 +158,60 @@ class UserProfileServiceTest {
                 .build();
         setId(user, 1L);
         return user;
+    }
+
+    @Test
+    void updateMyImage_storesUrlReturnedByS3() throws Exception {
+        User user = createUser();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(s3Service.upload(eq(1L), eq(S3KeyType.profile), any(MultipartFile.class)))
+                .thenReturn("user/1/profile/uuid-avatar.png");
+        when(s3Service.getS3FileUrl("user/1/profile/uuid-avatar.png"))
+                .thenReturn("https://bucket.s3.amazonaws.com/user/1/profile/uuid-avatar.png");
+
+        UserImageResponse response = userProfileService.updateMyImage(1L, pngFile());
+
+        assertThat(response.image())
+                .isEqualTo("https://bucket.s3.amazonaws.com/user/1/profile/uuid-avatar.png");
+        assertThat(user.getImage())
+                .isEqualTo("https://bucket.s3.amazonaws.com/user/1/profile/uuid-avatar.png");
+    }
+
+    @Test
+    void updateMyImage_rejectsNonImageMimeType() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(createUser()));
+
+        MultipartFile pdf = new MockMultipartFile(
+                "file", "resume.pdf", "application/pdf", new byte[]{1, 2, 3});
+
+        assertThatThrownBy(() -> userProfileService.updateMyImage(1L, pdf))
+                .isInstanceOf(UserException.class);
+    }
+
+    @Test
+    void updateMyImage_rejectsEmptyFile() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(createUser()));
+
+        MultipartFile empty = new MockMultipartFile(
+                "file", "avatar.png", "image/png", new byte[0]);
+
+        assertThatThrownBy(() -> userProfileService.updateMyImage(1L, empty))
+                .isInstanceOf(UserException.class);
+    }
+
+    @Test
+    void updateMyImage_rejectsFileLargerThan5Mb() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(createUser()));
+
+        MultipartFile huge = new MockMultipartFile(
+                "file", "avatar.png", "image/png", new byte[5 * 1024 * 1024 + 1]);
+
+        assertThatThrownBy(() -> userProfileService.updateMyImage(1L, huge))
+                .isInstanceOf(UserException.class);
+    }
+
+    private MultipartFile pngFile() {
+        return new MockMultipartFile("file", "avatar.png", "image/png", new byte[]{1, 2, 3});
     }
 
     private static void setId(Object target, Long id) {
