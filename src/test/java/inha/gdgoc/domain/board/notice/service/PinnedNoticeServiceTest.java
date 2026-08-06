@@ -2,6 +2,8 @@ package inha.gdgoc.domain.board.notice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -62,7 +65,10 @@ class PinnedNoticeServiceTest {
 
     pinnedNoticeService.replacePinned(new PinnedUpdateRequest(List.of(12L)), 1L);
 
-    verify(pinnedNoticeRepository).deleteAllInBatch();
+    // display_order UNIQUE 를 지키려면 삽입 전에 반드시 비워야 한다 — 순서까지 검증한다.
+    InOrder inOrder = inOrder(pinnedNoticeRepository);
+    inOrder.verify(pinnedNoticeRepository).deleteAllInBatch();
+    inOrder.verify(pinnedNoticeRepository).saveAll(anyList());
   }
 
   @Test

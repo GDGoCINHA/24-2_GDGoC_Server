@@ -17,7 +17,9 @@ import lombok.NoArgsConstructor;
 /**
  * 상단 고정 슬롯. 최대 3행이며 display_order 는 1~3 중 하나로 유일하다.
  *
- * <p>개수 제한은 애플리케이션이 세지 않는다 — display_order 의 UNIQUE 와 CHECK(1~3)이 4행째를 물리적으로 막는다.
+ * <p>개수 제한은 PinnedNoticeService 가 MAX_PINNED 로 먼저 걸러 깔끔한 400 을 내려준다. display_order 의
+ * UNIQUE 와 CHECK(1~3)은 그 검증을 우회한 경로를 막는 마지막 방어선이지, 1차 검증 자리가 아니다 — 애플리케이션 검증을
+ * 지우면 4행째가 400 대신 제약 위반 500 으로 실패한다.
  */
 @Entity
 @Table(name = "pinned_notice")
