@@ -2,12 +2,12 @@ package inha.gdgoc.domain.board.event.controller;
 
 import static inha.gdgoc.domain.board.event.controller.message.EventBoardMessage.*;
 
+import inha.gdgoc.domain.board.common.enums.SearchType;
 import inha.gdgoc.domain.board.event.dto.request.EventBoardCreateRequest;
 import inha.gdgoc.domain.board.event.dto.request.EventBoardUpdateRequest;
 import inha.gdgoc.domain.board.event.dto.response.DeletedEventBoardSummaryResponse;
 import inha.gdgoc.domain.board.event.dto.response.EventBoardDetailResponse;
 import inha.gdgoc.domain.board.event.dto.response.EventBoardSummaryResponse;
-import inha.gdgoc.domain.board.common.enums.SearchType;
 import inha.gdgoc.domain.board.event.service.EventBoardService;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.global.config.jwt.TokenProvider.CustomUserDetails;

@@ -2,9 +2,9 @@ package inha.gdgoc.domain.board.event.repository;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import inha.gdgoc.domain.board.common.enums.SearchType;
 import inha.gdgoc.domain.board.event.entity.EventBoard;
 import inha.gdgoc.domain.board.event.entity.QEventBoard;
-import inha.gdgoc.domain.board.common.enums.SearchType;
 import inha.gdgoc.domain.user.enums.TeamType;
 import inha.gdgoc.domain.user.enums.UserRole;
 import java.util.List;

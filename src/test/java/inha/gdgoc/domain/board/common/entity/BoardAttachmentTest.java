@@ -16,8 +16,9 @@ class BoardAttachmentTest {
   @Test
   @DisplayName("파일 첨부는 fileKey·fileName·fileSize 를 갖고 url 은 비어 있다")
   void fileAttachmentHasFileFieldsOnly() {
+    EventBoard board = board();
     EventBoardAttachment attachment =
-        EventBoardAttachment.createFile(board(), "user/1/event/uuid-a.pdf", "a.pdf", 1024L, 0);
+        EventBoardAttachment.createFile(board, "user/1/event/uuid-a.pdf", "a.pdf", 1024L, 0);
 
     assertThat(attachment.getKind()).isEqualTo(AttachmentKind.FILE);
     assertThat(attachment.getFileKey()).isEqualTo("user/1/event/uuid-a.pdf");
@@ -25,13 +26,15 @@ class BoardAttachmentTest {
     assertThat(attachment.getFileSize()).isEqualTo(1024L);
     assertThat(attachment.getUrl()).isNull();
     assertThat(attachment.getSortOrder()).isZero();
+    assertThat(attachment.getEventBoard()).isSameAs(board);
   }
 
   @Test
   @DisplayName("링크 첨부는 url 만 갖고 파일 필드는 비어 있다")
   void linkAttachmentHasUrlOnly() {
+    EventBoard board = board();
     EventBoardAttachment attachment =
-        EventBoardAttachment.createLink(board(), "https://pf.kakao.com/_abc/chat", 1);
+        EventBoardAttachment.createLink(board, "https://pf.kakao.com/_abc/chat", 1);
 
     assertThat(attachment.getKind()).isEqualTo(AttachmentKind.LINK);
     assertThat(attachment.getUrl()).isEqualTo("https://pf.kakao.com/_abc/chat");
@@ -39,6 +42,7 @@ class BoardAttachmentTest {
     assertThat(attachment.getFileName()).isNull();
     assertThat(attachment.getFileSize()).isNull();
     assertThat(attachment.getSortOrder()).isEqualTo(1);
+    assertThat(attachment.getEventBoard()).isSameAs(board);
   }
 
   @Test

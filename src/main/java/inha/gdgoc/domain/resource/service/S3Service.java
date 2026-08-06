@@ -80,6 +80,8 @@ public class S3Service {
                 HeadObjectRequest.builder().bucket(s3Properties.getBucket()).key(key).build());
             return res.contentLength();
         } catch (NoSuchKeyException e) {
+            // HeadObject는 응답 본문이 없어 SDK가 <Code>를 못 읽는데, DefaultS3BaseClientBuilder가 기본
+            // 등록하는 ExceptionTranslationInterceptor가 이를 보정해 404를 NoSuchKeyException으로 바꿔준다.
             return null;
         }
     }
