@@ -1228,7 +1228,9 @@ export default function ProfileCard({
 yarn build
 ```
 
-Expected: 빌드 성공. 실패하면 `GdgColorTag`의 실제 export 경로와 children prop 지원 여부를 확인하고, `BANNER_CLASS`의 Tailwind 색 토큰(`bg-green`, `bg-blue`, `bg-yellow`, `bg-red`)이 `globals.css`에 정의돼 있는지 확인한다. 없으면 해당 파일에서 실제 토큰명을 찾아 맞춘다.
+Expected: 빌드 성공.
+
+색 토큰은 확인되었다 — `globals.css:26-33`에 `--color-red`·`--color-blue`·`--color-green`·`--color-yellow`가 정의돼 있어 `bg-red`·`bg-blue`·`bg-green`·`bg-yellow`를 그대로 쓸 수 있다. 빌드가 실패한다면 `GdgColorTag`가 children을 받는지(`GdgColorTag.tsx`의 props)와 `@/components/ui/design-system` 배럴에서 export되는지를 확인한다.
 
 - [ ] **Step 4: Commit**
 
@@ -1379,7 +1381,9 @@ export default function ProfileInfoSection({
 yarn build
 ```
 
-Expected: 빌드 성공. 실패하면 `GdgButton`의 실제 prop 이름(`onClick` vs `onPress`)을 `GdgButton.tsx`에서 확인해 맞춘다. `OnboardingLanding.tsx`에서 `onPress`를 쓰는 사례가 있다.
+Expected: 빌드 성공.
+
+`GdgButton`은 `onClick`을 받는다 (`GdgButton.tsx:189,207`에서 확인). `OnboardingLanding.tsx`에 `onPress` 사용례가 있으나 그것은 NextUI 버튼이며 `GdgButton`이 아니다.
 
 - [ ] **Step 3: Commit**
 
