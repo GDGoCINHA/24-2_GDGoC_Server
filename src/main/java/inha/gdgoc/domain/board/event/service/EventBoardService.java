@@ -71,7 +71,10 @@ public class EventBoardService {
             author.getName());
 
     if (req.attachments() != null) {
-      req.attachments().forEach(a -> board.addAttachment(a.fileKey(), a.fileName()));
+      for (int i = 0; i < req.attachments().size(); i++) {
+        var entry = req.attachments().get(i);
+        board.addFileAttachment(entry.fileKey(), entry.fileName(), null, i);
+      }
     }
 
     return eventBoardRepository.save(board).getId();
@@ -102,7 +105,10 @@ public class EventBoardService {
 
     if (req.attachments() != null) {
       board.getAttachments().clear();
-      req.attachments().forEach(a -> board.addAttachment(a.fileKey(), a.fileName()));
+      for (int i = 0; i < req.attachments().size(); i++) {
+        var entry = req.attachments().get(i);
+        board.addFileAttachment(entry.fileKey(), entry.fileName(), null, i);
+      }
     }
   }
 
