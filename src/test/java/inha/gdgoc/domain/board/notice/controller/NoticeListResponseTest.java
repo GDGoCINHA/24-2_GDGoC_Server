@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import inha.gdgoc.domain.board.notice.dto.response.NoticeDeletedSummaryResponse;
 import inha.gdgoc.domain.board.notice.dto.response.NoticeListResponse;
 import inha.gdgoc.domain.board.notice.dto.response.NoticeSummaryResponse;
 import inha.gdgoc.domain.board.notice.enums.NoticeCategory;
@@ -67,10 +68,22 @@ class NoticeListResponseTest {
 
     assertThat(json).contains("\"isPublished\"");
     assertThat(json).doesNotContain("\"published\":");
+
+    // NoticeDeletedSummaryResponse 도 같은 boolean 컴포넌트를 갖는다. 프론트 두 세션이 지금 이 타입을
+    // 손으로 옮겨 적고 있으니, 계약이 갈라지지 않는지 여기서도 고정해 둔다.
+    String deletedJson = mapper.writeValueAsString(deletedSummary(1L, "공지"));
+
+    assertThat(deletedJson).contains("\"isPublished\"");
+    assertThat(deletedJson).doesNotContain("\"published\":");
   }
 
   private NoticeSummaryResponse summary(Long id, String title) {
     return new NoticeSummaryResponse(
         id, NoticeCategory.OPERATION, title, "홍길동", 0, true, Instant.EPOCH);
+  }
+
+  private NoticeDeletedSummaryResponse deletedSummary(Long id, String title) {
+    return new NoticeDeletedSummaryResponse(
+        id, NoticeCategory.OPERATION, title, "홍길동", 0, true, Instant.EPOCH, Instant.EPOCH);
   }
 }

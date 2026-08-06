@@ -45,6 +45,13 @@ public class NoticeBoardService {
    * 버린다. 그래서 조회수는 벌크 UPDATE 로 따로 올린다. DTO를 먼저 만들고 그 다음에 벌크 UPDATE를 호출하는 순서를
    * 지켜야 한다 — clearAutomatically 로 영속성 컨텍스트를 비우면 notice 가 detach 되어 첨부 지연 로딩이
    * LazyInitializationException 으로 죽는다.
+   *
+   * <p>이 메서드는 자신이 트랜잭션의 가장 바깥 경계라고 가정한다. 다른 @Transactional 서비스 메서드 안에서
+   * getNotice 를 호출하고, 그 호출자가 같은 NoticeBoard 를 수정한 뒤 flush 하면(엔티티에 @DynamicUpdate 가
+   * 없어) Hibernate 가 전체 컬럼 UPDATE 를 내보내는데, 그 시점 영속성 컨텍스트의 view_count 는 여기서 실행한 벌크
+   * UPDATE 를 반영하지 못한 stale 값이라 그 UPDATE 가 방금 올린 조회수를 도로 덮어써 조용히 잃어버린다. 지금은
+   * 컨트롤러가 유일한 호출자이고 @Transactional 이 없어 안전하지만, 다른 트랜잭션 안에서 호출하도록 바뀌면 이
+   * 가정이 깨진다.
    */
   @Transactional
   public NoticeDetailResponse getNotice(Long id, UserRole userRole) {
