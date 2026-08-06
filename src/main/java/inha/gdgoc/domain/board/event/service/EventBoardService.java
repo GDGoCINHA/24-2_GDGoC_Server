@@ -1,6 +1,10 @@
 package inha.gdgoc.domain.board.event.service;
 
+import inha.gdgoc.domain.board.common.entity.BoardAttachment;
+import inha.gdgoc.domain.board.common.enums.AttachmentKind;
+import inha.gdgoc.domain.board.common.enums.SearchType;
 import inha.gdgoc.domain.board.event.dto.request.EventBoardCreateRequest;
+import inha.gdgoc.domain.board.event.dto.request.EventBoardCreateRequest.AttachmentEntry;
 import inha.gdgoc.domain.board.event.dto.request.EventBoardUpdateRequest;
 import inha.gdgoc.domain.board.event.dto.response.DeletedEventBoardSummaryResponse;
 import inha.gdgoc.domain.board.event.dto.response.EventBoardDetailResponse;
@@ -8,7 +12,6 @@ import inha.gdgoc.domain.board.event.dto.response.EventBoardDetailResponse.Attac
 import inha.gdgoc.domain.board.event.dto.response.EventBoardSummaryResponse;
 import inha.gdgoc.domain.board.event.entity.EventBoard;
 import inha.gdgoc.domain.board.event.enums.EventBoardStatus;
-import inha.gdgoc.domain.board.event.enums.SearchType;
 import inha.gdgoc.domain.board.event.repository.EventBoardRepository;
 import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.user.entity.User;
@@ -17,6 +20,7 @@ import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.GlobalErrorCode;
+import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class EventBoardService {
+
+  private static final int MAX_ATTACHMENTS = 10;
 
   private final EventBoardRepository eventBoardRepository;
   private final UserRepository userRepository;
@@ -70,9 +76,7 @@ public class EventBoardService {
             authorId,
             author.getName());
 
-    if (req.attachments() != null) {
-      req.attachments().forEach(a -> board.addAttachment(a.fileKey(), a.fileName()));
-    }
+    applyAttachments(board, req.attachments());
 
     return eventBoardRepository.save(board).getId();
   }
@@ -102,7 +106,7 @@ public class EventBoardService {
 
     if (req.attachments() != null) {
       board.getAttachments().clear();
-      req.attachments().forEach(a -> board.addAttachment(a.fileKey(), a.fileName()));
+      applyAttachments(board, req.attachments());
     }
   }
 
@@ -126,6 +130,31 @@ public class EventBoardService {
 
     requireTeamAccess(board, userRole, userTeam);
     board.restore();
+  }
+
+  private void applyAttachments(EventBoard board, List<AttachmentEntry> entries) {
+    if (entries == null) return;
+
+    if (entries.size() > MAX_ATTACHMENTS) {
+      throw new BusinessException(
+          GlobalErrorCode.BAD_REQUEST, "첨부는 최대 " + MAX_ATTACHMENTS + "개까지 등록할 수 있습니다.");
+    }
+
+    for (int i = 0; i < entries.size(); i++) {
+      AttachmentEntry entry = entries.get(i);
+
+      if (entry.url() != null && !entry.url().isBlank()) {
+        board.addLinkAttachment(entry.url(), i);
+        continue;
+      }
+
+      Long size = s3Service.getObjectSize(entry.fileKey());
+      if (size == null) {
+        throw new BusinessException(
+            GlobalErrorCode.BAD_REQUEST, "업로드되지 않은 파일입니다: " + entry.fileName());
+      }
+      board.addFileAttachment(entry.fileKey(), entry.fileName(), size, i);
+    }
   }
 
   private EventBoard findVisibleBoard(Long id, TeamType userTeam, UserRole userRole) {
@@ -171,7 +200,20 @@ public class EventBoardService {
 
     List<AttachmentResponse> attachments =
         board.getAttachments().stream()
-            .map(a -> new AttachmentResponse(a.getId(), s3Service.getS3FileUrl(a.getFileKey()), a.getFileName()))
+            .sorted(Comparator.comparingInt(BoardAttachment::getSortOrder))
+            .map(
+                a ->
+                    a.getKind() == AttachmentKind.LINK
+                        ? new AttachmentResponse(
+                            a.getId(), a.getKind(), null, null, null, null, a.getUrl())
+                        : new AttachmentResponse(
+                            a.getId(),
+                            a.getKind(),
+                            a.getFileKey(),
+                            s3Service.getS3FileUrl(a.getFileKey()),
+                            a.getFileName(),
+                            a.getFileSize(),
+                            null))
             .toList();
 
     return new EventBoardDetailResponse(
