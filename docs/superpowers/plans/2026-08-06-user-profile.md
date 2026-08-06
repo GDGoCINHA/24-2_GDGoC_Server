@@ -1430,11 +1430,13 @@ const STATUS_LABEL: Record<ApplicationStatusValue, string> = {
 interface ApplicationStatusProps {
   application: MyCoreApplication | null
   loading?: boolean
+  error?: string | null
 }
 
 export default function ApplicationStatus({
   application,
-  loading = false
+  loading = false,
+  error = null
 }: ApplicationStatusProps) {
   return (
     <section className="space-y-4">
@@ -1442,6 +1444,8 @@ export default function ApplicationStatus({
 
       {loading ? (
         <p className="typo-pc-b3 text-gray-700">불러오는 중…</p>
+      ) : error ? (
+        <p className="typo-pc-b3 text-red">{error}</p>
       ) : application ? (
         <div className="flex items-center overflow-hidden rounded-full bg-gray-100/30">
           <span className="flex-1 px-5 py-3 typo-pc-b3 text-gray-700">운영진 지원서</span>
@@ -1539,6 +1543,7 @@ export default function ProfilePage() {
   const [application, setApplication] = useState<MyCoreApplication | null>(null)
   const [loading, setLoading] = useState(true)
   const [applicationLoading, setApplicationLoading] = useState(true)
+  const [applicationError, setApplicationError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -1557,10 +1562,14 @@ export default function ProfilePage() {
     }
 
     const loadApplication = async () => {
-      const data = await fetchMyCoreApplication(apiClient)
-      if (alive) {
-        setApplication(data)
-        setApplicationLoading(false)
+      try {
+        const data = await fetchMyCoreApplication(apiClient)
+        if (alive) setApplication(data)
+      } catch {
+        // 404(미지원)는 클라이언트가 이미 null로 돌려준다. 여기 오는 건 실제 실패다.
+        if (alive) setApplicationError('지원 현황을 불러오지 못했습니다.')
+      } finally {
+        if (alive) setApplicationLoading(false)
       }
     }
 
@@ -1632,7 +1641,11 @@ export default function ProfilePage() {
           error={saveError}
         />
 
-        <ApplicationStatus application={application} loading={applicationLoading} />
+        <ApplicationStatus
+          application={application}
+          loading={applicationLoading}
+          error={applicationError}
+        />
       </div>
     </main>
   )
