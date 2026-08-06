@@ -18,10 +18,12 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -64,7 +66,7 @@ public class UserProfileService {
         if (file == null || file.isEmpty()) {
             throw new UserException(INVALID_IMAGE_FILE);
         }
-        if (!ALLOWED_IMAGE_TYPES.contains(file.getContentType())) {
+        if (file.getContentType() == null || !ALLOWED_IMAGE_TYPES.contains(file.getContentType())) {
             throw new UserException(INVALID_IMAGE_FILE);
         }
         if (file.getSize() > MAX_IMAGE_SIZE) {
@@ -76,6 +78,7 @@ public class UserProfileService {
             String key = s3Service.upload(userId, S3KeyType.profile, file);
             url = s3Service.getS3FileUrl(key);
         } catch (IOException e) {
+            log.warn("프로필 이미지 S3 업로드 실패 - userId: {}", userId, e);
             throw new UserException(INVALID_IMAGE_FILE);
         }
 

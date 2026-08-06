@@ -200,6 +200,17 @@ class UserProfileServiceTest {
     }
 
     @Test
+    void updateMyImage_rejectsNullContentType() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(createUser()));
+
+        MultipartFile nullContentType = new MockMultipartFile(
+                "file", "avatar.png", null, new byte[]{1, 2, 3});
+
+        assertThatThrownBy(() -> userProfileService.updateMyImage(1L, nullContentType))
+                .isInstanceOf(UserException.class);
+    }
+
+    @Test
     void updateMyImage_rejectsFileLargerThan5Mb() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(createUser()));
 
