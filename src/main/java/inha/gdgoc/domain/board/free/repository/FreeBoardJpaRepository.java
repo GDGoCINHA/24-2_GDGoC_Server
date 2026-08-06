@@ -11,6 +11,8 @@ public interface FreeBoardJpaRepository extends JpaRepository<FreeBoard, Long> {
 
   Optional<FreeBoard> findByIdAndDeletedAtIsNull(Long id);
 
+  Optional<FreeBoard> findByIdAndDeletedAtIsNotNull(Long id);
+
   @Modifying
   @Query("UPDATE FreeBoard f SET f.viewCount = f.viewCount + 1 WHERE f.id = :id")
   void increaseViewCount(@Param("id") Long id);

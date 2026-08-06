@@ -5,6 +5,7 @@ import static inha.gdgoc.domain.board.free.controller.message.FreeBoardMessage.*
 import inha.gdgoc.domain.board.common.enums.SearchType;
 import inha.gdgoc.domain.board.free.dto.request.FreeBoardCreateRequest;
 import inha.gdgoc.domain.board.free.dto.request.FreeBoardUpdateRequest;
+import inha.gdgoc.domain.board.free.dto.response.FreeBoardDeletedSummaryResponse;
 import inha.gdgoc.domain.board.free.dto.response.FreeBoardDetailResponse;
 import inha.gdgoc.domain.board.free.dto.response.FreeBoardSummaryResponse;
 import inha.gdgoc.domain.board.free.service.FreeBoardService;
@@ -92,5 +93,32 @@ public class FreeBoardController {
       @AuthenticationPrincipal CustomUserDetails me, @PathVariable Long id) {
     freeBoardService.deletePost(id, me.getUserId(), me.getRole());
     return ResponseEntity.ok(ApiResponse.ok(FREE_DELETED));
+  }
+
+  /**
+   * 휴지통. 공지·행사가 CORE 이상인 것과 달리 MEMBER 이상이다 — 자유게시판은 MEMBER 도 글을 쓰므로 실수로 지운
+   * 자기 글을 본인이 되살릴 수 있어야 한다. 남의 글이 섞이지 않도록 ORGANIZER 미만에게는 자기 글만 보인다.
+   */
+  @Authorize(@Condition(atLeast = UserRole.MEMBER))
+  @GetMapping("/deleted")
+  public ResponseEntity<ApiResponse<Page<FreeBoardDeletedSummaryResponse>, PageMeta>>
+      listDeletedPosts(
+          @AuthenticationPrincipal CustomUserDetails me,
+          @RequestParam(defaultValue = "0") @Min(0) int page,
+          @RequestParam(defaultValue = "15") @Min(1) @Max(100) int size) {
+
+    Page<FreeBoardDeletedSummaryResponse> result =
+        freeBoardService.listDeletedPosts(page, size, me.getUserId(), me.getRole());
+
+    return ResponseEntity.ok(
+        ApiResponse.ok(FREE_DELETED_LIST_RETRIEVED, result, PageMeta.of(result)));
+  }
+
+  @Authorize(@Condition(atLeast = UserRole.MEMBER))
+  @PostMapping("/{id}/restore")
+  public ResponseEntity<ApiResponse<Void, Void>> restorePost(
+      @AuthenticationPrincipal CustomUserDetails me, @PathVariable Long id) {
+    freeBoardService.restorePost(id, me.getUserId(), me.getRole());
+    return ResponseEntity.ok(ApiResponse.ok(FREE_RESTORED));
   }
 }

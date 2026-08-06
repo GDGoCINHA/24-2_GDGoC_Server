@@ -40,6 +40,35 @@ class FreeBoardSecurityTest {
   }
 
   @Test
+  void commentList_requiresAuthentication() throws Exception {
+    mockMvc
+        .perform(get("/api/v1/board/free/999999/comments"))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void commentCreate_requiresAuthentication() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/board/free/999999/comments")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"content\":\"c\"}"))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void deletedList_requiresAuthentication() throws Exception {
+    mockMvc.perform(get("/api/v1/board/free/deleted")).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void restore_requiresAuthentication() throws Exception {
+    mockMvc
+        .perform(post("/api/v1/board/free/999999/restore"))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
   void create_requiresAuthentication() throws Exception {
     mockMvc
         .perform(
