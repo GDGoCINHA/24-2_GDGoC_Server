@@ -6,6 +6,7 @@ import inha.gdgoc.domain.board.common.enums.SearchType;
 import inha.gdgoc.domain.board.notice.dto.request.NoticeCreateRequest;
 import inha.gdgoc.domain.board.notice.dto.request.NoticeUpdateRequest;
 import inha.gdgoc.domain.board.notice.dto.request.PinnedUpdateRequest;
+import inha.gdgoc.domain.board.notice.dto.response.NoticeDeletedSummaryResponse;
 import inha.gdgoc.domain.board.notice.dto.response.NoticeDetailResponse;
 import inha.gdgoc.domain.board.notice.dto.response.NoticeListResponse;
 import inha.gdgoc.domain.board.notice.dto.response.NoticeSummaryResponse;
@@ -99,11 +100,11 @@ public class NoticeBoardController {
 
   @Authorize(@Condition(atLeast = UserRole.CORE))
   @GetMapping("/deleted")
-  public ResponseEntity<ApiResponse<Page<NoticeSummaryResponse>, PageMeta>> listDeletedNotices(
+  public ResponseEntity<ApiResponse<Page<NoticeDeletedSummaryResponse>, PageMeta>> listDeletedNotices(
       @AuthenticationPrincipal CustomUserDetails me,
       @RequestParam(defaultValue = "0") @Min(0) int page,
       @RequestParam(defaultValue = "15") @Min(1) @Max(100) int size) {
-    Page<NoticeSummaryResponse> result =
+    Page<NoticeDeletedSummaryResponse> result =
         noticeBoardService.listDeletedNotices(page, size, me.getUserId(), me.getRole());
     return ResponseEntity.ok(
         ApiResponse.ok(NOTICE_DELETED_LIST_RETRIEVED, result, PageMeta.of(result)));
