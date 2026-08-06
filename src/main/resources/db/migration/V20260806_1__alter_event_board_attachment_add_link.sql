@@ -11,5 +11,5 @@ ALTER TABLE event_board_attachment
 ALTER TABLE event_board_attachment
     ADD CONSTRAINT ck_event_board_attachment_kind CHECK (
         (kind = 'FILE' AND file_key IS NOT NULL AND file_name IS NOT NULL AND url IS NULL)
-     OR (kind = 'LINK' AND url IS NOT NULL AND file_key IS NULL)
+     OR (kind = 'LINK' AND url IS NOT NULL AND file_key IS NULL AND file_name IS NULL AND file_size IS NULL)
     );
