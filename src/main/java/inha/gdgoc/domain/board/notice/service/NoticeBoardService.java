@@ -178,6 +178,7 @@ public class NoticeBoardService {
         notice.getCategory(),
         notice.getTitle(),
         notice.getContent(),
+        notice.getAuthorId(),
         notice.getAuthorName(),
         viewCount,
         notice.isPublished(),

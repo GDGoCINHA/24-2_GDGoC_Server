@@ -5,6 +5,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import inha.gdgoc.domain.board.common.enums.SearchType;
 import inha.gdgoc.domain.board.free.entity.FreeBoard;
 import inha.gdgoc.domain.board.free.entity.QFreeBoard;
+import inha.gdgoc.domain.user.enums.UserRole;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,11 @@ public class FreeBoardRepositoryImpl implements FreeBoardRepository {
   @Override
   public Optional<FreeBoard> findById(Long id) {
     return jpaRepository.findByIdAndDeletedAtIsNull(id);
+  }
+
+  @Override
+  public Optional<FreeBoard> findDeletedById(Long id) {
+    return jpaRepository.findByIdAndDeletedAtIsNotNull(id);
   }
 
   @Override
@@ -53,6 +59,30 @@ public class FreeBoardRepositoryImpl implements FreeBoardRepository {
             .selectFrom(post)
             .where(where)
             .orderBy(post.createdAt.desc())
+            .offset(pageable.getOffset())
+            .limit(pageable.getPageSize())
+            .fetch();
+
+    Long total = queryFactory.select(post.count()).from(post).where(where).fetchOne();
+
+    return new PageImpl<>(content, pageable, total == null ? 0 : total);
+  }
+
+  @Override
+  public Page<FreeBoard> findDeletedPosts(Long userId, UserRole userRole, Pageable pageable) {
+
+    QFreeBoard post = QFreeBoard.freeBoard;
+
+    BooleanExpression where = post.deletedAt.isNotNull();
+    if (!UserRole.hasAtLeast(userRole, UserRole.ORGANIZER)) {
+      where = where.and(post.authorId.eq(userId));
+    }
+
+    List<FreeBoard> content =
+        queryFactory
+            .selectFrom(post)
+            .where(where)
+            .orderBy(post.deletedAt.desc())
             .offset(pageable.getOffset())
             .limit(pageable.getPageSize())
             .fetch();

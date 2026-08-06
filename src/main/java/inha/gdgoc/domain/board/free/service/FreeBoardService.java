@@ -4,6 +4,7 @@ import inha.gdgoc.domain.board.common.enums.SearchType;
 import inha.gdgoc.domain.board.common.service.AttachmentPolicy;
 import inha.gdgoc.domain.board.free.dto.request.FreeBoardCreateRequest;
 import inha.gdgoc.domain.board.free.dto.request.FreeBoardUpdateRequest;
+import inha.gdgoc.domain.board.free.dto.response.FreeBoardDeletedSummaryResponse;
 import inha.gdgoc.domain.board.free.dto.response.FreeBoardDetailResponse;
 import inha.gdgoc.domain.board.free.dto.response.FreeBoardSummaryResponse;
 import inha.gdgoc.domain.board.free.entity.FreeBoard;
@@ -101,6 +102,32 @@ public class FreeBoardService {
   }
 
   /**
+   * 삭제된 글 목록.
+   *
+   * <p>ORGANIZER 이상은 전부 보고 그 아래는 자기 글만 본다. 그 필터는 리포지토리가 건다 —
+   * findDeletedPosts 참고.
+   */
+  public Page<FreeBoardDeletedSummaryResponse> listDeletedPosts(
+      int page, int size, Long userId, UserRole userRole) {
+    return freeBoardRepository
+        .findDeletedPosts(userId, userRole, PageRequest.of(page, size))
+        .map(this::toDeletedSummaryResponse);
+  }
+
+  /** 목록에 남의 글이 섞이지 않더라도 id 를 직접 찍어 부를 수 있으므로 여기서 한 번 더 판정한다. */
+  @Transactional
+  public void restorePost(Long id, Long userId, UserRole userRole) {
+    FreeBoard post =
+        freeBoardRepository
+            .findDeletedById(id)
+            .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
+
+    requireAuthorOrOrganizer(post, userId, userRole);
+
+    post.restore();
+  }
+
+  /**
    * 자유게시판의 수정·삭제 경계다. 작성자 본인이거나 ORGANIZER 이상이어야 한다.
    *
    * <p>공지와 규칙이 같지만 뜻이 다르다. 공지는 CORE 이상만 글을 쓸 수 있어 '작성자'가 곧 운영진이고, 자유게시판은
@@ -111,6 +138,16 @@ public class FreeBoardService {
     if (!post.getAuthorId().equals(userId)) {
       throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER);
     }
+  }
+
+  private FreeBoardDeletedSummaryResponse toDeletedSummaryResponse(FreeBoard post) {
+    return new FreeBoardDeletedSummaryResponse(
+        post.getId(),
+        post.getTitle(),
+        post.getAuthorName(),
+        post.getViewCount(),
+        post.getCreatedAt(),
+        post.getDeletedAt());
   }
 
   private FreeBoardSummaryResponse toSummaryResponse(FreeBoard post) {
