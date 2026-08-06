@@ -4,6 +4,7 @@ import inha.gdgoc.domain.board.common.enums.SearchType;
 import inha.gdgoc.domain.board.common.service.AttachmentPolicy;
 import inha.gdgoc.domain.board.notice.dto.request.NoticeCreateRequest;
 import inha.gdgoc.domain.board.notice.dto.request.NoticeUpdateRequest;
+import inha.gdgoc.domain.board.notice.dto.response.NoticeDeletedSummaryResponse;
 import inha.gdgoc.domain.board.notice.dto.response.NoticeDetailResponse;
 import inha.gdgoc.domain.board.notice.dto.response.NoticeSummaryResponse;
 import inha.gdgoc.domain.board.notice.entity.NoticeBoard;
@@ -40,7 +41,10 @@ public class NoticeBoardService {
   /**
    * 상세를 조회하며 조회수를 1 올린다.
    *
-   * <p>클래스 기본값이 readOnly = true 이므로 여기에 @Transactional 을 따로 붙여야 더티체킹이 반영된다.
+   * <p>엔티티를 더티체킹으로 올리면 @LastModifiedDate 가 함께 갱신되어 "마지막으로 열어본 시각"이 수정 시각을 덮어써
+   * 버린다. 그래서 조회수는 벌크 UPDATE 로 따로 올린다. DTO를 먼저 만들고 그 다음에 벌크 UPDATE를 호출하는 순서를
+   * 지켜야 한다 — clearAutomatically 로 영속성 컨텍스트를 비우면 notice 가 detach 되어 첨부 지연 로딩이
+   * LazyInitializationException 으로 죽는다.
    */
   @Transactional
   public NoticeDetailResponse getNotice(Long id, UserRole userRole) {
@@ -53,8 +57,10 @@ public class NoticeBoardService {
       throw new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND);
     }
 
-    notice.increaseViewCount();
-    return toDetailResponse(notice);
+    // 벌크 UPDATE 는 로딩된 엔티티에 반영되지 않으므로, 이번 조회를 포함한 값을 보여주려면 +1 을 직접 넘긴다.
+    NoticeDetailResponse response = toDetailResponse(notice, notice.getViewCount() + 1);
+    noticeBoardRepository.increaseViewCount(id);
+    return response;
   }
 
   @Transactional
@@ -121,11 +127,11 @@ public class NoticeBoardService {
     notice.restore();
   }
 
-  public Page<NoticeSummaryResponse> listDeletedNotices(
+  public Page<NoticeDeletedSummaryResponse> listDeletedNotices(
       int page, int size, Long userId, UserRole userRole) {
     return noticeBoardRepository
         .findDeletedNotices(userId, userRole, PageRequest.of(page, size))
-        .map(this::toSummaryResponse);
+        .map(this::toDeletedSummaryResponse);
   }
 
   private void requireAuthorOrOrganizer(NoticeBoard notice, Long userId, UserRole userRole) {
@@ -147,14 +153,26 @@ public class NoticeBoardService {
         notice.getCreatedAt());
   }
 
-  private NoticeDetailResponse toDetailResponse(NoticeBoard notice) {
+  private NoticeDeletedSummaryResponse toDeletedSummaryResponse(NoticeBoard notice) {
+    return new NoticeDeletedSummaryResponse(
+        notice.getId(),
+        notice.getCategory(),
+        notice.getTitle(),
+        notice.getAuthorName(),
+        notice.getViewCount(),
+        notice.isPublished(),
+        notice.getCreatedAt(),
+        notice.getDeletedAt());
+  }
+
+  private NoticeDetailResponse toDetailResponse(NoticeBoard notice, int viewCount) {
     return new NoticeDetailResponse(
         notice.getId(),
         notice.getCategory(),
         notice.getTitle(),
         notice.getContent(),
         notice.getAuthorName(),
-        notice.getViewCount(),
+        viewCount,
         notice.isPublished(),
         attachmentPolicy.toResponses(notice.getAttachments()),
         notice.getCreatedAt(),

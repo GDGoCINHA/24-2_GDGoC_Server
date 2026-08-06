@@ -13,4 +13,6 @@ public interface NoticeBoardRepository extends NoticeBoardQueryDslRepository {
   List<NoticeBoard> findAllByIdIn(List<Long> ids);
 
   NoticeBoard save(NoticeBoard notice);
+
+  void increaseViewCount(Long id);
 }

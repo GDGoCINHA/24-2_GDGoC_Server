@@ -42,6 +42,11 @@ public class NoticeBoardRepositoryImpl implements NoticeBoardRepository {
   }
 
   @Override
+  public void increaseViewCount(Long id) {
+    jpaRepository.increaseViewCount(id);
+  }
+
+  @Override
   public Page<NoticeBoard> findVisibleNotices(
       UserRole userRole, SearchType searchType, String keyword, Pageable pageable) {
 

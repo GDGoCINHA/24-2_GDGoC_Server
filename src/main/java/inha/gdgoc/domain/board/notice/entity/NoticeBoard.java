@@ -73,8 +73,4 @@ public class NoticeBoard extends BoardEntity {
     if (category != null) this.category = category;
     if (isPublished != null) this.isPublished = isPublished;
   }
-
-  public void increaseViewCount() {
-    this.viewCount++;
-  }
 }

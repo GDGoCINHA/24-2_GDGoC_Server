@@ -3,7 +3,6 @@ package inha.gdgoc.domain.board.notice.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -55,14 +54,14 @@ class NoticeBoardServiceTest {
   }
 
   @Test
-  @DisplayName("상세를 조회하면 조회수가 1 오른다")
+  @DisplayName("상세를 조회하면 조회수 벌크 UPDATE 가 호출된다")
   void getNoticeIncreasesViewCount() {
     NoticeBoard notice = published();
     when(noticeBoardRepository.findById(1L)).thenReturn(Optional.of(notice));
 
     noticeBoardService.getNotice(1L, UserRole.GUEST);
 
-    assertThat(notice.getViewCount()).isEqualTo(1);
+    verify(noticeBoardRepository).increaseViewCount(1L);
   }
 
   @Test

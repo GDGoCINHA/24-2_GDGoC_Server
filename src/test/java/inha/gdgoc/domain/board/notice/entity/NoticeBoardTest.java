@@ -25,17 +25,6 @@ class NoticeBoardTest {
   }
 
   @Test
-  @DisplayName("조회수는 부를 때마다 1씩 오른다")
-  void increaseViewCountAddsOne() {
-    NoticeBoard notice = notice();
-
-    notice.increaseViewCount();
-    notice.increaseViewCount();
-
-    assertThat(notice.getViewCount()).isEqualTo(2);
-  }
-
-  @Test
   @DisplayName("수정은 null 이 아닌 필드만 바꾼다")
   void updateChangesOnlyNonNullFields() {
     NoticeBoard notice = notice();
