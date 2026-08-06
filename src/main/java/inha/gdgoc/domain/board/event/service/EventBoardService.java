@@ -1,6 +1,7 @@
 package inha.gdgoc.domain.board.event.service;
 
 import inha.gdgoc.domain.board.event.dto.request.EventBoardCreateRequest;
+import inha.gdgoc.domain.board.event.dto.request.EventBoardCreateRequest.AttachmentEntry;
 import inha.gdgoc.domain.board.event.dto.request.EventBoardUpdateRequest;
 import inha.gdgoc.domain.board.event.dto.response.DeletedEventBoardSummaryResponse;
 import inha.gdgoc.domain.board.event.dto.response.EventBoardDetailResponse;
@@ -28,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class EventBoardService {
+
+  private static final int MAX_ATTACHMENTS = 10;
 
   private final EventBoardRepository eventBoardRepository;
   private final UserRepository userRepository;
@@ -70,12 +73,7 @@ public class EventBoardService {
             authorId,
             author.getName());
 
-    if (req.attachments() != null) {
-      for (int i = 0; i < req.attachments().size(); i++) {
-        var entry = req.attachments().get(i);
-        board.addFileAttachment(entry.fileKey(), entry.fileName(), null, i);
-      }
-    }
+    applyAttachments(board, req.attachments());
 
     return eventBoardRepository.save(board).getId();
   }
@@ -105,10 +103,7 @@ public class EventBoardService {
 
     if (req.attachments() != null) {
       board.getAttachments().clear();
-      for (int i = 0; i < req.attachments().size(); i++) {
-        var entry = req.attachments().get(i);
-        board.addFileAttachment(entry.fileKey(), entry.fileName(), null, i);
-      }
+      applyAttachments(board, req.attachments());
     }
   }
 
@@ -132,6 +127,31 @@ public class EventBoardService {
 
     requireTeamAccess(board, userRole, userTeam);
     board.restore();
+  }
+
+  private void applyAttachments(EventBoard board, List<AttachmentEntry> entries) {
+    if (entries == null) return;
+
+    if (entries.size() > MAX_ATTACHMENTS) {
+      throw new BusinessException(
+          GlobalErrorCode.BAD_REQUEST, "첨부는 최대 " + MAX_ATTACHMENTS + "개까지 등록할 수 있습니다.");
+    }
+
+    for (int i = 0; i < entries.size(); i++) {
+      AttachmentEntry entry = entries.get(i);
+
+      if (entry.url() != null && !entry.url().isBlank()) {
+        board.addLinkAttachment(entry.url(), i);
+        continue;
+      }
+
+      Long size = s3Service.getObjectSize(entry.fileKey());
+      if (size == null) {
+        throw new BusinessException(
+            GlobalErrorCode.BAD_REQUEST, "업로드되지 않은 파일입니다: " + entry.fileName());
+      }
+      board.addFileAttachment(entry.fileKey(), entry.fileName(), size, i);
+    }
   }
 
   private EventBoard findVisibleBoard(Long id, TeamType userTeam, UserRole userRole) {

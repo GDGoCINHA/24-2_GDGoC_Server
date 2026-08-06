@@ -23,5 +23,13 @@ public record EventBoardCreateRequest(
     return eventStartDate == null || eventEndDate == null || !eventEndDate.isBefore(eventStartDate);
   }
 
-  public record AttachmentEntry(@NotBlank String fileKey, @NotBlank String fileName) {}
+  public record AttachmentEntry(String fileKey, String fileName, String url) {
+
+    @AssertTrue(message = "첨부는 파일(fileKey·fileName) 또는 링크(url) 중 하나여야 합니다.")
+    private boolean isExactlyOneKind() {
+      boolean isFile = fileKey != null && !fileKey.isBlank() && fileName != null && !fileName.isBlank();
+      boolean isLink = url != null && !url.isBlank();
+      return isFile ^ isLink;
+    }
+  }
 }
