@@ -43,11 +43,15 @@ public abstract class BoardAttachment extends BaseEntity {
     this.fileName = fileName;
     this.fileSize = fileSize;
     this.sortOrder = sortOrder;
+    this.url = null;
   }
 
   protected void initLink(String url, int sortOrder) {
     this.kind = AttachmentKind.LINK;
     this.url = url;
     this.sortOrder = sortOrder;
+    this.fileKey = null;
+    this.fileName = null;
+    this.fileSize = null;
   }
 }

@@ -1,5 +1,7 @@
 package inha.gdgoc.domain.board.event.service;
 
+import inha.gdgoc.domain.board.common.entity.BoardAttachment;
+import inha.gdgoc.domain.board.common.enums.AttachmentKind;
 import inha.gdgoc.domain.board.event.dto.request.EventBoardCreateRequest;
 import inha.gdgoc.domain.board.event.dto.request.EventBoardCreateRequest.AttachmentEntry;
 import inha.gdgoc.domain.board.event.dto.request.EventBoardUpdateRequest;
@@ -18,6 +20,7 @@ import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.GlobalErrorCode;
+import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -197,7 +200,20 @@ public class EventBoardService {
 
     List<AttachmentResponse> attachments =
         board.getAttachments().stream()
-            .map(a -> new AttachmentResponse(a.getId(), s3Service.getS3FileUrl(a.getFileKey()), a.getFileName()))
+            .sorted(Comparator.comparingInt(BoardAttachment::getSortOrder))
+            .map(
+                a ->
+                    a.getKind() == AttachmentKind.LINK
+                        ? new AttachmentResponse(
+                            a.getId(), a.getKind(), null, null, null, null, a.getUrl())
+                        : new AttachmentResponse(
+                            a.getId(),
+                            a.getKind(),
+                            a.getFileKey(),
+                            s3Service.getS3FileUrl(a.getFileKey()),
+                            a.getFileName(),
+                            a.getFileSize(),
+                            null))
             .toList();
 
     return new EventBoardDetailResponse(

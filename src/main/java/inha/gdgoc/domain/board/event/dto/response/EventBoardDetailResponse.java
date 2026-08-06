@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.board.event.dto.response;
 
+import inha.gdgoc.domain.board.common.enums.AttachmentKind;
 import inha.gdgoc.domain.board.event.enums.EventBoardStatus;
 import inha.gdgoc.domain.user.enums.TeamType;
 import java.time.Instant;
@@ -21,5 +22,12 @@ public record EventBoardDetailResponse(
     Instant createdAt,
     Instant updatedAt) {
 
-  public record AttachmentResponse(Long id, String fileUrl, String fileName) {}
+  public record AttachmentResponse(
+      Long id,
+      AttachmentKind kind,
+      String fileKey,
+      String fileUrl,
+      String fileName,
+      Long fileSize,
+      String url) {}
 }
