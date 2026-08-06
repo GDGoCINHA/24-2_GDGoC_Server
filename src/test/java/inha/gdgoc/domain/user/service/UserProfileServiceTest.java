@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
+import inha.gdgoc.domain.user.dto.request.UpdateUserProfileRequest;
 import inha.gdgoc.domain.user.dto.response.UserProfileResponse;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.TeamType;
@@ -59,6 +60,68 @@ class UserProfileServiceTest {
 
         assertThatThrownBy(() -> userProfileService.getMyProfile(99L))
                 .isInstanceOf(UserException.class);
+    }
+
+    @Test
+    void updateMyProfile_updatesEditableFieldsAndNormalizesMajorLabel() {
+        User user = createUser();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        UserProfileResponse response = userProfileService.updateMyProfile(
+                1L,
+                new UpdateUserProfileRequest("김철수", "컴퓨터공학과", "01099998888")
+        );
+
+        assertThat(response.name()).isEqualTo("김철수");
+        assertThat(response.major()).isEqualTo("CSE");
+        assertThat(response.phoneNumber()).isEqualTo("01099998888");
+    }
+
+    @Test
+    void updateMyProfile_acceptsMajorCodeDirectly() {
+        User user = createUser();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        UserProfileResponse response = userProfileService.updateMyProfile(
+                1L,
+                new UpdateUserProfileRequest("홍길동", "CSE", "01012345678")
+        );
+
+        assertThat(response.major()).isEqualTo("CSE");
+    }
+
+    @Test
+    void updateMyProfile_rejectsUnknownMajor() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(createUser()));
+
+        assertThatThrownBy(() -> userProfileService.updateMyProfile(
+                1L,
+                new UpdateUserProfileRequest("홍길동", "없는학과", "01012345678")
+        )).isInstanceOf(UserException.class);
+    }
+
+    @Test
+    void updateMyProfile_rejectsHyphenatedPhoneNumber() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(createUser()));
+
+        assertThatThrownBy(() -> userProfileService.updateMyProfile(
+                1L,
+                new UpdateUserProfileRequest("홍길동", "DTE", "010-1234-5678")
+        )).isInstanceOf(UserException.class);
+    }
+
+    @Test
+    void updateMyProfile_doesNotTouchStudentIdOrEmail() {
+        User user = createUser();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        userProfileService.updateMyProfile(
+                1L,
+                new UpdateUserProfileRequest("김철수", "CSE", "01099998888")
+        );
+
+        assertThat(user.getStudentId()).isEqualTo("12201234");
+        assertThat(user.getEmail()).isEqualTo("hong@inha.edu");
     }
 
     static User createUser() {
