@@ -92,7 +92,7 @@ PATCH /api/v1/users/me/image
 | `domain/user/dto/request/UpdateUserProfileRequest` | 신설 (record) |
 | `domain/user/entity/User` | `updateProfile(...)`, `updateImage(...)` 추가 |
 | `domain/user/exception/UserErrorCode` | `INVALID_MAJOR`(400), `INVALID_PHONE_NUMBER`(400), `INVALID_IMAGE_FILE`(400) 추가 |
-| `domain/resource/enums/S3KeyType` | `profile("user/profile")` 추가 |
+| `domain/resource/enums/S3KeyType` | `profile("profile")` 추가 |
 | `global/util/MajorNormalizer` | 코드 유효성 확인용 public 메서드 추가 |
 
 기존 `UserController`(이메일 중복 체크·아이디 찾기)와 `UserService`는 **건드리지 않는다.** 프로필은 별도 서비스로 분리해 각 단위가 하나의 책임만 갖게 한다.
@@ -105,10 +105,12 @@ PATCH /api/v1/users/me/image
 |---|---|
 | `name` | `@NotBlank`, 1~30자 |
 | `major` | `MajorNormalizer.normalize()` 후 알려진 코드인지 확인. 아니면 `INVALID_MAJOR` |
-| `phoneNumber` | 정규식 `^010-\d{4}-\d{4}$`. `AdditionalInfoForm.tsx`의 `usePhoneNumber().formatInput` 및 placeholder `010-1234-5678`과 일치 |
+| `phoneNumber` | 정규식 `^01[0-9]\d{7,8}$` — **하이픈 없는 숫자만** |
 | 이미지 | MIME `image/png`, `image/jpeg`, `image/webp` 화이트리스트. 최대 5MB |
 
 세 필드 모두 값이 비어 오는 것을 허용하지 않는다(부분 수정이 아닌 전체 치환). `User`의 `name`·`major`·`phoneNumber`가 모두 `nullable = false`이기 때문이다.
+
+**전화번호는 하이픈 없이 저장된다.** 회원가입이 `toDigits()`를 거친 값을 보낸다(`signup/page.tsx:256` → `phoneNumber: phoneDigits`). 기존 테스트 픽스처도 `"01012345678"` 형태다. 하이픈 포함 정규식을 쓰면 **기존 사용자 전원이 수정에 실패**하므로 숫자만 받는다. `01[0-9]`로 여는 이유는 011·016 등 구형 번호가 남아 있을 수 있어서다.
 
 `major`를 서버에서도 검증하는 이유는 프론트가 드롭다운이어도 API는 직접 호출될 수 있기 때문이다. `MajorNormalizer.normalize()`는 알 수 없는 값을 그대로 되돌려주므로 정규화만으로는 검증이 되지 않는다.
 
@@ -176,6 +178,16 @@ DB에는 학과가 **코드로 저장된다**(`디자인테크놀로지학과` �
 
 **서버는 코드만 주고받고, 표시용 변환은 프론트가 담당한다.** `src/constant/majorOptions.ts`가 이미 `{ code, label }` 매핑과 `normalizeMajorCode()`를 갖고 있고, `GdgMajorDropdown`이 이를 사용한다. 편집 시 자유 입력이 아닌 드롭다운을 쓰므로 정규화 실패가 원천 차단된다.
 
+## 전화번호 표시 변환
+
+학과와 같은 구조다. **저장은 숫자만, 표시는 하이픈.**
+
+- 조회·편집 표시: `formatPhoneNumberInput(value)` → `010-1234-5678`
+- 입력 중 자동 포맷: `usePhoneNumber().formatInput`
+- 전송 직전: `usePhoneNumber().toDigits` → `01012345678`
+
+회원가입 페이지가 이미 쓰는 흐름을 그대로 따른다.
+
 ## 데이터 흐름
 
 ```
@@ -225,7 +237,7 @@ DB에는 학과가 **코드로 저장된다**(`디자인테크놀로지학과` �
 
 1. **모바일 디자인이 없다.** Figma 프레임이 전부 `PC_` 접두사다. 반응형은 기존 프로젝트 관례(`pc:`/`mobile:` breakpoint)를 따라 구현자가 판단한다
 2. **`short` 그리드를 기준으로 한다.** 디자인 노트에 "short 그리드 버전만 하단부에 바리에이션으로 정리했습니다"라고 적혀 있어 태그 규격의 기준이 short다. `long`·`제안1`·`제안2`는 채택하지 않는다
-3. **전화번호는 하이픈 포함 형식이다.** `usePhoneNumber().formatInput`과 회원가입 폼 placeholder에서 확인했다
+3. **전화번호는 하이픈 없는 숫자로 저장된다.** `signup/page.tsx:256`이 `toDigits()` 결과를 보내는 것과 테스트 픽스처 `"01012345678"`로 확인했다. 화면 표시용 하이픈은 프론트가 `formatPhoneNumberInput()`으로 넣고, 전송 시 `toDigits()`로 되돌린다
 4. **`users` 테이블의 실제 DB 제약은 리포에서 확인할 수 없다.** `ddl-auto: none`이고 `baseline-on-migrate: true`로 Flyway 이전 스키마가 baseline 처리되어 `users` CREATE 문이 리포에 없다. 따라서 엔티티의 `unique = true`는 실제 제약을 보장하지 않는다. 이번 설계는 이메일·학번을 읽기 전용으로 두어 이 불확실성을 우회한다
 
 # 성공 기준
