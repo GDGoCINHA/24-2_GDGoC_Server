@@ -33,7 +33,7 @@ public class PinnedNotice extends BaseEntity {
   @JoinColumn(name = "notice_board_id", nullable = false, unique = true)
   private NoticeBoard noticeBoard;
 
-  @Column(nullable = false)
+  @Column(nullable = false, unique = true)
   private int displayOrder;
 
   @Column(name = "pinned_by", nullable = false)
