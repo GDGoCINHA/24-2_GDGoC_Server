@@ -56,6 +56,7 @@ class EventBoardAttachmentServiceTest {
   @DisplayName("첨부가 11개면 400으로 거절한다")
   void rejectsMoreThanTenAttachments() {
     givenAuthor();
+    lenient().when(s3Service.getObjectSize(anyString())).thenReturn(1L);
 
     List<AttachmentEntry> entries =
         IntStream.range(0, 11)
