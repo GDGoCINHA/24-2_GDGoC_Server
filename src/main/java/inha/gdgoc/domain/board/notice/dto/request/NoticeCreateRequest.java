@@ -12,5 +12,5 @@ public record NoticeCreateRequest(
     @NotBlank @Size(max = 255) String title,
     @NotBlank String content,
     @NotNull NoticeCategory category,
-    boolean isPublished,
+    @NotNull Boolean isPublished,
     @Valid List<AttachmentEntry> attachments) {}
