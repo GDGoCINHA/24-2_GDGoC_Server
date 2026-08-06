@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.board.event.dto.request;
 
+import inha.gdgoc.domain.board.common.dto.AttachmentEntry;
 import inha.gdgoc.domain.user.enums.TeamType;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -13,4 +14,4 @@ public record EventBoardUpdateRequest(
     String thumbnailKey,
     String content,
     Boolean isPublished,
-    @Valid List<EventBoardCreateRequest.AttachmentEntry> attachments) {}
+    @Valid List<AttachmentEntry> attachments) {}

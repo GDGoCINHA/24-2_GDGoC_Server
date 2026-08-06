@@ -6,9 +6,10 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
+import inha.gdgoc.domain.board.common.dto.AttachmentEntry;
 import inha.gdgoc.domain.board.common.enums.AttachmentKind;
+import inha.gdgoc.domain.board.common.service.AttachmentPolicy;
 import inha.gdgoc.domain.board.event.dto.request.EventBoardCreateRequest;
-import inha.gdgoc.domain.board.event.dto.request.EventBoardCreateRequest.AttachmentEntry;
 import inha.gdgoc.domain.board.event.entity.EventBoard;
 import inha.gdgoc.domain.board.event.repository.EventBoardRepository;
 import inha.gdgoc.domain.resource.service.S3Service;
@@ -22,10 +23,10 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -37,7 +38,14 @@ class EventBoardAttachmentServiceTest {
   @Mock private UserRepository userRepository;
   @Mock private S3Service s3Service;
 
-  @InjectMocks private EventBoardService eventBoardService;
+  private EventBoardService eventBoardService;
+
+  @BeforeEach
+  void setUp() {
+    eventBoardService =
+        new EventBoardService(
+            eventBoardRepository, userRepository, s3Service, new AttachmentPolicy(s3Service));
+  }
 
   @Test
   @DisplayName("S3에 없는 키를 첨부하면 400으로 거절한다")

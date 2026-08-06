@@ -68,11 +68,13 @@ public class EventBoard extends BoardEntity {
     return board;
   }
 
+  @Override
   public void addFileAttachment(String fileKey, String fileName, Long fileSize, int sortOrder) {
     this.attachments.add(
         EventBoardAttachment.createFile(this, fileKey, fileName, fileSize, sortOrder));
   }
 
+  @Override
   public void addLinkAttachment(String url, int sortOrder) {
     this.attachments.add(EventBoardAttachment.createLink(this, url, sortOrder));
   }
