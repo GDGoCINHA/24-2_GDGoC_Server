@@ -1042,8 +1042,8 @@ export const fetchMyCoreApplication = async (
 
 ```bash
 cd "C:/Users/good/Desktop/gdgocinha-profile/24-2_GDGoC_Web"
-yarn install
-yarn build
+npm install
+npm run build
 ```
 
 Expected: 빌드 성공
@@ -1225,7 +1225,7 @@ export default function ProfileCard({
 - [ ] **Step 3: Verify the build**
 
 ```bash
-yarn build
+npm run build
 ```
 
 Expected: 빌드 성공.
@@ -1378,7 +1378,7 @@ export default function ProfileInfoSection({
 - [ ] **Step 2: Verify the build**
 
 ```bash
-yarn build
+npm run build
 ```
 
 Expected: 빌드 성공.
@@ -1469,7 +1469,7 @@ export default function ApplicationStatus({
 - [ ] **Step 2: Verify the build**
 
 ```bash
-yarn build
+npm run build
 ```
 
 Expected: 빌드 성공
@@ -1581,6 +1581,27 @@ export default function ProfilePage() {
     }
   }, [apiClient])
 
+  // AuthUser의 필드가 전부 optional이라 `{...user, name, image}`로 덮으면
+  // 저장된 user가 비어 있을 때 userRole·id·team이 사라진다. ApiCodeGuard는
+  // API 호출로 권한을 확인하므로, 토큰은 유효한데 localStorage user만 빈
+  // 상태가 실제로 가능하다. UserProfile이 AuthUser의 7개 필드를 모두 담고
+  // 있으니 응답으로 전체를 다시 채운다.
+  const syncAuthUser = useCallback(
+    (source: UserProfile) => {
+      setUser({
+        ...user,
+        id: source.id,
+        name: source.name,
+        email: source.email,
+        userRole: source.userRole,
+        team: source.team,
+        membershipStatus: source.membershipStatus,
+        image: source.image
+      })
+    },
+    [setUser, user]
+  )
+
   const handleSave = useCallback(
     async (payload: UpdateProfilePayload) => {
       setSaving(true)
@@ -1588,7 +1609,7 @@ export default function ProfilePage() {
       try {
         const updated = await updateMyProfile(apiClient, payload)
         setProfile(updated)
-        setUser({ ...user, name: updated.name, image: updated.image })
+        syncAuthUser(updated)
       } catch (error) {
         setSaveError('수정에 실패했습니다. 입력값을 확인해 주세요.')
         throw error
@@ -1596,7 +1617,7 @@ export default function ProfilePage() {
         setSaving(false)
       }
     },
-    [apiClient, setUser, user]
+    [apiClient, syncAuthUser]
   )
 
   const handleImageChange = useCallback(
@@ -1605,15 +1626,18 @@ export default function ProfilePage() {
       setImageError(null)
       try {
         const image = await updateMyProfileImage(apiClient, file)
-        setProfile((prev) => (prev ? { ...prev, image } : prev))
-        setUser({ ...user, image })
+        if (profile) {
+          const next: UserProfile = { ...profile, image }
+          setProfile(next)
+          syncAuthUser(next)
+        }
       } catch {
         setImageError('이미지 변경에 실패했습니다. png·jpg·webp 5MB 이하만 가능합니다.')
       } finally {
         setUploading(false)
       }
     },
-    [apiClient, setUser, user]
+    [apiClient, profile, syncAuthUser]
   )
 
   if (loading) return <Loader isLoading />
@@ -1657,7 +1681,7 @@ export default function ProfilePage() {
 - [ ] **Step 3: Verify the build**
 
 ```bash
-yarn build
+npm run build
 ```
 
 Expected: 빌드 성공
@@ -1665,7 +1689,7 @@ Expected: 빌드 성공
 - [ ] **Step 4: Manual verification**
 
 ```bash
-yarn dev
+npm run dev
 ```
 
 브라우저에서 `http://localhost:3000/profile` 접속 후 확인:
@@ -1730,7 +1754,7 @@ sed -n '370,400p' src/components/landing/OnboardingLanding.tsx
 - [ ] **Step 3: Verify the build**
 
 ```bash
-yarn build
+npm run build
 ```
 
 Expected: 빌드 성공
@@ -1738,7 +1762,7 @@ Expected: 빌드 성공
 - [ ] **Step 4: Manual verification**
 
 ```bash
-yarn dev
+npm run dev
 ```
 
 1. MEMBER 계정으로 로그인 → 메뉴에 `마이페이지`만 보이고 누르면 `/profile`로 간다. **온보딩으로 튕기지 않는다**
@@ -1771,8 +1795,8 @@ cd "C:/Users/good/Desktop/gdgocinha-profile/24-2_GDGoC_Server"
 
 ```bash
 cd "C:/Users/good/Desktop/gdgocinha-profile/24-2_GDGoC_Web"
-yarn build
-yarn format
+npm run build
+npm run format
 ```
 
 **성공 기준 대조** — 스펙의 9개 항목을 모두 확인한다. 특히:
