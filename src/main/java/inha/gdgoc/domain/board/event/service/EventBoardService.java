@@ -8,7 +8,7 @@ import inha.gdgoc.domain.board.event.dto.response.EventBoardDetailResponse.Attac
 import inha.gdgoc.domain.board.event.dto.response.EventBoardSummaryResponse;
 import inha.gdgoc.domain.board.event.entity.EventBoard;
 import inha.gdgoc.domain.board.event.enums.EventBoardStatus;
-import inha.gdgoc.domain.board.event.enums.SearchType;
+import inha.gdgoc.domain.board.common.enums.SearchType;
 import inha.gdgoc.domain.board.event.repository.EventBoardRepository;
 import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.user.entity.User;

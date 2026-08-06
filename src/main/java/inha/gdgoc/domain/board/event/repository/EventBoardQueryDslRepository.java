@@ -1,7 +1,7 @@
 package inha.gdgoc.domain.board.event.repository;
 
 import inha.gdgoc.domain.board.event.entity.EventBoard;
-import inha.gdgoc.domain.board.event.enums.SearchType;
+import inha.gdgoc.domain.board.common.enums.SearchType;
 import inha.gdgoc.domain.user.enums.TeamType;
 import inha.gdgoc.domain.user.enums.UserRole;
 import org.springframework.data.domain.Page;
