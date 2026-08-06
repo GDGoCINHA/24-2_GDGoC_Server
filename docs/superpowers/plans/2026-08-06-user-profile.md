@@ -1772,11 +1772,18 @@ yarn format
 머지가 곧 배포다. 순서를 지킨다.
 
 1. Server `feature/user-profile` → `develop`
-2. **실제 엔드포인트로 반영 확인.** Actions 초록불은 근거가 아니다
+2. **실제 엔드포인트로 반영 확인.** Actions 초록불은 근거가 아니다.
+
+   **401로는 판별할 수 없다.** `SecurityConfig`가 `.anyRequest().authenticated()`이므로 **존재하지 않는 경로도 401을 반환한다** — 인증 필터가 `DispatcherServlet`의 핸들러 조회보다 먼저 돌기 때문이다. Task 5 리뷰에서 확인됐고, 같은 이유로 보안 테스트 4개가 컨트롤러 없이도 통과했다. CLAUDE.md의 기존 확인법(`/api/v1/board/events`)이 통했던 건 그 경로가 `permitAll`이어서다 — 우리 경로는 아니다.
+
+   대신 `/v3/api-docs/**`가 `permitAll`이므로, springdoc이 실제로 매핑한 경로 목록으로 판별한다:
+
    ```bash
-   curl -s -o /dev/null -w "%{http_code}\n" "https://dev-api.gdgocinha.com/api/v1/users/me"
+   curl -s "https://dev-api.gdgocinha.com/v3/api-docs" > /tmp/api-docs.json; echo "exit=$?"
+   grep -c '/api/v1/users/me' /tmp/api-docs.json
    ```
-   `401` = 라우트 존재(반영됨). `404` = 미반영. 판별이 애매하면 예전부터 공개였던 `/api/v1/auth/login`을 대조군으로 함께 호출한다
+
+   `0`이면 미반영, `1` 이상이면 반영 완료다. springdoc은 실제 `@RequestMapping`이 존재하는 경로만 문서화하므로 라우트 존재의 직접 증거가 된다.
 3. Web `feature/user-profile` → `develop`. CloudFront 무효화 전파에 시간이 걸린다
 4. `dev.gdgocinha.com/profile`에서 수동 확인
 5. 운영은 Server `main` → Web `master` 순. **브랜치 이름이 서로 다르다**
