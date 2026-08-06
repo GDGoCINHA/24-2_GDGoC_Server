@@ -8,6 +8,7 @@ public enum S3KeyType {
     study("study"),
     recruitCore("recruit/core"),
     recruitMember("recruit/member"),
+    profile("profile"),
     boardEvent("board/event"),
     boardNotice("board/notice"),
     boardFree("board/free");

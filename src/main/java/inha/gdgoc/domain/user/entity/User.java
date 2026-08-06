@@ -136,6 +136,17 @@ public class User extends BaseEntity {
     public void reject() {
         this.membershipStatus = MembershipStatus.REJECTED;
     }
+
+    public void updateProfile(String name, String major, String phoneNumber) {
+        this.name = name;
+        this.major = major;
+        this.phoneNumber = phoneNumber;
+    }
+
+    public void updateImage(String image) {
+        this.image = image;
+    }
+
     public enum MembershipStatus { PENDING, APPROVED, REJECTED }
     
     public boolean isGuest() {

@@ -122,4 +122,8 @@ public class MajorNormalizer {
 
         return ALIASES.getOrDefault(trimmed, trimmed);
     }
+
+    public boolean isKnownCode(String code) {
+        return code != null && KNOWN_CODES.contains(code);
+    }
 }
