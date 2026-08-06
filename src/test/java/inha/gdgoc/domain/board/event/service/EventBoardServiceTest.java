@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
+import inha.gdgoc.domain.board.common.service.AttachmentPolicy;
 import inha.gdgoc.domain.board.event.dto.request.EventBoardUpdateRequest;
 import inha.gdgoc.domain.board.event.entity.EventBoard;
 import inha.gdgoc.domain.board.event.repository.EventBoardRepository;
@@ -16,9 +17,9 @@ import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.GlobalErrorCode;
 import java.time.LocalDate;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -41,8 +42,14 @@ class EventBoardServiceTest {
     @Mock
     private S3Service s3Service;
 
-    @InjectMocks
     private EventBoardService eventBoardService;
+
+    @BeforeEach
+    void setUp() {
+        eventBoardService =
+                new EventBoardService(
+                        eventBoardRepository, userRepository, s3Service, new AttachmentPolicy(s3Service));
+    }
 
     // --- 미공개 글 가시성 ---
 

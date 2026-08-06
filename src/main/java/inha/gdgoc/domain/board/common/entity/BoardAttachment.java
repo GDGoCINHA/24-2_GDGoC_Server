@@ -18,6 +18,9 @@ import lombok.Getter;
 @MappedSuperclass
 public abstract class BoardAttachment extends BaseEntity {
 
+  /** id 는 테이블이 분리돼 있어 하위 엔티티가 갖는다. 하위의 Lombok @Getter 가 이 선언을 구현한다. */
+  public abstract Long getId();
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 16)
   private AttachmentKind kind;

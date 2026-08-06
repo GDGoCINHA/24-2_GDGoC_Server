@@ -42,6 +42,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/logout").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/board/events").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/board/events/{id:[0-9]+}").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/board/notices").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/board/notices/{id:[0-9]+}").permitAll()
                 .requestMatchers(
                     "/swagger-ui/**",
                     "/v3/api-docs/**",

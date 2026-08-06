@@ -1,8 +1,7 @@
-package inha.gdgoc.domain.board.event.dto.request;
+package inha.gdgoc.domain.board.common.dto;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import inha.gdgoc.domain.board.event.dto.request.EventBoardCreateRequest.AttachmentEntry;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;

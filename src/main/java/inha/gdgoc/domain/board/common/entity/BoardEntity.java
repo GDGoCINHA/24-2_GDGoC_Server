@@ -52,4 +52,10 @@ public abstract class BoardEntity extends BaseEntity {
   public void restore() {
     this.deletedAt = null;
   }
+
+  /** 첨부 컬렉션은 하위 엔티티가 소유한다. AttachmentPolicy 가 BoardEntity 만 알고 쓸 수 있게 여기서 선언한다. */
+  public abstract void addFileAttachment(
+      String fileKey, String fileName, Long fileSize, int sortOrder);
+
+  public abstract void addLinkAttachment(String url, int sortOrder);
 }
