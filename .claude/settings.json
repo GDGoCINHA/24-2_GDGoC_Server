@@ -1,17 +1,10 @@
 {
   "hooks": {
-    "Stop": [
+    "SessionStart": [
       {
         "matcher": "",
         "hooks": [
-          {
-            "type": "command",
-            "command": "./gradlew compileJava compileTestJava --offline -q 2>&1 || { echo '컴파일 실패 - 위 에러를 확인하세요.' >&2; exit 1; }"
-          },
-          {
-            "type": "command",
-            "command": "node .claude/hooks/lifecycle.mjs retire"
-          }
+          { "type": "command", "command": "node .claude/hooks/session-start.mjs" }
         ]
       }
     ],
@@ -19,14 +12,24 @@
       {
         "matcher": "Bash|PowerShell",
         "hooks": [
-          {
-            "type": "command",
-            "command": "node .claude/hooks/guard.mjs"
-          },
-          {
-            "type": "command",
-            "command": "node .claude/hooks/lifecycle.mjs promote"
-          }
+          { "type": "command", "command": "node .claude/hooks/guard.mjs" },
+          { "type": "command", "command": "node .claude/hooks/test-gate.mjs", "timeout": 120 },
+          { "type": "command", "command": "node .claude/hooks/lifecycle.mjs promote" }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "node .claude/hooks/migration-guard.mjs" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "node .claude/hooks/verify.mjs" },
+          { "type": "command", "command": "node .claude/hooks/lifecycle.mjs retire" }
         ]
       }
     ]

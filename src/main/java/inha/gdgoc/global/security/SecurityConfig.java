@@ -40,6 +40,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/v1/auth/logout").permitAll()
+                // 행사 게시판만 공개다. 공지·자유는 회원 전용이라 여기 넣지 않는다 —
+                // anyRequest().authenticated() 가 받는다. NoticeBoardSecurityTest 가 지킨다.
                 .requestMatchers(HttpMethod.GET, "/api/v1/board/events").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/board/events/{id:[0-9]+}").permitAll()
                 .requestMatchers(
@@ -53,6 +55,7 @@ public class SecurityConfig {
                     "/api/v1/recruit/member/check/**",
                     "/api/v1/recruit/member/memo",
                     "/api/v1/recruit/core/period",
+                    "/api/v1/recruit/member/period",
                     "/api/v1/fileupload",
                     "/api/v1/manito/verify")
                 .permitAll()

@@ -1,14 +1,15 @@
 package inha.gdgoc.domain.board.event.service;
 
+import inha.gdgoc.domain.board.common.dto.AttachmentResponse;
+import inha.gdgoc.domain.board.common.enums.SearchType;
+import inha.gdgoc.domain.board.common.service.AttachmentPolicy;
 import inha.gdgoc.domain.board.event.dto.request.EventBoardCreateRequest;
 import inha.gdgoc.domain.board.event.dto.request.EventBoardUpdateRequest;
 import inha.gdgoc.domain.board.event.dto.response.DeletedEventBoardSummaryResponse;
 import inha.gdgoc.domain.board.event.dto.response.EventBoardDetailResponse;
-import inha.gdgoc.domain.board.event.dto.response.EventBoardDetailResponse.AttachmentResponse;
 import inha.gdgoc.domain.board.event.dto.response.EventBoardSummaryResponse;
 import inha.gdgoc.domain.board.event.entity.EventBoard;
 import inha.gdgoc.domain.board.event.enums.EventBoardStatus;
-import inha.gdgoc.domain.board.event.enums.SearchType;
 import inha.gdgoc.domain.board.event.repository.EventBoardRepository;
 import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.user.entity.User;
@@ -32,6 +33,7 @@ public class EventBoardService {
   private final EventBoardRepository eventBoardRepository;
   private final UserRepository userRepository;
   private final S3Service s3Service;
+  private final AttachmentPolicy attachmentPolicy;
 
   public Page<EventBoardSummaryResponse> listEventBoards(
       int page, int size, SearchType searchType, String keyword, TeamType userTeam, UserRole userRole) {
@@ -70,9 +72,7 @@ public class EventBoardService {
             authorId,
             author.getName());
 
-    if (req.attachments() != null) {
-      req.attachments().forEach(a -> board.addAttachment(a.fileKey(), a.fileName()));
-    }
+    attachmentPolicy.apply(board, req.attachments());
 
     return eventBoardRepository.save(board).getId();
   }
@@ -102,7 +102,7 @@ public class EventBoardService {
 
     if (req.attachments() != null) {
       board.getAttachments().clear();
-      req.attachments().forEach(a -> board.addAttachment(a.fileKey(), a.fileName()));
+      attachmentPolicy.apply(board, req.attachments());
     }
   }
 
@@ -169,10 +169,7 @@ public class EventBoardService {
     String thumbnailUrl =
         board.getThumbnailKey() != null ? s3Service.getS3FileUrl(board.getThumbnailKey()) : null;
 
-    List<AttachmentResponse> attachments =
-        board.getAttachments().stream()
-            .map(a -> new AttachmentResponse(a.getId(), s3Service.getS3FileUrl(a.getFileKey()), a.getFileName()))
-            .toList();
+    List<AttachmentResponse> attachments = attachmentPolicy.toResponses(board.getAttachments());
 
     return new EventBoardDetailResponse(
         board.getId(),

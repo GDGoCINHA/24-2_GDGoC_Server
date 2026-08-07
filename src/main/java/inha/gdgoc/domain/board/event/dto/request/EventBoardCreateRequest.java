@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.board.event.dto.request;
 
+import inha.gdgoc.domain.board.common.dto.AttachmentEntry;
 import inha.gdgoc.domain.user.enums.TeamType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
@@ -22,6 +23,4 @@ public record EventBoardCreateRequest(
   private boolean isEventPeriodValid() {
     return eventStartDate == null || eventEndDate == null || !eventEndDate.isBefore(eventStartDate);
   }
-
-  public record AttachmentEntry(@NotBlank String fileKey, @NotBlank String fileName) {}
 }

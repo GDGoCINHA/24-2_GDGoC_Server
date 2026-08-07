@@ -50,3 +50,10 @@ docker-compose-local.yml
 ### Claude Code ###
 # 팀 공유 설정(.claude/settings.json)은 커밋하고 개인 설정만 제외
 .claude/settings.local.json
+
+### Superpowers ###
+# SDD 작업용 스크래치(원장·브리프·리뷰 패키지). 커밋 대상 아님
+.superpowers/
+# spec·plan 전문도 커밋하지 않는다. 결론만 .claude/rules/ 로 승격한다.
+# 판정 기준은 .claude/rules/artifact-lifecycle.md 가 정본이다.
+docs/superpowers/

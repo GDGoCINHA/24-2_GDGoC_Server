@@ -11,6 +11,9 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetUrlRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
@@ -64,6 +67,23 @@ public class S3Service {
         return s3Client.utilities()
             .getUrl(GetUrlRequest.builder().bucket(s3Properties.getBucket()).key(key).build())
             .toExternalForm();
+    }
+
+    /**
+     * 객체의 크기를 바이트로 반환한다. 키가 없으면 null.
+     *
+     * <p>presigned 업로드는 서버가 완료를 알 수 없으므로, 첨부를 저장하기 전에 이 호출로 실제 업로드 여부를 확인한다.
+     */
+    public Long getObjectSize(String key) {
+        try {
+            HeadObjectResponse res = s3Client.headObject(
+                HeadObjectRequest.builder().bucket(s3Properties.getBucket()).key(key).build());
+            return res.contentLength();
+        } catch (NoSuchKeyException e) {
+            // HeadObject는 응답 본문이 없어 SDK가 <Code>를 못 읽는데, DefaultS3BaseClientBuilder가 기본
+            // 등록하는 ExceptionTranslationInterceptor가 이를 보정해 404를 NoSuchKeyException으로 바꿔준다.
+            return null;
+        }
     }
 
     private String buildKey(Long userId, S3KeyType s3key, String originalFileName) {

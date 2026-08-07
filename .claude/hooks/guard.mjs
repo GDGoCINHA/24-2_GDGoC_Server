@@ -7,6 +7,8 @@
 //
 // 판정은 `judge()` 하나에 모아 두고 CLI 는 입출력만 한다 — 그래야 테스트가 붙는다.
 
+import { isMainModule } from "./is-main.mjs";
+
 // 셸 툴 — 이 툴들은 command 를 못 읽으면 판정 불가로 보고 차단한다.
 const SHELL_TOOLS = new Set(["Bash", "PowerShell"]);
 
@@ -29,8 +31,18 @@ const PRODUCTION = [
   [/\bdeploy\.prod\.sh\b/, "운영 배포 스크립트다"],
   [/\bdocker-compose-prod\.yml\b/, "운영 컴포즈 파일이다"],
   // `git push -u origin main` 처럼 플래그가 끼어도 잡히도록 위치를 고정하지 않는다.
-  // 단 ref 끝이 main 일 때만 — `feature/main-menu` 는 대상이 아니다.
-  [/\bgit\s+push\b.*\bmain(\s|$)/, "main 푸시는 운영 자동 배포를 트리거한다"],
+  // 단 ref 끝이 main·master 일 때만 — `feature/main-menu` 는 대상이 아니다.
+  //
+  // 두 이름을 모두 막는 이유: Server 의 운영 브랜치는 main, Web 은 master 다.
+  // 둘 다 막으면 이 파일이 리포에 무관해져 사본이 어느 쪽이든 판정이 같고,
+  // 부모 폴더 배선에서 가드를 한 번만 호출하면 된다.
+  //
+  // 닫는 따옴표를 허용하는 이유: `git push origin "master"` 는 정상적인 셸 표현인데
+  // 예전 패턴은 뒤에 공백이나 끝만 봐서 `master"` 로 **그대로 새어나갔다.**
+  [
+    /\bgit\s+push\b.*\b(main|master)["']?(\s|$)/,
+    "main·master 푸시는 운영 자동 배포를 트리거한다",
+  ],
 ];
 
 /**
@@ -62,7 +74,7 @@ export function judge(input) {
 
 // --- CLI ------------------------------------------------------------------
 // 이 파일이 직접 실행될 때만 stdin 을 읽는다. import 하는 테스트는 여기 오지 않는다.
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"))) {
+if (isMainModule(import.meta.url, process.argv[1])) {
   let raw = "";
   process.stdin.setEncoding("utf8");
   process.stdin.on("data", (d) => (raw += d));

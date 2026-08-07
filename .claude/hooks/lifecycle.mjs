@@ -10,8 +10,12 @@
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { tellAgent } from "./agent-message.mjs";
+import { isMainModule } from "./is-main.mjs";
 
-const PROTECTED = new Set(["develop", "main", "HEAD", ""]);
+// master 는 Web 리포의 운영 브랜치다. 두 리포가 사본을 공유하므로 함께 보호한다.
+const PROTECTED = new Set(["develop", "main", "master", "HEAD", ""]);
 const PREFIXES = /^(feature|fix|chore|hotfix|refactor|test|docs)\//;
 
 /** 브랜치 이름 → 과제 이름. 과제가 아니면 null. */
@@ -29,16 +33,75 @@ export function retirementTargets({ workDirs, mergedTasks }) {
   return workDirs.filter((d) => merged.has(d));
 }
 
+/**
+ * develop 히스토리의 머지 커밋 제목 → 실제로 머지된 과제 이름.
+ *
+ * **`git branch --merged` 를 쓰지 않는 이유:** 그 목록에는 develop 에서 분기한 뒤
+ * 아직 커밋이 없는 브랜치도 들어온다. 둘 다 develop 의 조상이라 조상 관계만으로는
+ * "머지됐다"와 "아직 시작 안 했다"가 구별되지 않는다. 실제로 구현 전인
+ * `feature/board-ui` 의 작업 공간을 회수하라고 안내한 사고가 있었다.
+ *
+ * 놓치는 경우(squash·fast-forward 머지)는 있어도 **진행 중인 과제를 회수 대상으로
+ * 올리지는 않는다.** 안내를 한 번 거르는 쪽이 남의 작업을 치우는 쪽보다 싸다.
+ */
+export function tasksFromMergeCommits(subjects) {
+  const branches = [];
+  for (const s of subjects ?? []) {
+    // `Merge branch 'X' into develop` — 따옴표 안이 소스 브랜치다.
+    // `into develop` 까지 요구한다. develop 을 작업 브랜치로 가져온 역방향 머지
+    // (`Merge remote-tracking branch 'origin/develop' into feature/eventboard`)는
+    // 그 과제가 끝났다는 뜻이 아니므로 여기서 걸러진다.
+    const local = /^Merge branch '([^']+)' into develop$/.exec(s);
+    if (local) {
+      branches.push(local[1]);
+      continue;
+    }
+    // `Merge pull request #N from <owner>/<브랜치>`
+    const pr = /^Merge pull request #\d+ from [^/]+\/(.+)$/.exec(s);
+    if (pr) branches.push(pr[1]);
+  }
+  // 포크 간 동기화 PR 은 소스가 develop 이므로 taskFromBranch 가 null 로 거른다.
+  return branches.map((b) => taskFromBranch(b)).filter(Boolean);
+}
+
 /** 이 명령이 PR 생성인가. `gh pr view`·`merge`·`list` 는 아니다. */
 export function isPrCreate(command) {
   return typeof command === "string" && /\bgh\s+pr\s+create\b/.test(command);
 }
 
+/** `--repo <path>` 의 값. 없으면 현재 디렉터리 — 리포 안 세션은 인자가 필요 없다. */
+export function parseRepo(argv) {
+  const i = argv.indexOf("--repo");
+  return i >= 0 && argv[i + 1] ? argv[i + 1] : ".";
+}
+
+/**
+ * 안내에 찍을 작업 공간 경로.
+ * 부모 폴더 세션에서는 cwd 가 리포 밖이므로 리포 이름이 앞에 붙어야
+ * **찍힌 명령을 그대로 실행할 수 있다.**
+ */
+export function workPath(repo, task) {
+  return repo === "." ? `.claude/work/${task}` : `${repo}/.claude/work/${task}`;
+}
+
+/** 회수 안내. 대상이 없으면 null — 조건을 만족할 때만 말한다. */
+export function retirementNotice({ repo, targets }) {
+  if (!targets.length) return null;
+  const moves = targets
+    .map((t) => `  mv ${workPath(repo, t)} ${workPath(repo, t).replace("/work/", "/attic/")}`)
+    .join("\n");
+  return (
+    `[산출물 수명] 머지가 끝난 과제의 작업 공간이 남아 있다: ${targets.join(", ")}\n` +
+    moves +
+    "\n삭제가 아니라 이동이다. 되돌릴 수 있다."
+  );
+}
+
 /** PR 직전에 띄울 승격 안내. 판정할 게 없으면 null. */
-export function promotionNotice({ task, workFileCount }) {
+export function promotionNotice({ repo, task, workFileCount }) {
   if (!task || workFileCount <= 0) return null;
   return [
-    `[산출물 수명] .claude/work/${task}/ 에 파일 ${workFileCount}개가 있다.`,
+    `[산출물 수명] ${workPath(repo, task)}/ 에 파일 ${workFileCount}개가 있다.`,
     "PR 을 올리기 전에 레포에 남길 것을 판정하라.",
     "  · 남긴다면 docs/<주제>.md 최종본으로 쓰고 기존 문서에 엮는다.",
     "    최종본은 근거·판정 사유·재생성 방법 셋을 담아야 작업 공간을 버릴 수 있다.",
@@ -49,21 +112,22 @@ export function promotionNotice({ task, workFileCount }) {
 
 // --- 수집 ------------------------------------------------------------------
 
-const git = (...args) => {
+const git = (repo, ...args) => {
   try {
-    return execFileSync("git", args, { encoding: "utf8" }).trim();
+    return execFileSync("git", ["-C", repo, ...args], { encoding: "utf8" }).trim();
   } catch {
     return "";
   }
 };
 
-function currentBranch() {
-  return git("rev-parse", "--abbrev-ref", "HEAD");
+function currentBranch(repo) {
+  return git(repo, "rev-parse", "--abbrev-ref", "HEAD");
 }
 
-function workDirs() {
-  if (!existsSync(".claude/work")) return [];
-  return readdirSync(".claude/work", { withFileTypes: true })
+function workDirs(repo) {
+  const dir = join(repo, ".claude/work");
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { withFileTypes: true })
     .filter((e) => e.isDirectory())
     .map((e) => e.name);
 }
@@ -77,36 +141,34 @@ function countFiles(dir) {
   return n;
 }
 
-/** develop 에 이미 들어간 브랜치들의 과제 이름. */
-function mergedTasks() {
-  const out = git("branch", "--merged", "origin/develop", "--format=%(refname:short)");
+/** develop 에 이미 들어간 과제 이름. 판정 근거는 `tasksFromMergeCommits` 주석 참조. */
+function mergedTasks(repo) {
+  const out = git(repo, "log", "origin/develop", "--merges", "--format=%s");
   if (!out) return [];
-  return out
-    .split("\n")
-    .map((b) => taskFromBranch(b.trim()))
-    .filter(Boolean);
+  return tasksFromMergeCommits(out.split("\n"));
 }
 
 // --- CLI -------------------------------------------------------------------
 // stdin 은 읽지 않는다. 이 훅은 훅 입력이 아니라 레포 상태를 본다.
-//   node lifecycle.mjs retire    → 회수 대상 보고 (Stop)
-//   node lifecycle.mjs promote   → 승격 안내 (PreToolUse, gh pr create 직전)
+//   node lifecycle.mjs retire  [--repo <path>]  → 회수 대상 보고 (Stop)
+//   node lifecycle.mjs promote [--repo <path>]  → 승격 안내 (PreToolUse, gh pr create 직전)
+//
+// `--repo` 기본값은 `.` 이다. 부모 폴더에서 띄운 세션은 cwd 가 리포 밖이므로
+// 대상 리포를 명시해야 한다 — 없으면 조용히 아무것도 찾지 못한다.
 
-const isMain =
-  process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
+const isMain = isMainModule(import.meta.url, process.argv[1]);
 
 if (isMain) {
   const mode = process.argv[2];
+  const repo = parseRepo(process.argv);
 
   if (mode === "retire") {
-    const targets = retirementTargets({ workDirs: workDirs(), mergedTasks: mergedTasks() });
-    if (targets.length) {
-      console.error(
-        `[산출물 수명] 머지가 끝난 과제의 작업 공간이 남아 있다: ${targets.join(", ")}\n` +
-          targets.map((t) => `  mv .claude/work/${t} .claude/attic/${t}`).join("\n") +
-          "\n삭제가 아니라 이동이다. 되돌릴 수 있다."
-      );
-    }
+    const notice = retirementNotice({
+      repo,
+      targets: retirementTargets({ workDirs: workDirs(repo), mergedTasks: mergedTasks(repo) }),
+    });
+    // 평문 stdout 은 에이전트에 닿지 않는다 — `agent-message.mjs` 주석 참조.
+    if (notice) tellAgent("Stop", notice);
     process.exit(0);
   }
 
@@ -125,16 +187,19 @@ if (isMain) {
       }
       if (!isPrCreate(command)) process.exit(0);
 
-      const task = taskFromBranch(currentBranch());
+      const task = taskFromBranch(currentBranch(repo));
       const notice = promotionNotice({
+        repo,
         task,
-        workFileCount: task ? countFiles(`.claude/work/${task}`) : 0,
+        workFileCount: task ? countFiles(join(repo, ".claude/work", task)) : 0,
       });
-      if (notice) console.error(notice);
+      // PreToolUse 는 stdout 이 JSON 제어 채널이다. 평문을 흘리면 파싱과 섞이므로
+      // 안내도 반드시 JSON 으로 싣는다. 이 훅은 차단하지 않으므로 결정 필드는 없다.
+      if (notice) tellAgent("PreToolUse", notice);
       process.exit(0);
     });
   } else if (mode !== "retire") {
-    console.error("사용법: lifecycle.mjs <retire|promote>");
+    console.error("사용법: lifecycle.mjs <retire|promote> [--repo <path>]");
     process.exit(2);
   }
 }

@@ -33,6 +33,16 @@ test("운영 배포 경로를 막는다", () => {
     "git push origin main",
     "git push origin HEAD:main",
     "git push -u origin main", // 기존 패턴은 `\S+\s+main` 이라 -u 가 끼면 새어나갔다
+    // Web 리포의 운영 브랜치는 master 다. 부모 폴더 세션에서 두 리포를 함께
+    // 다루면 이 구멍이 실제로 밟힌다.
+    "git push origin master",
+    "git push origin HEAD:master",
+    "git push -u origin master",
+    // ref 를 따옴표로 감싸도 막아야 한다. 셸에서 정상적으로 쓰이는 형태이고,
+    // 예전 패턴은 `master` 뒤에 공백이나 끝만 봤기 때문에 `master"` 로 새어나갔다.
+    'git push origin "master"',
+    "git push origin 'main'",
+    'git push origin "main"',
   ];
   for (const c of blocked) {
     assert.ok(judge(bash(c)), `막아야 한다: ${c}`);
@@ -52,6 +62,7 @@ test("정상 명령은 통과시킨다", () => {
     "git reset HEAD~1",           // --hard 가 아니다
     "git branch --merged develop",
     "git push origin feature/main-menu", // 브랜치 이름에 main 이 들어갈 뿐이다
+    "git push origin feature/master-detail", // 브랜치 이름에 master 가 들어갈 뿐이다
   ];
   for (const c of allowed) {
     assert.equal(judge(bash(c)), null, `통과해야 한다: ${c}`);

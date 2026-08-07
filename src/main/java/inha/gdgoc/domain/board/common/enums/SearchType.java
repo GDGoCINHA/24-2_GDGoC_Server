@@ -1,4 +1,4 @@
-package inha.gdgoc.domain.board.event.enums;
+package inha.gdgoc.domain.board.common.enums;
 
 public enum SearchType {
   TITLE_AND_CONTENT,

@@ -1,7 +1,7 @@
 package inha.gdgoc.domain.board.event.entity;
 
+import inha.gdgoc.domain.board.common.entity.BoardEntity;
 import inha.gdgoc.domain.user.enums.TeamType;
-import inha.gdgoc.global.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,7 +12,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,14 +23,11 @@ import lombok.NoArgsConstructor;
 @Table(name = "event_board")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class EventBoard extends BaseEntity {
+public class EventBoard extends BoardEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
-
-  @Column(nullable = false, length = 255)
-  private String title;
 
   @Column(nullable = false)
   private LocalDate eventStartDate;
@@ -46,20 +42,8 @@ public class EventBoard extends BaseEntity {
   @Column(length = 512)
   private String thumbnailKey;
 
-  @Column(nullable = false, columnDefinition = "TEXT")
-  private String content;
-
   @Column(nullable = false)
   private boolean isPublished;
-
-  @Column(name = "author_id", nullable = false)
-  private Long authorId;
-
-  @Column(name = "author_name", nullable = false, length = 100)
-  private String authorName;
-
-  @Column
-  private Instant deletedAt;
 
   @OneToMany(mappedBy = "eventBoard", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<EventBoardAttachment> attachments = new ArrayList<>();
@@ -75,28 +59,24 @@ public class EventBoard extends BaseEntity {
       Long authorId,
       String authorName) {
     EventBoard board = new EventBoard();
-    board.title = title;
+    board.initBoard(title, content, authorId, authorName);
     board.eventStartDate = eventStartDate;
     board.eventEndDate = eventEndDate;
     board.organizingTeam = organizingTeam;
     board.thumbnailKey = thumbnailKey;
-    board.content = content;
     board.isPublished = isPublished;
-    board.authorId = authorId;
-    board.authorName = authorName;
     return board;
   }
 
-  public void softDelete() {
-    this.deletedAt = Instant.now();
+  @Override
+  public void addFileAttachment(String fileKey, String fileName, Long fileSize, int sortOrder) {
+    this.attachments.add(
+        EventBoardAttachment.createFile(this, fileKey, fileName, fileSize, sortOrder));
   }
 
-  public void restore() {
-    this.deletedAt = null;
-  }
-
-  public void addAttachment(String fileKey, String fileName) {
-    this.attachments.add(EventBoardAttachment.create(this, fileKey, fileName));
+  @Override
+  public void addLinkAttachment(String url, int sortOrder) {
+    this.attachments.add(EventBoardAttachment.createLink(this, url, sortOrder));
   }
 
   public void update(
@@ -107,12 +87,12 @@ public class EventBoard extends BaseEntity {
       String thumbnailKey,
       String content,
       Boolean isPublished) {
-    if (title != null) this.title = title;
+    updateTitle(title);
+    updateContent(content);
     if (eventStartDate != null) this.eventStartDate = eventStartDate;
     if (eventEndDate != null) this.eventEndDate = eventEndDate;
     if (organizingTeam != null) this.organizingTeam = organizingTeam;
     if (thumbnailKey != null) this.thumbnailKey = thumbnailKey;
-    if (content != null) this.content = content;
     if (isPublished != null) this.isPublished = isPublished;
   }
 }

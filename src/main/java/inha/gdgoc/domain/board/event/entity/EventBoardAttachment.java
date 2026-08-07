@@ -1,7 +1,6 @@
 package inha.gdgoc.domain.board.event.entity;
 
-import inha.gdgoc.global.entity.BaseEntity;
-import jakarta.persistence.Column;
+import inha.gdgoc.domain.board.common.entity.BoardAttachment;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -18,7 +17,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "event_board_attachment")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class EventBoardAttachment extends BaseEntity {
+public class EventBoardAttachment extends BoardAttachment {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,17 +27,18 @@ public class EventBoardAttachment extends BaseEntity {
   @JoinColumn(name = "event_board_id", nullable = false)
   private EventBoard eventBoard;
 
-  @Column(nullable = false, length = 512)
-  private String fileKey;
-
-  @Column(nullable = false, length = 255)
-  private String fileName;
-
-  static EventBoardAttachment create(EventBoard eventBoard, String fileKey, String fileName) {
+  public static EventBoardAttachment createFile(
+      EventBoard eventBoard, String fileKey, String fileName, Long fileSize, int sortOrder) {
     EventBoardAttachment attachment = new EventBoardAttachment();
     attachment.eventBoard = eventBoard;
-    attachment.fileKey = fileKey;
-    attachment.fileName = fileName;
+    attachment.initFile(fileKey, fileName, fileSize, sortOrder);
+    return attachment;
+  }
+
+  public static EventBoardAttachment createLink(EventBoard eventBoard, String url, int sortOrder) {
+    EventBoardAttachment attachment = new EventBoardAttachment();
+    attachment.eventBoard = eventBoard;
+    attachment.initLink(url, sortOrder);
     return attachment;
   }
 }
