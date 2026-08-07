@@ -18,10 +18,12 @@ import inha.gdgoc.domain.recruit.member.dto.request.RecruitMemberMemoRequest;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckEmailResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckPhoneNumberResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.CheckStudentIdResponse;
+import inha.gdgoc.domain.recruit.member.dto.response.RecruitMemberPeriodResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.RecruitMemberSummaryResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.SpecifiedMemberResponse;
 import inha.gdgoc.domain.resource.dto.response.PresignedUploadResponse;
 import inha.gdgoc.domain.recruit.member.entity.RecruitMember;
+import inha.gdgoc.domain.recruit.member.service.RecruitMemberPeriodService;
 import inha.gdgoc.domain.recruit.member.service.RecruitMemberService;
 import inha.gdgoc.global.dto.response.ApiResponse;
 import inha.gdgoc.global.dto.response.PageMeta;
@@ -70,6 +72,7 @@ public class RecruitMemberController {
                     + " T(inha.gdgoc.domain.user.enums.TeamType).HR))";
 
     private final RecruitMemberService recruitMemberService;
+    private final RecruitMemberPeriodService recruitMemberPeriodService;
 
     public record ProofFilePresignedUploadRequest(
             @NotBlank String fileName,
@@ -78,10 +81,21 @@ public class RecruitMemberController {
     ) {
     }
 
+    /**
+     * 부원 모집 기간. 코어의 {@code GET /api/v1/recruit/core/period} 와 같은 역할이다.
+     *
+     * <p>비로그인 방문자가 지원 화면에 들어오기 전에 본다. SecurityConfig 의 permitAll 에 넣어야 한다.
+     */
+    @GetMapping("/period")
+    public ResponseEntity<RecruitMemberPeriodResponse> period() {
+        return ResponseEntity.ok(recruitMemberPeriodService.getPeriod());
+    }
+
     @PostMapping(value = "/apply", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Void, Void>> recruitMemberAdd(
             @RequestBody Map<String, Object> applicationRequest
     ) {
+        recruitMemberPeriodService.validateOpen();
         recruitMemberService.addRecruitMember(applicationRequest, null);
 
         return ResponseEntity.ok(ApiResponse.ok(MEMBER_SAVE_SUCCESS));
@@ -92,15 +106,18 @@ public class RecruitMemberController {
             @RequestPart("request") Map<String, Object> applicationRequest,
             @RequestPart(value = "file", required = false) MultipartFile file
     ) {
+        recruitMemberPeriodService.validateOpen();
         recruitMemberService.addRecruitMember(applicationRequest, file);
 
         return ResponseEntity.ok(ApiResponse.ok(MEMBER_SAVE_SUCCESS));
     }
 
+    /** 증빙 파일도 지원의 일부다. 기간 밖에 업로드 URL 만 받아두는 길을 열어두지 않는다. */
     @PostMapping("/apply/proof-file/presigned-upload")
     public ResponseEntity<ApiResponse<PresignedUploadResponse, Void>> createProofFilePresignedUpload(
             @Valid @RequestBody ProofFilePresignedUploadRequest request
     ) {
+        recruitMemberPeriodService.validateOpen();
         PresignedUploadResponse response = recruitMemberService.createProofFilePresignedUpload(
                 request.fileName(),
                 request.contentType(),

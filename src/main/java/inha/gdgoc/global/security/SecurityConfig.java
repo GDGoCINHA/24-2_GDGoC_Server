@@ -55,6 +55,7 @@ public class SecurityConfig {
                     "/api/v1/recruit/member/check/**",
                     "/api/v1/recruit/member/memo",
                     "/api/v1/recruit/core/period",
+                    "/api/v1/recruit/member/period",
                     "/api/v1/fileupload",
                     "/api/v1/manito/verify")
                 .permitAll()

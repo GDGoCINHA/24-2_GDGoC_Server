@@ -57,6 +57,10 @@ app:
       # 자기 상수로 검증하므로 여기 값이 무엇인지는 중요하지 않다.
       open-at: 2026-08-10T00:00:00+09:00
       close-at: 2026-08-30T23:59:59+09:00
+    member:
+      # 같은 이유의 고정값. 기간 동작은 RecruitMemberPeriodServiceTest 가 자기 상수로 검증한다.
+      open-at: 2026-08-17T00:00:00+09:00
+      close-at: 2026-09-09T23:59:59+09:00
 
 google:
   client-id: test-client-id
