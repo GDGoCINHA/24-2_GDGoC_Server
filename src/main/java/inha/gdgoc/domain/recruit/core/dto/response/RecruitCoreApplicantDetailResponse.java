@@ -21,10 +21,8 @@ public record RecruitCoreApplicantDetailResponse(
     Instant updatedAt
 ) {
 
-    public static RecruitCoreApplicantDetailResponse from(RecruitCoreApplication entity) {
-        return from(entity, entity.getFileUrls());
-    }
-
+    // fileUrls 는 반드시 호출부에서 S3 URL 로 변환해 넘긴다.
+    // 엔티티에 저장된 값은 S3 키이므로, 그대로 내려주면 클라이언트에서 링크가 열리지 않는다.
     public static RecruitCoreApplicantDetailResponse from(RecruitCoreApplication entity, List<String> fileUrls) {
         return new RecruitCoreApplicantDetailResponse(
             entity.getId(),
