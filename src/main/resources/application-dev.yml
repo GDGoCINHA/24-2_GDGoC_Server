@@ -68,16 +68,18 @@ app:
   mail:
     recruit-from: ${APP_MAIL_RECRUIT_FROM:}
   recruit:
+    # 개발 서버는 지원 흐름을 아무 때나 눌러볼 수 있도록 상시 열어 둔다.
+    # 운영 일정은 application-prod.yml 이 따로 들고 있으므로 여기 값은 운영에 영향이 없다.
     core:
       # 모집 기간. 코드가 아니라 여기서 바꾼다 — 2차 모집은 환경변수만 고치면 된다.
       # KST 오프셋을 그대로 쓴다 (OffsetDateTime.parse 로 읽는다).
-      open-at: ${RECRUIT_CORE_OPEN_AT:2026-08-10T00:00:00+09:00}
-      close-at: ${RECRUIT_CORE_CLOSE_AT:2026-08-30T23:59:59+09:00}
+      open-at: ${RECRUIT_CORE_OPEN_AT:2026-01-01T00:00:00+09:00}
+      close-at: ${RECRUIT_CORE_CLOSE_AT:2027-12-31T23:59:59+09:00}
     member:
       # 부원 모집 기간. 코어와 같은 방식으로 서버가 판정한다 — 전에는 기간 개념이 없어
       # 오픈 전에도 지원이 됐다. 웹의 src/constant/recruitSchedule.ts 와 값을 맞춘다.
-      open-at: ${RECRUIT_MEMBER_OPEN_AT:2026-08-17T00:00:00+09:00}
-      close-at: ${RECRUIT_MEMBER_CLOSE_AT:2026-09-09T23:59:59+09:00}
+      open-at: ${RECRUIT_MEMBER_OPEN_AT:2026-01-01T00:00:00+09:00}
+      close-at: ${RECRUIT_MEMBER_CLOSE_AT:2027-12-31T23:59:59+09:00}
 
 google:
   client-id: ${GOOGLE_CLIENT_ID}
