@@ -72,7 +72,7 @@ app:
       # 모집 기간. 코드가 아니라 여기서 바꾼다 — 2차 모집은 환경변수만 고치면 된다.
       # KST 오프셋을 그대로 쓴다 (OffsetDateTime.parse 로 읽는다).
       open-at: ${RECRUIT_CORE_OPEN_AT:2026-08-10T00:00:00+09:00}
-      close-at: ${RECRUIT_CORE_CLOSE_AT:2026-08-30T23:59:59+09:00}
+      close-at: ${RECRUIT_CORE_CLOSE_AT:2026-08-23T23:59:59+09:00}
     member:
       # 부원 모집 기간. 코어와 같은 방식으로 서버가 판정한다 — 전에는 기간 개념이 없어
       # 오픈 전에도 지원이 됐다. 웹의 src/constant/recruitSchedule.ts 와 값을 맞춘다.
