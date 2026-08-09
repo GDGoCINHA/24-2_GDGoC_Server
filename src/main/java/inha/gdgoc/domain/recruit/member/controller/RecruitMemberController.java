@@ -21,6 +21,7 @@ import inha.gdgoc.domain.recruit.member.dto.response.CheckStudentIdResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.RecruitMemberPeriodResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.RecruitMemberSummaryResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.SpecifiedMemberResponse;
+import inha.gdgoc.domain.recruit.member.enums.AdmissionSemester;
 import inha.gdgoc.domain.resource.dto.response.PresignedUploadResponse;
 import inha.gdgoc.domain.recruit.member.entity.RecruitMember;
 import inha.gdgoc.domain.recruit.member.service.RecruitMemberPeriodService;
@@ -207,6 +208,9 @@ public class RecruitMemberController {
             @Parameter(description = "검색어(이름 부분 일치). 없으면 전체 조회", example = "소연")
             @RequestParam(required = false) String question,
 
+            @Parameter(description = "지원 학기. 없으면 전체 조회", example = "Y26_2")
+            @RequestParam(required = false) AdmissionSemester admissionSemester,
+
             @Parameter(description = "페이지(0부터 시작)", example = "0")
             @RequestParam(defaultValue = "0") int page,
 
@@ -222,9 +226,8 @@ public class RecruitMemberController {
         Direction direction = "ASC".equalsIgnoreCase(dir) ? Direction.ASC : Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort));
 
-        Page<RecruitMember> memberPage = (question == null || question.isBlank())
-                ? recruitMemberService.findAllMembersPage(pageable)
-                : recruitMemberService.searchMembersByNamePage(question, pageable);
+        Page<RecruitMember> memberPage =
+                recruitMemberService.searchMembers(question, admissionSemester, pageable);
 
         List<RecruitMemberSummaryResponse> list = memberPage
                 .map(RecruitMemberSummaryResponse::from)

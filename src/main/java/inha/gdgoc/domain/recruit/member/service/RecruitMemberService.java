@@ -18,6 +18,7 @@ import inha.gdgoc.domain.recruit.member.dto.response.CheckStudentIdResponse;
 import inha.gdgoc.domain.recruit.member.dto.response.SpecifiedMemberResponse;
 import inha.gdgoc.domain.recruit.member.entity.Answer;
 import inha.gdgoc.domain.recruit.member.entity.RecruitMember;
+import inha.gdgoc.domain.recruit.member.enums.AdmissionSemester;
 import inha.gdgoc.domain.recruit.member.enums.InputType;
 import inha.gdgoc.domain.recruit.member.enums.SurveyType;
 import inha.gdgoc.domain.recruit.member.exception.RecruitMemberException;
@@ -32,6 +33,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -168,14 +170,31 @@ public class RecruitMemberService {
         else m.markUnpaid();
     }
 
+    /**
+     * 이름 검색과 지원 학기를 조합해 조회한다. 둘 다 선택이며 없으면 전체를 본다.
+     *
+     * <p>조건이 늘 때마다 쿼리 메서드가 조합 수만큼 불어나므로 Specification 으로 둔다.
+     * 관리자 코어 지원서 조회(RecruitCoreAdminService)와 같은 방식이다.
+     */
     @Transactional(readOnly = true)
-    public Page<RecruitMember> findAllMembersPage(Pageable pageable) {
-        return recruitMemberRepository.findAll(pageable);
-    }
+    public Page<RecruitMember> searchMembers(
+            String name,
+            AdmissionSemester admissionSemester,
+            Pageable pageable
+    ) {
+        Specification<RecruitMember> spec = (root, query, builder) -> builder.conjunction();
 
-    @Transactional(readOnly = true)
-    public Page<RecruitMember> searchMembersByNamePage(String name, Pageable pageable) {
-        return recruitMemberRepository.findByNameContainingIgnoreCase(name, pageable);
+        if (name != null && !name.isBlank()) {
+            String keyword = "%" + name.trim().toLowerCase() + "%";
+            spec = spec.and((root, query, builder) ->
+                    builder.like(builder.lower(root.get("name")), keyword));
+        }
+        if (admissionSemester != null) {
+            spec = spec.and((root, query, builder) ->
+                    builder.equal(root.get("admissionSemester"), admissionSemester));
+        }
+
+        return recruitMemberRepository.findAll(spec, pageable);
     }
 
     private String normalizePhoneNumber(String phoneNumber) {
