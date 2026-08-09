@@ -4,14 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import inha.gdgoc.domain.admin.recruit.core.dto.request.RecruitCoreApplicationAcceptRequest;
 import inha.gdgoc.domain.admin.recruit.core.dto.request.RecruitCoreApplicationRejectRequest;
 import inha.gdgoc.domain.admin.recruit.core.dto.response.RecruitCoreApplicationDecisionResponse;
+import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicantDetailResponse;
 import inha.gdgoc.domain.recruit.core.entity.RecruitCoreApplication;
 import inha.gdgoc.domain.recruit.core.enums.RecruitCoreResultStatus;
 import inha.gdgoc.domain.recruit.core.repository.RecruitCoreApplicationRepository;
+import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.TeamType;
 import inha.gdgoc.domain.user.enums.UserRole;
@@ -35,8 +38,40 @@ class RecruitCoreAdminServiceTest {
     @Mock
     private RecruitCoreApplicationRepository repository;
 
+    @Mock
+    private S3Service s3Service;
+
     @InjectMocks
     private RecruitCoreAdminService adminService;
+
+    // 관리자 상세 조회가 S3 키를 그대로 내려주면 대시보드의 <a href> 가 상대 경로가 되어
+    // 첨부 파일이 열리지 않는다. 본인 조회(RecruitCoreApplicationService) 는 변환하는데
+    // 관리자 경로만 빠져 있었다.
+    @Test
+    void getApplicationDetail_convertsS3KeyToUrl() {
+        String key = "user/12/recruitCore/3f9a-resume.pdf";
+        String url = "https://bucket.s3.ap-northeast-2.amazonaws.com/" + key;
+        RecruitCoreApplication application = createApplication(300L, createUser(1L), List.of(key));
+        when(repository.findById(300L)).thenReturn(Optional.of(application));
+        when(s3Service.getS3FileUrl(key)).thenReturn(url);
+
+        RecruitCoreApplicantDetailResponse response = adminService.getApplicationDetail(300L);
+
+        assertThat(response.fileUrls()).containsExactly(url);
+    }
+
+    // 이미 완전한 URL 로 저장된 과거 데이터는 다시 감싸지 않는다.
+    @Test
+    void getApplicationDetail_keepsAbsoluteUrlAsIs() {
+        String url = "https://cdn.example.com/legacy.pdf";
+        RecruitCoreApplication application = createApplication(301L, createUser(1L), List.of(url));
+        when(repository.findById(301L)).thenReturn(Optional.of(application));
+
+        RecruitCoreApplicantDetailResponse response = adminService.getApplicationDetail(301L);
+
+        assertThat(response.fileUrls()).containsExactly(url);
+        verifyNoInteractions(s3Service);
+    }
 
     @Test
     void searchApplications_buildsSpecificationAndDelegates() {
@@ -107,6 +142,10 @@ class RecruitCoreAdminServiceTest {
     }
 
     private RecruitCoreApplication createApplication(Long id, User user) {
+        return createApplication(id, user, List.of());
+    }
+
+    private RecruitCoreApplication createApplication(Long id, User user, List<String> fileUrls) {
         RecruitCoreApplication application = RecruitCoreApplication.builder()
             .user(user)
             .session("2026-1")
@@ -120,7 +159,7 @@ class RecruitCoreAdminServiceTest {
             .wish("wish")
             .strengths("strengths")
             .pledge("pledge")
-            .fileUrls(List.of())
+            .fileUrls(fileUrls)
             .resultStatus(RecruitCoreResultStatus.SUBMITTED)
             .build();
         setId(application, id);

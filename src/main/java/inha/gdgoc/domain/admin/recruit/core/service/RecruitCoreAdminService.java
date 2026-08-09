@@ -7,12 +7,14 @@ import inha.gdgoc.domain.admin.recruit.core.dto.response.RecruitCoreApplicationD
 import inha.gdgoc.domain.recruit.core.entity.RecruitCoreApplication;
 import inha.gdgoc.domain.recruit.core.enums.RecruitCoreResultStatus;
 import inha.gdgoc.domain.recruit.core.repository.RecruitCoreApplicationRepository;
+import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.TeamType;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.GlobalErrorCode;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class RecruitCoreAdminService {
 
     private final RecruitCoreApplicationRepository repository;
+    private final S3Service s3Service;
 
     @Transactional(readOnly = true)
     public Page<RecruitCoreApplication> searchApplications(
@@ -44,9 +47,28 @@ public class RecruitCoreAdminService {
         return repository.findAll(spec, pageable);
     }
 
+    // 저장된 fileUrls 는 S3 키다(웹이 presigned 업로드 후 key 를 보낸다).
+    // 키를 그대로 내려주면 대시보드의 링크가 상대 경로가 되어 첨부 파일이 열리지 않는다.
     @Transactional(readOnly = true)
     public RecruitCoreApplicantDetailResponse getApplicationDetail(Long applicationId) {
-        return RecruitCoreApplicantDetailResponse.from(getApplication(applicationId));
+        RecruitCoreApplication application = getApplication(applicationId);
+        return RecruitCoreApplicantDetailResponse.from(application, toS3FileUrls(application.getFileUrls()));
+    }
+
+    private List<String> toS3FileUrls(List<String> fileKeys) {
+        if (fileKeys == null || fileKeys.isEmpty()) {
+            return List.of();
+        }
+        return fileKeys.stream()
+            .map(this::toS3FileUrl)
+            .toList();
+    }
+
+    private String toS3FileUrl(String fileKey) {
+        if (fileKey.startsWith("http://") || fileKey.startsWith("https://")) {
+            return fileKey;
+        }
+        return s3Service.getS3FileUrl(fileKey);
     }
 
     @Transactional
