@@ -26,6 +26,7 @@ import inha.gdgoc.domain.resource.dto.response.PresignedUploadResponse;
 import inha.gdgoc.domain.recruit.member.entity.RecruitMember;
 import inha.gdgoc.domain.recruit.member.service.RecruitMemberPeriodService;
 import inha.gdgoc.domain.recruit.member.service.RecruitMemberService;
+import inha.gdgoc.global.config.jwt.TokenProvider.CustomUserDetails;
 import inha.gdgoc.global.dto.response.ApiResponse;
 import inha.gdgoc.global.dto.response.PageMeta;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,6 +47,7 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -162,6 +164,22 @@ public class RecruitMemberController {
         CheckEmailResponse response = recruitMemberService.isRegisteredEmail(request.getEmail());
 
         return ResponseEntity.ok(ApiResponse.ok(EMAIL_DUPLICATION_CHECK_SUCCESS, response));
+    }
+
+    /**
+     * 마이페이지에서 본인 지원서를 연다.
+     *
+     * <p>{@code /{memberId}} 보다 먼저 둔다. 세그먼트 수가 달라 충돌하지는 않지만 읽는 순서를 맞춘다.
+     */
+    @Operation(summary = "나의 부원 지원서 조회", security = {@SecurityRequirement(name = "BearerAuth")})
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/applications/me")
+    public ResponseEntity<ApiResponse<SpecifiedMemberResponse, Void>> getMyApplication(
+            @AuthenticationPrincipal CustomUserDetails me
+    ) {
+        SpecifiedMemberResponse response = recruitMemberService.findMyApplication(me.getUserId());
+
+        return ResponseEntity.ok(ApiResponse.ok(MEMBER_RETRIEVED_SUCCESS, response));
     }
 
     @Operation(summary = "특정 멤버 가입 신청서 조회", security = {@SecurityRequirement(name = "BearerAuth")})
