@@ -75,9 +75,17 @@ app:
       close-at: ${RECRUIT_CORE_CLOSE_AT:2026-09-08T23:59:59+09:00}
     member:
       # 부원 모집 기간. 코어와 같은 방식으로 서버가 판정한다 — 전에는 기간 개념이 없어
-      # 오픈 전에도 지원이 됐다. 웹의 src/constant/recruitSchedule.ts 와 값을 맞춘다.
+      # 오픈 전에도 지원이 됐다.
+      #
+      # 부원은 코어와 달리 **상시 모집**이다. 그래서 close-at 은 2026-2 학기가 끝나는 날까지
+      # 열어 둔다. 웹이 카드에 보여주는 '집중 모집 기간'(8/17 ~ 9/9)은 이 값이 아니라
+      # 웹 상수 src/constant/recruitSchedule.ts 의 MEMBER_SCHEDULE 이 출처다 — 표시 전용이며
+      # 게이팅과 무관하다. 일정이 바뀌면 그쪽도 함께 고친다.
+      #
+      # 2027-02-01 을 넘기면 SemesterCalculator 가 Y27_1 을 돌려주므로, 이번 학기 지원서를
+      # 한 학기로 모으려면 1월 말이 마지노선이다.
       open-at: ${RECRUIT_MEMBER_OPEN_AT:2026-08-17T00:00:00+09:00}
-      close-at: ${RECRUIT_MEMBER_CLOSE_AT:2026-09-09T23:59:59+09:00}
+      close-at: ${RECRUIT_MEMBER_CLOSE_AT:2027-01-31T23:59:59+09:00}
 
 google:
   client-id: ${GOOGLE_CLIENT_ID}
