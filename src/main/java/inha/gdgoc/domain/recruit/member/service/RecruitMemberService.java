@@ -78,7 +78,7 @@ public class RecruitMemberService {
         normalizeProofFileUrl(answers);
 
         AdmissionSemester semester = semesterCalculator.currentSemester();
-        validateNotAppliedThisSemester(memberRequest.getEmail(), semester);
+        validateNotAppliedThisSemester(memberRequest, semester);
 
         RecruitMember member = memberRequest.toEntity(semester, majorNormalizer);
         recruitMemberRepository.save(member);
@@ -138,21 +138,26 @@ public class RecruitMemberService {
         recruitMemberMemoRepository.save(recruitMemberMemoRequest.toEntity());
     }
 
+    // 중복 확인 3종은 전부 이번 학기만 본다. 전역으로 보면 지난 학기 지원자가
+    // 「중복입니다」에 걸려 이번 학기 지원을 시작조차 못 한다.
     public CheckStudentIdResponse isRegisteredStudentId(String studentId) {
-        boolean exists = recruitMemberRepository.existsByStudentId(studentId);
+        boolean exists = recruitMemberRepository.existsByStudentIdAndAdmissionSemester(
+                studentId, semesterCalculator.currentSemester());
 
         return new CheckStudentIdResponse(exists);
     }
 
     public CheckPhoneNumberResponse isRegisteredPhoneNumber(String phoneNumber) {
         String cleanPhone = normalizePhoneNumber(phoneNumber);
-        boolean exists = recruitMemberRepository.existsByPhoneNumber(cleanPhone);
+        boolean exists = recruitMemberRepository.existsByPhoneNumberAndAdmissionSemester(
+                cleanPhone, semesterCalculator.currentSemester());
 
         return new CheckPhoneNumberResponse(exists);
     }
 
     public CheckEmailResponse isRegisteredEmail(String email) {
-        boolean exists = recruitMemberRepository.existsByEmailIgnoreCase(email.trim());
+        boolean exists = recruitMemberRepository.existsByEmailIgnoreCaseAndAdmissionSemester(
+                email.trim(), semesterCalculator.currentSemester());
 
         return new CheckEmailResponse(exists);
     }
@@ -165,7 +170,7 @@ public class RecruitMemberService {
     }
 
     /**
-     * 로그인 사용자가 낸 부원 지원서를 돌려준다. 마이페이지에서 쓴다.
+     * 로그인 사용자가 <b>이번 학기</b>에 낸 부원 지원서를 돌려준다. 마이페이지에서 쓴다.
      *
      * <p>부원 지원은 비로그인으로 받아 계정과 이어지는 컬럼이 없다. 이메일이 유일한 연결 고리이며,
      * 로그인은 @inha.edu 계정만, 지원 폼의 도메인도 @inha.edu 고정이라 이 매칭이 성립한다.
@@ -175,7 +180,8 @@ public class RecruitMemberService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
         RecruitMember member = recruitMemberRepository
-                .findTopByEmailIgnoreCaseOrderByCreatedAtDesc(user.getEmail().trim())
+                .findByEmailIgnoreCaseAndAdmissionSemester(
+                        user.getEmail().trim(), semesterCalculator.currentSemester())
                 .orElseThrow(() -> new RecruitMemberException(RECRUIT_MEMBER_NOT_FOUND));
 
         return toSpecifiedMemberResponse(member);
@@ -189,16 +195,31 @@ public class RecruitMemberService {
     }
 
     /**
-     * 이메일당 학기 1회. 코어의 {@code findByUserIdAndSession} 검사와 같은 규칙이다.
+     * 한 학기에 한 번만 받는다 — 이메일·학번·전화번호 중 하나라도 겹치면 막는다.
      *
      * <p>화면에서도 중복 확인 버튼으로 걸러내지만 그건 안내일 뿐이다. 지원 API 는 인증 없이 열려 있어
      * 주소를 직접 치면 그대로 들어온다 — 실제 차단은 여기서 한다.
+     *
+     * <p>학번·전화번호는 DB 에도 (값, 학기) 복합 UNIQUE 가 있다. 그것만 믿으면 중복 제출이
+     * 제약 위반 500 으로 나가므로, 여기서 먼저 걸러 409 로 답한다.
      */
-    private void validateNotAppliedThisSemester(String email, AdmissionSemester semester) {
-        if (email == null || email.isBlank()) {
-            return;
+    private void validateNotAppliedThisSemester(RecruitMemberRequest request, AdmissionSemester semester) {
+        String email = request.getEmail();
+        if (email != null && !email.isBlank()
+                && recruitMemberRepository.existsByEmailIgnoreCaseAndAdmissionSemester(email.trim(), semester)) {
+            throw new RecruitMemberException(RECRUIT_MEMBER_ALREADY_APPLIED);
         }
-        if (recruitMemberRepository.existsByEmailIgnoreCaseAndAdmissionSemester(email.trim(), semester)) {
+
+        String studentId = request.getStudentId();
+        if (studentId != null && !studentId.isBlank()
+                && recruitMemberRepository.existsByStudentIdAndAdmissionSemester(studentId.trim(), semester)) {
+            throw new RecruitMemberException(RECRUIT_MEMBER_ALREADY_APPLIED);
+        }
+
+        String phoneNumber = request.getPhoneNumber();
+        if (phoneNumber != null && !phoneNumber.isBlank()
+                && recruitMemberRepository.existsByPhoneNumberAndAdmissionSemester(
+                        normalizePhoneNumber(phoneNumber), semester)) {
             throw new RecruitMemberException(RECRUIT_MEMBER_ALREADY_APPLIED);
         }
     }
