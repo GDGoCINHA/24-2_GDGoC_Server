@@ -25,6 +25,10 @@ import inha.gdgoc.domain.recruit.member.exception.RecruitMemberException;
 import inha.gdgoc.domain.recruit.member.repository.AnswerRepository;
 import inha.gdgoc.domain.recruit.member.repository.RecruitMemberMemoRepository;
 import inha.gdgoc.domain.recruit.member.repository.RecruitMemberRepository;
+import inha.gdgoc.domain.user.entity.User;
+import inha.gdgoc.domain.user.repository.UserRepository;
+import inha.gdgoc.global.exception.BusinessException;
+import inha.gdgoc.global.exception.GlobalErrorCode;
 import inha.gdgoc.global.util.SemesterCalculator;
 import inha.gdgoc.global.util.MajorNormalizer;
 import java.util.HashMap;
@@ -45,6 +49,7 @@ public class RecruitMemberService {
 
     private final RecruitMemberRepository recruitMemberRepository;
     private final RecruitMemberMemoRepository recruitMemberMemoRepository;
+    private final UserRepository userRepository;
     private final AnswerRepository answerRepository;
     private final ObjectMapper objectMapper;
     private final SemesterCalculator semesterCalculator;
@@ -72,8 +77,10 @@ public class RecruitMemberService {
         }
         normalizeProofFileUrl(answers);
 
-        RecruitMember member = memberRequest
-                .toEntity(semesterCalculator.currentSemester(), majorNormalizer);
+        AdmissionSemester semester = semesterCalculator.currentSemester();
+        validateNotAppliedThisSemester(memberRequest.getEmail(), semester);
+
+        RecruitMember member = memberRequest.toEntity(semester, majorNormalizer);
         recruitMemberRepository.save(member);
 
         List<Answer> answerEntities = answers.entrySet().stream()
@@ -153,10 +160,47 @@ public class RecruitMemberService {
     public SpecifiedMemberResponse findSpecifiedMember(Long id) {
         RecruitMember member = recruitMemberRepository.findById(id)
                 .orElseThrow(() -> new RecruitMemberException(RECRUIT_MEMBER_NOT_FOUND));
+
+        return toSpecifiedMemberResponse(member);
+    }
+
+    /**
+     * 로그인 사용자가 낸 부원 지원서를 돌려준다. 마이페이지에서 쓴다.
+     *
+     * <p>부원 지원은 비로그인으로 받아 계정과 이어지는 컬럼이 없다. 이메일이 유일한 연결 고리이며,
+     * 로그인은 @inha.edu 계정만, 지원 폼의 도메인도 @inha.edu 고정이라 이 매칭이 성립한다.
+     */
+    @Transactional(readOnly = true)
+    public SpecifiedMemberResponse findMyApplication(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
+        RecruitMember member = recruitMemberRepository
+                .findTopByEmailIgnoreCaseOrderByCreatedAtDesc(user.getEmail().trim())
+                .orElseThrow(() -> new RecruitMemberException(RECRUIT_MEMBER_NOT_FOUND));
+
+        return toSpecifiedMemberResponse(member);
+    }
+
+    private SpecifiedMemberResponse toSpecifiedMemberResponse(RecruitMember member) {
         List<Answer> answers = answerRepository
                 .findByRecruitMemberAndSurveyType(member, SurveyType.RECRUIT);
 
         return SpecifiedMemberResponse.from(member, answers, objectMapper);
+    }
+
+    /**
+     * 이메일당 학기 1회. 코어의 {@code findByUserIdAndSession} 검사와 같은 규칙이다.
+     *
+     * <p>화면에서도 중복 확인 버튼으로 걸러내지만 그건 안내일 뿐이다. 지원 API 는 인증 없이 열려 있어
+     * 주소를 직접 치면 그대로 들어온다 — 실제 차단은 여기서 한다.
+     */
+    private void validateNotAppliedThisSemester(String email, AdmissionSemester semester) {
+        if (email == null || email.isBlank()) {
+            return;
+        }
+        if (recruitMemberRepository.existsByEmailIgnoreCaseAndAdmissionSemester(email.trim(), semester)) {
+            throw new RecruitMemberException(RECRUIT_MEMBER_ALREADY_APPLIED);
+        }
     }
 
     @Transactional

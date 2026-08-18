@@ -179,7 +179,8 @@ public class RecruitCoreApplicationService {
         if (!privileged && !application.isOwnedBy(viewerId)) {
             throw new BusinessException(GlobalErrorCode.FORBIDDEN_USER);
         }
-        return RecruitCoreApplicantDetailResponse.from(application, toS3FileUrls(application.getFileUrls()));
+        return RecruitCoreApplicantDetailResponse.from(
+            application, toS3FileUrls(application.getFileUrls()), privileged);
     }
 
     private List<String> toS3FileUrls(List<String> fileKeys) {
