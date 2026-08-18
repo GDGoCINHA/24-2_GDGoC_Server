@@ -181,6 +181,33 @@ class RecruitCoreApplicationServiceTest {
         assertThat(detail.applicationId()).isEqualTo(99L);
     }
 
+    // 본인도 자기 지원서를 마이페이지에서 연다. 검토자·내부 메모까지 실어 보내면
+    // 화면에서 안 그려도 개발자 도구로 읽힌다.
+    @Test
+    void getApplicantDetailForViewer_whenOwner_hidesReview() {
+        RecruitCoreApplication application = createApplication(99L, createUser(1L), SESSION);
+        ReflectionTestUtils.setField(application, "reviewedBy", 7L);
+        ReflectionTestUtils.setField(application, "resultNote", "면접 태도 미흡");
+        when(repository.findById(99L)).thenReturn(Optional.of(application));
+
+        RecruitCoreApplicantDetailResponse detail =
+            service.getApplicantDetailForViewer(99L, 1L, UserRole.MEMBER);
+
+        assertThat(detail.review()).isNull();
+    }
+
+    @Test
+    void getApplicantDetailForViewer_whenPrivileged_keepsReview() {
+        RecruitCoreApplication application = createApplication(99L, createUser(2L), SESSION);
+        ReflectionTestUtils.setField(application, "resultNote", "면접 태도 미흡");
+        when(repository.findById(99L)).thenReturn(Optional.of(application));
+
+        RecruitCoreApplicantDetailResponse detail =
+            service.getApplicantDetailForViewer(99L, 1L, UserRole.LEAD);
+
+        assertThat(detail.review().resultNote()).isEqualTo("면접 태도 미흡");
+    }
+
     @Test
     void getApplicantDetailForViewer_whenUnauthorized_throwsException() {
         RecruitCoreApplication application = createApplication(99L, createUser(2L), SESSION);
