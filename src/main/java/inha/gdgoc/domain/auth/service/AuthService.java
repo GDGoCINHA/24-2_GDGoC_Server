@@ -14,6 +14,7 @@ import inha.gdgoc.domain.auth.dto.response.SignupNeededResponse;
 import inha.gdgoc.domain.auth.dto.response.TokenDto;
 import inha.gdgoc.domain.auth.entity.AdminCredential;
 import inha.gdgoc.domain.auth.repository.AdminCredentialRepository;
+import inha.gdgoc.domain.recruit.member.repository.RecruitMemberRepository;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.TeamType;
 import inha.gdgoc.domain.user.enums.UserRole;
@@ -22,6 +23,7 @@ import inha.gdgoc.global.config.jwt.TokenProvider;
 import inha.gdgoc.global.config.jwt.TokenProvider.CustomUserDetails;
 import inha.gdgoc.global.security.AccessGuard;
 import inha.gdgoc.global.util.MajorNormalizer;
+import inha.gdgoc.global.util.SemesterCalculator;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
@@ -53,6 +55,8 @@ public class AuthService {
   private final AccessGuard accessGuard;
   private final PasswordEncoder passwordEncoder;
   private final MajorNormalizer majorNormalizer;
+  private final RecruitMemberRepository recruitMemberRepository;
+  private final SemesterCalculator semesterCalculator;
 
   @Value("${google.client-id}")
   private String googleClientId;
@@ -89,6 +93,8 @@ public class AuthService {
       }
   
       log.info("기존 유저 로그인 - UserID: {}, Email: {}", user.getId(), user.getEmail());
+      // 지원서를 낸 뒤 처음 들어온 사람이 여기서 MEMBER 가 된다. 토큰·응답에 새 역할이 담기도록 발급 전에 한다.
+      promotePaidApplicantToMember(user);
       // 기존 유저 -> 토큰 발급 및 로그인 성공 응답
       TokenDto tokens = generateTokens(user);
       return LoginSuccessResponse.of(tokens, AuthUserResponse.from(user));
@@ -121,10 +127,44 @@ public class AuthService {
             .build();
 
     userRepository.save(newUser);
+    promotePaidApplicantToMember(newUser);
 
     // 토큰 발급
     TokenDto tokens = generateTokens(newUser);
     return LoginSuccessResponse.of(tokens, AuthUserResponse.from(newUser));
+  }
+
+  /**
+   * 회비를 낸 이번 학기 부원 지원자를 MEMBER 로 올린다.
+   *
+   * <p>부원 지원은 비로그인으로 받아 지원서에 계정을 가리키는 컬럼이 없다. 지원 시점에는 올릴 대상이
+   * 아직 없으므로, 로그인·가입하는 이 자리가 승격이 가능한 유일한 지점이다. 이메일이 둘을 잇는 키인 것은
+   * RecruitMemberService.findMyApplication 과 같다 — 로그인은 @inha.edu 전용이고 지원 폼도 같은
+   * 도메인만 받는다.
+   *
+   * <p>회비를 낸 사람만 올린다. 입금 확인은 운영진이 대시보드에서 하던 작업 그대로이고, 승격은 그 뒤
+   * 본인이 로그인할 때 따라온다. 학기가 바뀌어도 되돌리지 않는다 — 강등은 별도 정책이다.
+   *
+   * <p>지원 이력이 없거나 미납이면 GUEST 로 남는다. 승격 실패는 로그인을 막지 않는다.
+   */
+  private void promotePaidApplicantToMember(User user) {
+    if (user.getUserRole() != UserRole.GUEST) {
+      return;
+    }
+
+    String email = user.getEmail();
+    if (email == null || email.isBlank()) {
+      return;
+    }
+
+    recruitMemberRepository
+        .findByEmailIgnoreCaseAndAdmissionSemester(email.trim(), semesterCalculator.currentSemester())
+        .filter(application -> Boolean.TRUE.equals(application.getIsPayed()))
+        .ifPresent(application -> {
+          user.changeRole(UserRole.MEMBER);
+          userRepository.save(user);
+          log.info("부원 지원자 자동 승격 GUEST->MEMBER - UserID: {}, Email: {}", user.getId(), email);
+        });
   }
 
   @Transactional(readOnly = true)

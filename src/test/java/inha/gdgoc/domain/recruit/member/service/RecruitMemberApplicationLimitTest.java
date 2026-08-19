@@ -12,6 +12,7 @@ import inha.gdgoc.domain.recruit.member.exception.RecruitMemberErrorCode;
 import inha.gdgoc.domain.recruit.member.exception.RecruitMemberException;
 import inha.gdgoc.domain.recruit.member.repository.RecruitMemberRepository;
 import inha.gdgoc.domain.user.entity.User;
+import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.util.SemesterCalculator;
 import java.time.LocalDate;
@@ -176,6 +177,100 @@ class RecruitMemberApplicationLimitTest {
         assertThatThrownBy(() -> recruitMemberService.findMyApplication(user.getId()))
             .isInstanceOf(RecruitMemberException.class)
             .hasFieldOrPropertyWithValue("errorCode", RecruitMemberErrorCode.RECRUIT_MEMBER_NOT_FOUND);
+    }
+
+    // 이메일이 지원서와 계정을 잇는 유일한 키다. 다른 도메인으로 들어오면 나중에 로그인해도
+    // 영영 이어지지 않아 MEMBER 승격이 안 된다. 화면이 도메인을 고정하지만 API 는 열려 있다.
+    @Test
+    void 인하대_이메일이_아니면_지원할_수_없다() {
+        assertThatThrownBy(() ->
+            recruitMemberService.addRecruitMember(payload("12200001", "01000000001", "hong@gmail.com"), null))
+            .isInstanceOf(RecruitMemberException.class)
+            .hasFieldOrPropertyWithValue("errorCode", RecruitMemberErrorCode.RECRUIT_MEMBER_INVALID_EMAIL_DOMAIN);
+
+        assertThat(recruitMemberRepository.count()).isZero();
+    }
+
+    @Test
+    void 인하대_이메일은_대소문자를_가리지_않는다() {
+        recruitMemberService.addRecruitMember(payload("12200001", "01000000001", "hong@INHA.edu"), null);
+
+        assertThat(recruitMemberRepository.count()).isEqualTo(1);
+    }
+
+    // inha.edu 로 끝나기만 하면 통과하는 검사는 fake-inha.edu 같은 도메인을 놓친다.
+    @Test
+    void 인하대_도메인을_흉내낸_주소는_막힌다() {
+        assertThatThrownBy(() ->
+            recruitMemberService.addRecruitMember(payload("12200001", "01000000001", "hong@fake-inha.edu"), null))
+            .isInstanceOf(RecruitMemberException.class)
+            .hasFieldOrPropertyWithValue("errorCode", RecruitMemberErrorCode.RECRUIT_MEMBER_INVALID_EMAIL_DOMAIN);
+    }
+
+    // ===== 입금 체크와 계정 역할 =====
+    // 지원서에는 계정을 가리키는 컬럼이 없다. 이메일로 이어 붙이는 이 연결이 끊기면
+    // 회비를 내고도 GUEST 로 남아 자유게시판에 글을 쓰지 못한다.
+
+    @Test
+    void 입금_완료로_바꾸면_GUEST_계정이_MEMBER_가_된다() {
+        RecruitMember application = recruitMemberRepository.save(member("12200001", "01000000001", "hong@inha.edu"));
+        User account = userRepository.save(user("hong@inha.edu"));
+
+        recruitMemberService.updatePayment(application.getId(), true);
+
+        assertThat(roleOf(account)).isEqualTo(UserRole.MEMBER);
+    }
+
+    // 잘못 누른 체크를 되돌리면 권한도 함께 돌아와야 한다.
+    @Test
+    void 미입금으로_되돌리면_MEMBER_계정이_GUEST_가_된다() {
+        RecruitMember application = recruitMemberRepository.save(member("12200001", "01000000001", "hong@inha.edu"));
+        User account = userRepository.save(user("hong@inha.edu"));
+        recruitMemberService.updatePayment(application.getId(), true);
+
+        recruitMemberService.updatePayment(application.getId(), false);
+
+        assertThat(roleOf(account)).isEqualTo(UserRole.GUEST);
+    }
+
+    // CORE 이상은 회비와 무관하게 임명된 자리다. 오클릭 한 번으로 운영진이 GUEST 가 되면 안 된다.
+    @Test
+    void 미입금으로_되돌려도_CORE_는_강등되지_않는다() {
+        RecruitMember application = recruitMemberRepository.save(member("12200001", "01000000001", "hong@inha.edu"));
+        User account = userRepository.save(user("hong@inha.edu"));
+        account.changeRole(UserRole.CORE);
+        userRepository.save(account);
+
+        recruitMemberService.updatePayment(application.getId(), true);
+        recruitMemberService.updatePayment(application.getId(), false);
+
+        assertThat(roleOf(account)).isEqualTo(UserRole.CORE);
+    }
+
+    // 지난 학기 지원서의 입금 체크로 이번 학기 권한이 움직이면 안 된다.
+    @Test
+    void 지난_학기_지원서의_입금_체크는_역할을_바꾸지_않는다() {
+        RecruitMember application = recruitMemberRepository.save(
+            member("12200001", "01000000001", "hong@inha.edu", PAST_SEMESTER));
+        User account = userRepository.save(user("hong@inha.edu"));
+
+        recruitMemberService.updatePayment(application.getId(), true);
+
+        assertThat(roleOf(account)).isEqualTo(UserRole.GUEST);
+    }
+
+    // 아직 가입하지 않은 지원자다. 올릴 대상이 없을 뿐 입금 처리 자체는 성공해야 한다.
+    @Test
+    void 계정이_없는_지원자의_입금_체크도_정상_처리된다() {
+        RecruitMember application = recruitMemberRepository.save(member("12200001", "01000000001", "hong@inha.edu"));
+
+        recruitMemberService.updatePayment(application.getId(), true);
+
+        assertThat(recruitMemberRepository.findById(application.getId()).orElseThrow().getIsPayed()).isTrue();
+    }
+
+    private UserRole roleOf(User account) {
+        return userRepository.findById(account.getId()).orElseThrow().getUserRole();
     }
 
     private Map<String, Object> payload(String studentId, String phoneNumber, String email) {

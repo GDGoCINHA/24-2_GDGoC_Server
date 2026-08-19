@@ -26,6 +26,14 @@ public interface UserRepository extends JpaRepository<User, Long>, UserRepositor
     boolean existsByNameAndEmail(String name, String email);
     boolean existsByEmail(String email);
 
+    /**
+     * 부원 지원서에서 계정을 되찾을 때 쓴다. 지원서에는 계정을 가리키는 컬럼이 없어 이메일이 유일한 키다.
+     *
+     * <p>users.email 에는 UNIQUE 가 없다. 구글 OAuth 라 실제로 겹칠 일은 없지만, 겹쳐도 조용히
+     * 한 건만 집지 않도록 목록으로 받는다.
+     */
+    List<User> findByEmailIgnoreCase(String email);
+
     /* ===== 출석/팀 뷰용 기본 쿼리 ===== */
 
     // 특정 팀에서 주어진 역할들(CORE/LEAD 등) 만 조회

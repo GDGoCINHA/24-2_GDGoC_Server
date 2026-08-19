@@ -2,6 +2,7 @@ package inha.gdgoc.domain.recruit.member.service;
 
 import static inha.gdgoc.domain.recruit.member.exception.RecruitMemberErrorCode.RECRUIT_MEMBER_NOT_FOUND;
 import static inha.gdgoc.domain.recruit.member.exception.RecruitMemberErrorCode.RECRUIT_MEMBER_ALREADY_APPLIED;
+import static inha.gdgoc.domain.recruit.member.exception.RecruitMemberErrorCode.RECRUIT_MEMBER_INVALID_EMAIL_DOMAIN;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import inha.gdgoc.domain.resource.enums.S3KeyType;
@@ -26,6 +27,7 @@ import inha.gdgoc.domain.recruit.member.repository.AnswerRepository;
 import inha.gdgoc.domain.recruit.member.repository.RecruitMemberMemoRepository;
 import inha.gdgoc.domain.recruit.member.repository.RecruitMemberRepository;
 import inha.gdgoc.domain.user.entity.User;
+import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.GlobalErrorCode;
@@ -35,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -42,10 +45,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class RecruitMemberService {
     private static final long MAX_PROOF_FILE_SIZE = 10 * 1024 * 1024;
+    private static final String INHA_EMAIL_DOMAIN = "@inha.edu";
 
     private final RecruitMemberRepository recruitMemberRepository;
     private final RecruitMemberMemoRepository recruitMemberMemoRepository;
@@ -70,14 +75,25 @@ public class RecruitMemberService {
             answers = buildAnswersFromNumberedPayload(requestPayload);
         }
 
+        log.info("[recruit-member] 지원 접수 - studentId={}, name={}, hasProofFile={}",
+                memberRequest.getStudentId(), memberRequest.getName(), file != null && !file.isEmpty());
+
         if (file != null && !file.isEmpty()) {
-            String key = uploadProofFile(file);
+            String key;
+            try {
+                key = uploadProofFile(file);
+            } catch (RuntimeException ex) {
+                log.warn("[recruit-member] 지원 실패(증빙 파일 업로드) - studentId={}, name={}, reason={}",
+                        memberRequest.getStudentId(), memberRequest.getName(), ex.toString());
+                throw ex;
+            }
             String proofFileUrl = s3Service.getS3FileUrl(key);
             answers.put("proofFileUrl", proofFileUrl);
         }
         normalizeProofFileUrl(answers);
 
         AdmissionSemester semester = semesterCalculator.currentSemester();
+        validateInhaEmail(memberRequest);
         validateNotAppliedThisSemester(memberRequest, semester);
 
         RecruitMember member = memberRequest.toEntity(semester, majorNormalizer);
@@ -97,6 +113,18 @@ public class RecruitMemberService {
                 .toList();
 
         answerRepository.saveAll(answerEntities);
+
+        log.info("[recruit-member] 지원 완료 - applicationId={}, semester={}, studentId={}, name={}",
+                member.getId(), semester, member.getStudentId(), member.getName());
+    }
+
+    /** 이메일은 도메인만 남긴다. 어느 도메인으로 잘못 들어오는지가 진단에 필요한 전부다. */
+    private String domainOf(String email) {
+        if (email == null) {
+            return "none";
+        }
+        int at = email.lastIndexOf('@');
+        return at < 0 ? "malformed" : email.substring(at).toLowerCase();
     }
 
     private String uploadProofFile(MultipartFile file) {
@@ -195,6 +223,23 @@ public class RecruitMemberService {
     }
 
     /**
+     * 지원 이메일은 @inha.edu 만 받는다.
+     *
+     * <p>이 이메일이 지원서와 계정을 잇는 유일한 키다 — 로그인은 @inha.edu 전용이라 다른 도메인으로
+     * 지원하면 나중에 로그인해도 영영 이어지지 않고 MEMBER 승격도 안 된다. 화면이 도메인을 고정하지만
+     * 지원 API 는 인증 없이 열려 있어 주소를 직접 치면 그대로 들어온다 — 실제 차단은 여기서 한다.
+     */
+    private void validateInhaEmail(RecruitMemberRequest request) {
+        String email = request.getEmail();
+        String normalized = (email == null ? "" : email.trim().toLowerCase());
+        if (!normalized.endsWith(INHA_EMAIL_DOMAIN)) {
+            log.warn("[recruit-member] 지원 거절(이메일 도메인) - domain={}, studentId={}, name={}",
+                    domainOf(email), request.getStudentId(), request.getName());
+            throw new RecruitMemberException(RECRUIT_MEMBER_INVALID_EMAIL_DOMAIN);
+        }
+    }
+
+    /**
      * 한 학기에 한 번만 받는다 — 이메일·학번·전화번호 중 하나라도 겹치면 막는다.
      *
      * <p>화면에서도 중복 확인 버튼으로 걸러내지만 그건 안내일 뿐이다. 지원 API 는 인증 없이 열려 있어
@@ -207,21 +252,28 @@ public class RecruitMemberService {
         String email = request.getEmail();
         if (email != null && !email.isBlank()
                 && recruitMemberRepository.existsByEmailIgnoreCaseAndAdmissionSemester(email.trim(), semester)) {
-            throw new RecruitMemberException(RECRUIT_MEMBER_ALREADY_APPLIED);
+            rejectAsDuplicate("email", semester, request);
         }
 
         String studentId = request.getStudentId();
         if (studentId != null && !studentId.isBlank()
                 && recruitMemberRepository.existsByStudentIdAndAdmissionSemester(studentId.trim(), semester)) {
-            throw new RecruitMemberException(RECRUIT_MEMBER_ALREADY_APPLIED);
+            rejectAsDuplicate("studentId", semester, request);
         }
 
         String phoneNumber = request.getPhoneNumber();
         if (phoneNumber != null && !phoneNumber.isBlank()
                 && recruitMemberRepository.existsByPhoneNumberAndAdmissionSemester(
                         normalizePhoneNumber(phoneNumber), semester)) {
-            throw new RecruitMemberException(RECRUIT_MEMBER_ALREADY_APPLIED);
+            rejectAsDuplicate("phoneNumber", semester, request);
         }
+    }
+
+    /** 세 검사가 같은 에러코드를 던지므로, 어느 필드가 겹쳤는지는 로그에만 남는다. */
+    private void rejectAsDuplicate(String field, AdmissionSemester semester, RecruitMemberRequest request) {
+        log.warn("[recruit-member] 지원 거절(중복) - field={}, semester={}, studentId={}, name={}",
+                field, semester, request.getStudentId(), request.getName());
+        throw new RecruitMemberException(RECRUIT_MEMBER_ALREADY_APPLIED);
     }
 
     @Transactional
@@ -233,6 +285,42 @@ public class RecruitMemberService {
 
         if (isPayed) m.markPaid();
         else m.markUnpaid();
+
+        syncRoleWithPayment(m, isPayed);
+    }
+
+    /**
+     * 입금 체크를 계정 역할에 곧바로 반영한다.
+     *
+     * <p>승격 지점이 여기와 로그인 두 곳인 이유: 지원서에는 계정을 가리키는 컬럼이 없어, 아직 가입하지
+     * 않은 지원자는 여기서 올릴 대상이 없다. 그 사람은 첫 로그인 때 AuthService 가 올린다. 반대로
+     * 이미 가입한 사람은 여기서 올려야 재로그인 없이 바로 글을 쓸 수 있다. 두 자리가 서로의 빈틈을 메운다.
+     *
+     * <p><b>올릴 때는 GUEST 만, 내릴 때는 MEMBER 만</b> 건드린다. CORE 이상은 회비와 무관하게 임명된
+     * 자리라, 잘못 누른 체크 한 번으로 운영진이 GUEST 로 떨어지면 안 된다. GUEST·MEMBER 는 팀을 갖지
+     * 않으므로(isTeamAssignableRole 은 CORE·LEAD 만) 팀은 건드릴 것이 없다.
+     *
+     * <p>지난 학기 지원서의 입금 체크로 이번 학기 권한이 움직여서는 안 되므로 학기를 먼저 본다.
+     */
+    private void syncRoleWithPayment(RecruitMember application, boolean isPayed) {
+        if (application.getAdmissionSemester() != semesterCalculator.currentSemester()) {
+            return;
+        }
+
+        String email = application.getEmail();
+        if (email == null || email.isBlank()) {
+            return;
+        }
+
+        for (User user : userRepository.findByEmailIgnoreCase(email.trim())) {
+            if (isPayed && user.getUserRole() == UserRole.GUEST) {
+                user.changeRole(UserRole.MEMBER);
+                userRepository.save(user);
+            } else if (!isPayed && user.getUserRole() == UserRole.MEMBER) {
+                user.changeRole(UserRole.GUEST);
+                userRepository.save(user);
+            }
+        }
     }
 
     /**
