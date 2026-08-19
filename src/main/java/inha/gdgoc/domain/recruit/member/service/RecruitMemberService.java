@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -44,6 +45,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class RecruitMemberService {
@@ -73,15 +75,25 @@ public class RecruitMemberService {
             answers = buildAnswersFromNumberedPayload(requestPayload);
         }
 
+        log.info("[recruit-member] 지원 접수 - studentId={}, name={}, hasProofFile={}",
+                memberRequest.getStudentId(), memberRequest.getName(), file != null && !file.isEmpty());
+
         if (file != null && !file.isEmpty()) {
-            String key = uploadProofFile(file);
+            String key;
+            try {
+                key = uploadProofFile(file);
+            } catch (RuntimeException ex) {
+                log.warn("[recruit-member] 지원 실패(증빙 파일 업로드) - studentId={}, name={}, reason={}",
+                        memberRequest.getStudentId(), memberRequest.getName(), ex.toString());
+                throw ex;
+            }
             String proofFileUrl = s3Service.getS3FileUrl(key);
             answers.put("proofFileUrl", proofFileUrl);
         }
         normalizeProofFileUrl(answers);
 
         AdmissionSemester semester = semesterCalculator.currentSemester();
-        validateInhaEmail(memberRequest.getEmail());
+        validateInhaEmail(memberRequest);
         validateNotAppliedThisSemester(memberRequest, semester);
 
         RecruitMember member = memberRequest.toEntity(semester, majorNormalizer);
@@ -101,6 +113,18 @@ public class RecruitMemberService {
                 .toList();
 
         answerRepository.saveAll(answerEntities);
+
+        log.info("[recruit-member] 지원 완료 - applicationId={}, semester={}, studentId={}, name={}",
+                member.getId(), semester, member.getStudentId(), member.getName());
+    }
+
+    /** 이메일은 도메인만 남긴다. 어느 도메인으로 잘못 들어오는지가 진단에 필요한 전부다. */
+    private String domainOf(String email) {
+        if (email == null) {
+            return "none";
+        }
+        int at = email.lastIndexOf('@');
+        return at < 0 ? "malformed" : email.substring(at).toLowerCase();
     }
 
     private String uploadProofFile(MultipartFile file) {
@@ -205,9 +229,12 @@ public class RecruitMemberService {
      * 지원하면 나중에 로그인해도 영영 이어지지 않고 MEMBER 승격도 안 된다. 화면이 도메인을 고정하지만
      * 지원 API 는 인증 없이 열려 있어 주소를 직접 치면 그대로 들어온다 — 실제 차단은 여기서 한다.
      */
-    private void validateInhaEmail(String email) {
+    private void validateInhaEmail(RecruitMemberRequest request) {
+        String email = request.getEmail();
         String normalized = (email == null ? "" : email.trim().toLowerCase());
         if (!normalized.endsWith(INHA_EMAIL_DOMAIN)) {
+            log.warn("[recruit-member] 지원 거절(이메일 도메인) - domain={}, studentId={}, name={}",
+                    domainOf(email), request.getStudentId(), request.getName());
             throw new RecruitMemberException(RECRUIT_MEMBER_INVALID_EMAIL_DOMAIN);
         }
     }
@@ -225,21 +252,28 @@ public class RecruitMemberService {
         String email = request.getEmail();
         if (email != null && !email.isBlank()
                 && recruitMemberRepository.existsByEmailIgnoreCaseAndAdmissionSemester(email.trim(), semester)) {
-            throw new RecruitMemberException(RECRUIT_MEMBER_ALREADY_APPLIED);
+            rejectAsDuplicate("email", semester, request);
         }
 
         String studentId = request.getStudentId();
         if (studentId != null && !studentId.isBlank()
                 && recruitMemberRepository.existsByStudentIdAndAdmissionSemester(studentId.trim(), semester)) {
-            throw new RecruitMemberException(RECRUIT_MEMBER_ALREADY_APPLIED);
+            rejectAsDuplicate("studentId", semester, request);
         }
 
         String phoneNumber = request.getPhoneNumber();
         if (phoneNumber != null && !phoneNumber.isBlank()
                 && recruitMemberRepository.existsByPhoneNumberAndAdmissionSemester(
                         normalizePhoneNumber(phoneNumber), semester)) {
-            throw new RecruitMemberException(RECRUIT_MEMBER_ALREADY_APPLIED);
+            rejectAsDuplicate("phoneNumber", semester, request);
         }
+    }
+
+    /** 세 검사가 같은 에러코드를 던지므로, 어느 필드가 겹쳤는지는 로그에만 남는다. */
+    private void rejectAsDuplicate(String field, AdmissionSemester semester, RecruitMemberRequest request) {
+        log.warn("[recruit-member] 지원 거절(중복) - field={}, semester={}, studentId={}, name={}",
+                field, semester, request.getStudentId(), request.getName());
+        throw new RecruitMemberException(RECRUIT_MEMBER_ALREADY_APPLIED);
     }
 
     @Transactional

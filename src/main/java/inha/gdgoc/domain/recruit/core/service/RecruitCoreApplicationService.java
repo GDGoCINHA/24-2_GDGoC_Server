@@ -23,6 +23,7 @@ import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.GlobalErrorCode;
 import inha.gdgoc.global.util.MajorNormalizer;
+import lombok.extern.slf4j.Slf4j;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -33,6 +34,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 public class RecruitCoreApplicationService {
 
@@ -126,10 +128,15 @@ public class RecruitCoreApplicationService {
 
     @Transactional
     public RecruitCoreApplicationCreateResponse submit(Long userId, RecruitCoreApplicationCreateRequest request) {
+        log.info("[recruit-core] 지원 접수 - userId={}, studentId={}, name={}, team={}",
+            userId, request.snapshot().studentId(), request.snapshot().name(), request.team());
+
         validateRecruitmentOpen();
         String session = recruitCoreSessionResolver.currentSession();
         repository.findByUserIdAndSession(userId, session)
             .ifPresent(existing -> {
+                log.warn("[recruit-core] 지원 거절(중복) - userId={}, session={}, existingApplicationId={}",
+                    userId, session, existing.getId());
                 throw new RecruitCoreAlreadyAppliedException(session, existing.getId());
             });
 
@@ -156,6 +163,8 @@ public class RecruitCoreApplicationService {
             .build();
 
         RecruitCoreApplication saved = repository.save(application);
+        log.info("[recruit-core] 지원 완료 - applicationId={}, userId={}, session={}, studentId={}, name={}, team={}",
+            saved.getId(), userId, session, saved.getStudentId(), saved.getName(), saved.getTeam());
         return RecruitCoreApplicationCreateResponse.from(saved);
     }
 
@@ -209,12 +218,18 @@ public class RecruitCoreApplicationService {
             .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
     }
 
+    private void logRecruitmentClosed(String phase, Instant boundary) {
+        log.warn("[recruit-core] 지원 거절(기간) - phase={}, boundary={}", phase, boundary);
+    }
+
     private void validateRecruitmentOpen() {
         RecruitCorePeriodStatus status = getPeriodStatus();
         if (status == RecruitCorePeriodStatus.BEFORE_OPEN) {
+            logRecruitmentClosed("BEFORE_OPEN", openAt);
             throw new RecruitCoreNotOpenException(openAt);
         }
         if (status == RecruitCorePeriodStatus.CLOSED) {
+            logRecruitmentClosed("CLOSED", closeAt);
             throw new RecruitCoreClosedException(closeAt);
         }
     }
