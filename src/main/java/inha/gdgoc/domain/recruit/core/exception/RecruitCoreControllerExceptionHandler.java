@@ -16,7 +16,7 @@ public class RecruitCoreControllerExceptionHandler {
     public ResponseEntity<RecruitCoreApplicationErrorResponse> handleAlreadyApplied(
         RecruitCoreAlreadyAppliedException ex
     ) {
-        log.debug("RecruitCoreAlreadyAppliedException: {}", ex.getMessage());
+        log.info("RecruitCoreAlreadyAppliedException: {}", ex.getMessage());
         var code = ex.getErrorCode();
         RecruitCoreApplicationErrorResponse body = RecruitCoreApplicationErrorResponse.of(
             code.getCode(),
@@ -31,7 +31,7 @@ public class RecruitCoreControllerExceptionHandler {
     public ResponseEntity<RecruitCoreApplicationErrorResponse> handleClosed(
         RecruitCoreClosedException ex
     ) {
-        log.debug("RecruitCoreClosedException: {}", ex.getMessage());
+        log.info("RecruitCoreClosedException: {}", ex.getMessage());
         var code = ex.getErrorCode();
         RecruitCoreApplicationErrorResponse body = RecruitCoreApplicationErrorResponse.of(
             code.getCode(),
@@ -44,7 +44,7 @@ public class RecruitCoreControllerExceptionHandler {
     public ResponseEntity<RecruitCoreApplicationErrorResponse> handleNotOpen(
         RecruitCoreNotOpenException ex
     ) {
-        log.debug("RecruitCoreNotOpenException: {}", ex.getMessage());
+        log.info("RecruitCoreNotOpenException: {}", ex.getMessage());
         var code = ex.getErrorCode();
         RecruitCoreApplicationErrorResponse body = RecruitCoreApplicationErrorResponse.of(
             code.getCode(),
@@ -57,7 +57,7 @@ public class RecruitCoreControllerExceptionHandler {
     public ResponseEntity<RecruitCoreApplicationErrorResponse> handleNotFound(
         RecruitCoreApplicationNotFoundException ex
     ) {
-        log.debug("RecruitCoreApplicationNotFoundException: {}", ex.getMessage());
+        log.info("RecruitCoreApplicationNotFoundException: {}", ex.getMessage());
         var code = ex.getErrorCode();
         RecruitCoreApplicationErrorResponse body = RecruitCoreApplicationErrorResponse.of(
             code.getCode(),

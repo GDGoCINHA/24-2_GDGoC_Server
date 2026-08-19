@@ -11,6 +11,9 @@ public enum RecruitMemberErrorCode implements ErrorCode {
     RECRUIT_MEMBER_NOT_OPEN(HttpStatus.FORBIDDEN, "부원 모집 기간이 아직 시작되지 않았습니다."),
     RECRUIT_MEMBER_CLOSED(HttpStatus.FORBIDDEN, "부원 모집 기간이 종료되었습니다."),
 
+    // 400 BAD REQUEST
+    RECRUIT_MEMBER_INVALID_EMAIL_DOMAIN(HttpStatus.BAD_REQUEST, "인하대학교(@inha.edu) 이메일로만 지원할 수 있습니다."),
+
     // 409 CONFLICT
     RECRUIT_MEMBER_ALREADY_APPLIED(HttpStatus.CONFLICT, "이미 지원을 완료하였습니다."),
 
