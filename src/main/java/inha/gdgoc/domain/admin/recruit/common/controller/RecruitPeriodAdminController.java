@@ -6,7 +6,8 @@ import static inha.gdgoc.domain.admin.recruit.common.controller.message.RecruitP
 
 import inha.gdgoc.domain.admin.recruit.common.dto.request.RecruitPeriodUpdateRequest;
 import inha.gdgoc.domain.admin.recruit.common.dto.response.RecruitPeriodAdminResponse;
-import inha.gdgoc.domain.recruit.common.dto.RecruitWindow;
+import inha.gdgoc.domain.recruit.common.dto.RecruitScheduleNotice;
+import inha.gdgoc.domain.recruit.common.service.RecruitPeriodService.SavedPeriod;
 import inha.gdgoc.domain.recruit.common.enums.RecruitType;
 import inha.gdgoc.domain.recruit.common.service.RecruitPeriodService;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCorePeriodResponse;
@@ -64,19 +65,25 @@ public class RecruitPeriodAdminController {
         @PathVariable RecruitType recruitType,
         @Valid @RequestBody RecruitPeriodUpdateRequest request) {
 
-        RecruitWindow saved =
+        SavedPeriod saved =
             recruitPeriodService.save(
-                recruitType, request.openAt(), request.closeAt(), me.getUserId());
+                recruitType,
+                request.openAt(),
+                request.closeAt(),
+                request.toNotice(),
+                me.getUserId());
 
         log.warn(
             "[recruit-period] 기간 변경 - type={}, openAt={}, closeAt={}, by={}",
             recruitType,
-            saved.openAt(),
-            saved.closeAt(),
+            saved.window().openAt(),
+            saved.window().closeAt(),
             me.getUserId());
 
         return ResponseEntity.ok(
-            ApiResponse.ok(RECRUIT_PERIOD_UPDATED, RecruitPeriodAdminResponse.of(saved, true)));
+            ApiResponse.ok(
+                RECRUIT_PERIOD_UPDATED,
+                RecruitPeriodAdminResponse.of(saved.window(), true, saved.notice())));
     }
 
     @DeleteMapping
@@ -97,13 +104,16 @@ public class RecruitPeriodAdminController {
      */
     private RecruitPeriodAdminResponse describe(RecruitType recruitType) {
         boolean overridden = recruitPeriodService.find(recruitType).isPresent();
+        RecruitScheduleNotice notice = recruitPeriodService.findNotice(recruitType);
 
         if (recruitType == RecruitType.CORE) {
             RecruitCorePeriodResponse period = recruitCoreApplicationService.getPeriod();
-            return new RecruitPeriodAdminResponse(period.openAt(), period.closeAt(), overridden);
+            return new RecruitPeriodAdminResponse(
+                period.openAt(), period.closeAt(), overridden, notice);
         }
 
         RecruitMemberPeriodResponse period = recruitMemberPeriodService.getPeriod();
-        return new RecruitPeriodAdminResponse(period.openAt(), period.closeAt(), overridden);
+        return new RecruitPeriodAdminResponse(
+            period.openAt(), period.closeAt(), overridden, notice);
     }
 }
