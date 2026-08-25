@@ -56,6 +56,8 @@ public class SecurityConfig {
                     "/api/v1/recruit/member/memo",
                     "/api/v1/recruit/core/period",
                     "/api/v1/recruit/member/period",
+                    // 로그인 없이 여는 첫 화면이 읽는다. 관리자 경로(/api/v1/admin/**)는 여기 없다.
+                    "/api/v1/landing-content",
                     "/api/v1/fileupload",
                     "/api/v1/manito/verify")
                 .permitAll()
