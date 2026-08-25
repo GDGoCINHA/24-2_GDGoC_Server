@@ -1,5 +1,8 @@
 package inha.gdgoc.domain.recruit.member.service;
 
+import inha.gdgoc.domain.recruit.common.dto.RecruitWindow;
+import inha.gdgoc.domain.recruit.common.enums.RecruitType;
+import inha.gdgoc.domain.recruit.common.service.RecruitPeriodOverrideReader;
 import inha.gdgoc.domain.recruit.member.dto.response.RecruitMemberPeriodResponse;
 import inha.gdgoc.domain.recruit.member.enums.RecruitMemberPeriodStatus;
 import inha.gdgoc.domain.recruit.member.exception.RecruitMemberErrorCode;
@@ -25,6 +28,9 @@ import org.springframework.stereotype.Service;
  *
  * <p>Instant 가 아니라 String 으로 받는 이유: {@code Instant.parse()} 는 'Z' 형식만 받아 '+09:00' 을
  * 거부한다. 설정에 KST 를 그대로 적을 수 있어야 오프셋 계산 실수가 안 난다.
+ *
+ * <p>설정값은 이제 **기본값**이다. 관리자가 화면에서 기간을 저장하면 그 값이 앞선다
+ * ({@link RecruitPeriodOverrideReader}). 저장된 게 없으면 지금까지처럼 설정값을 쓴다.
  */
 @Service
 public class RecruitMemberPeriodService {
@@ -33,42 +39,62 @@ public class RecruitMemberPeriodService {
         DateTimeFormatter.ofPattern("M월 d일 H시");
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
-    private final Instant openAt;
-    private final Instant closeAt;
+    private final Instant configuredOpenAt;
+    private final Instant configuredCloseAt;
     private final Clock clock;
+    private final RecruitPeriodOverrideReader overrideReader;
 
     @Autowired
     public RecruitMemberPeriodService(
         @Value("${app.recruit.member.open-at}") String openAt,
-        @Value("${app.recruit.member.close-at}") String closeAt
+        @Value("${app.recruit.member.close-at}") String closeAt,
+        RecruitPeriodOverrideReader overrideReader
     ) {
         this(
             OffsetDateTime.parse(openAt).toInstant(),
             OffsetDateTime.parse(closeAt).toInstant(),
-            Clock.system(KST));
+            Clock.system(KST),
+            overrideReader);
     }
 
+    /** 설정값만 쓰는 생성자. 테스트가 DB 없이 마감 동작을 검증할 때 쓴다. */
     public RecruitMemberPeriodService(Instant openAt, Instant closeAt, Clock clock) {
+        this(openAt, closeAt, clock, RecruitPeriodOverrideReader.NONE);
+    }
+
+    public RecruitMemberPeriodService(
+        Instant openAt, Instant closeAt, Clock clock, RecruitPeriodOverrideReader overrideReader) {
         if (!openAt.isBefore(closeAt)) {
             throw new IllegalArgumentException(
                 "app.recruit.member.open-at 은 close-at 보다 앞서야 한다: openAt=" + openAt
                     + ", closeAt=" + closeAt);
         }
-        this.openAt = openAt;
-        this.closeAt = closeAt;
+        this.configuredOpenAt = openAt;
+        this.configuredCloseAt = closeAt;
         this.clock = clock;
+        this.overrideReader = overrideReader;
+    }
+
+    /** 관리자가 저장한 기간이 있으면 그것, 없으면 설정값. */
+    private RecruitWindow window() {
+        return overrideReader
+            .find(RecruitType.MEMBER)
+            .orElseGet(() -> new RecruitWindow(configuredOpenAt, configuredCloseAt));
     }
 
     public RecruitMemberPeriodResponse getPeriod() {
-        return new RecruitMemberPeriodResponse(openAt, closeAt, getPeriodStatus());
+        RecruitWindow window = window();
+        return new RecruitMemberPeriodResponse(
+            window.openAt(), window.closeAt(), getPeriodStatus());
     }
 
     public RecruitMemberPeriodStatus getPeriodStatus() {
+        RecruitWindow window = window();
         Instant now = Instant.now(clock);
-        if (now.isBefore(openAt)) {
+        if (now.isBefore(window.openAt())) {
             return RecruitMemberPeriodStatus.BEFORE_OPEN;
         }
-        if (now.isAfter(closeAt)) {
+        if (now.isAfter(window.closeAt())) {
             return RecruitMemberPeriodStatus.CLOSED;
         }
         return RecruitMemberPeriodStatus.OPEN;
@@ -81,16 +107,17 @@ public class RecruitMemberPeriodService {
      * 들어온다 — 실제 차단은 여기서 한다.
      */
     public void validateOpen() {
+        RecruitWindow window = window();
         RecruitMemberPeriodStatus status = getPeriodStatus();
         if (status == RecruitMemberPeriodStatus.BEFORE_OPEN) {
             throw new BusinessException(
                 RecruitMemberErrorCode.RECRUIT_MEMBER_NOT_OPEN,
-                "부원 모집은 " + format(openAt) + "에 시작됩니다.");
+                "부원 모집은 " + format(window.openAt()) + "에 시작됩니다.");
         }
         if (status == RecruitMemberPeriodStatus.CLOSED) {
             throw new BusinessException(
                 RecruitMemberErrorCode.RECRUIT_MEMBER_CLOSED,
-                "부원 모집이 " + format(closeAt) + "에 마감되었습니다.");
+                "부원 모집이 " + format(window.closeAt()) + "에 마감되었습니다.");
         }
     }
 

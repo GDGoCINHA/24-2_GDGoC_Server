@@ -6,6 +6,9 @@ import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicantDetailRes
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreApplicationCreateResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreEligibilityResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCoreMyApplicationResponse;
+import inha.gdgoc.domain.recruit.common.dto.RecruitWindow;
+import inha.gdgoc.domain.recruit.common.enums.RecruitType;
+import inha.gdgoc.domain.recruit.common.service.RecruitPeriodOverrideReader;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCorePeriodResponse;
 import inha.gdgoc.domain.recruit.core.dto.response.RecruitCorePrefillResponse;
 import inha.gdgoc.domain.recruit.core.entity.RecruitCoreApplication;
@@ -43,9 +46,10 @@ public class RecruitCoreApplicationService {
     private final RecruitCoreSessionResolver recruitCoreSessionResolver;
     private final MajorNormalizer majorNormalizer;
     private final S3Service s3Service;
-    private final Instant openAt;
-    private final Instant closeAt;
+    private final Instant configuredOpenAt;
+    private final Instant configuredCloseAt;
     private final Clock clock;
+    private final RecruitPeriodOverrideReader overrideReader;
 
     // 시각을 주입받는다. `Instant.now()` 를 직접 부르면 마감일이 지나는 순간
     // 테스트가 통째로 무너지고, 마감 동작 자체를 검증할 방법도 없다.
@@ -65,12 +69,29 @@ public class RecruitCoreApplicationService {
         MajorNormalizer majorNormalizer,
         S3Service s3Service,
         @Value("${app.recruit.core.open-at}") String openAt,
-        @Value("${app.recruit.core.close-at}") String closeAt
+        @Value("${app.recruit.core.close-at}") String closeAt,
+        RecruitPeriodOverrideReader overrideReader
     ) {
         this(repository, userRepository, recruitCoreSessionResolver, majorNormalizer, s3Service,
             OffsetDateTime.parse(openAt).toInstant(),
             OffsetDateTime.parse(closeAt).toInstant(),
-            Clock.system(ZoneId.of("Asia/Seoul")));
+            Clock.system(ZoneId.of("Asia/Seoul")),
+            overrideReader);
+    }
+
+    /** 설정값만 쓰는 생성자. 테스트가 DB 없이 마감 동작을 검증할 때 쓴다. */
+    public RecruitCoreApplicationService(
+        RecruitCoreApplicationRepository repository,
+        UserRepository userRepository,
+        RecruitCoreSessionResolver recruitCoreSessionResolver,
+        MajorNormalizer majorNormalizer,
+        S3Service s3Service,
+        Instant openAt,
+        Instant closeAt,
+        Clock clock
+    ) {
+        this(repository, userRepository, recruitCoreSessionResolver, majorNormalizer, s3Service,
+            openAt, closeAt, clock, RecruitPeriodOverrideReader.NONE);
     }
 
     public RecruitCoreApplicationService(
@@ -81,7 +102,8 @@ public class RecruitCoreApplicationService {
         S3Service s3Service,
         Instant openAt,
         Instant closeAt,
-        Clock clock
+        Clock clock,
+        RecruitPeriodOverrideReader overrideReader
     ) {
         if (!openAt.isBefore(closeAt)) {
             throw new IllegalArgumentException(
@@ -93,9 +115,17 @@ public class RecruitCoreApplicationService {
         this.recruitCoreSessionResolver = recruitCoreSessionResolver;
         this.majorNormalizer = majorNormalizer;
         this.s3Service = s3Service;
-        this.openAt = openAt;
-        this.closeAt = closeAt;
+        this.configuredOpenAt = openAt;
+        this.configuredCloseAt = closeAt;
         this.clock = clock;
+        this.overrideReader = overrideReader;
+    }
+
+    /** 관리자가 저장한 기간이 있으면 그것, 없으면 설정값. */
+    private RecruitWindow window() {
+        return overrideReader
+            .find(RecruitType.CORE)
+            .orElseGet(() -> new RecruitWindow(configuredOpenAt, configuredCloseAt));
     }
 
     @Transactional(readOnly = true)
@@ -223,32 +253,35 @@ public class RecruitCoreApplicationService {
     }
 
     private void validateRecruitmentOpen() {
+        RecruitWindow window = window();
         RecruitCorePeriodStatus status = getPeriodStatus();
         if (status == RecruitCorePeriodStatus.BEFORE_OPEN) {
-            logRecruitmentClosed("BEFORE_OPEN", openAt);
-            throw new RecruitCoreNotOpenException(openAt);
+            logRecruitmentClosed("BEFORE_OPEN", window.openAt());
+            throw new RecruitCoreNotOpenException(window.openAt());
         }
         if (status == RecruitCorePeriodStatus.CLOSED) {
-            logRecruitmentClosed("CLOSED", closeAt);
-            throw new RecruitCoreClosedException(closeAt);
+            logRecruitmentClosed("CLOSED", window.closeAt());
+            throw new RecruitCoreClosedException(window.closeAt());
         }
     }
 
     @Transactional(readOnly = true)
     public RecruitCorePeriodResponse getPeriod() {
+        RecruitWindow window = window();
         return new RecruitCorePeriodResponse(
             recruitCoreSessionResolver.currentSession(),
-            openAt,
-            closeAt,
+            window.openAt(),
+            window.closeAt(),
             getPeriodStatus());
     }
 
     public RecruitCorePeriodStatus getPeriodStatus() {
+        RecruitWindow window = window();
         Instant now = Instant.now(clock);
-        if (now.isBefore(openAt)) {
+        if (now.isBefore(window.openAt())) {
             return RecruitCorePeriodStatus.BEFORE_OPEN;
         }
-        if (now.isAfter(closeAt)) {
+        if (now.isAfter(window.closeAt())) {
             return RecruitCorePeriodStatus.CLOSED;
         }
         return RecruitCorePeriodStatus.OPEN;
