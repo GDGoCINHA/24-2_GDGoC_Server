@@ -85,7 +85,10 @@ public class RecruitMemberPeriodService {
     public RecruitMemberPeriodResponse getPeriod() {
         RecruitWindow window = window();
         return new RecruitMemberPeriodResponse(
-            window.openAt(), window.closeAt(), getPeriodStatus());
+            window.openAt(),
+            window.closeAt(),
+            getPeriodStatus(),
+            overrideReader.findNotice(RecruitType.MEMBER));
     }
 
     public RecruitMemberPeriodStatus getPeriodStatus() {
