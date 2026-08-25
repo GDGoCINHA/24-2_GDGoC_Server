@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.recruit.member.dto.response;
 
+import inha.gdgoc.domain.recruit.common.dto.RecruitScheduleNotice;
 import inha.gdgoc.domain.recruit.member.enums.RecruitMemberPeriodStatus;
 import java.time.Instant;
 
@@ -11,6 +12,7 @@ import java.time.Instant;
 public record RecruitMemberPeriodResponse(
     Instant openAt,
     Instant closeAt,
-    RecruitMemberPeriodStatus status
+    RecruitMemberPeriodStatus status,
+    RecruitScheduleNotice notice
 ) {
 }

@@ -272,7 +272,8 @@ public class RecruitCoreApplicationService {
             recruitCoreSessionResolver.currentSession(),
             window.openAt(),
             window.closeAt(),
-            getPeriodStatus());
+            getPeriodStatus(),
+            overrideReader.findNotice(RecruitType.CORE));
     }
 
     public RecruitCorePeriodStatus getPeriodStatus() {
