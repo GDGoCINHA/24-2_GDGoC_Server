@@ -4,6 +4,8 @@ import inha.gdgoc.domain.admin.user.dto.request.UpdateRoleRequest;
 import inha.gdgoc.domain.admin.user.dto.request.UpdateUserRoleTeamRequest;
 import inha.gdgoc.domain.admin.user.dto.response.UserSummaryResponse;
 import inha.gdgoc.domain.admin.user.service.UserAdminService;
+import inha.gdgoc.domain.user.enums.TeamType;
+import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.global.config.jwt.TokenProvider.CustomUserDetails;
 import inha.gdgoc.global.dto.response.ApiResponse;
 import inha.gdgoc.global.dto.response.PageMeta;
@@ -55,6 +57,8 @@ public class UserAdminController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<UserSummaryResponse>, PageMeta>> list(
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) UserRole role,
+            @RequestParam(required = false) TeamType team,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "name") String sort,
@@ -62,7 +66,7 @@ public class UserAdminController {
     ) {
         Sort.Direction direction = "ASC".equalsIgnoreCase(dir) ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort));
-        Page<UserSummaryResponse> result = userAdminService.listUsers(q, pageable);
+        Page<UserSummaryResponse> result = userAdminService.listUsers(q, role, team, pageable);
         return ResponseEntity.ok(ApiResponse.ok("USER_SUMMARY_LIST_RETRIEVED", result, PageMeta.of(result)));
     }
 

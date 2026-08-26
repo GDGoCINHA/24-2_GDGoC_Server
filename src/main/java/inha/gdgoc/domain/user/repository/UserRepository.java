@@ -53,9 +53,19 @@ public interface UserRepository extends JpaRepository<User, Long>, UserRepositor
             u.id, u.name, u.major, u.studentId, u.email, u.userRole, u.team
         )
         from User u
-        where (:q is null or :q = '' or u.name like concat('%', :q, '%'))
+        where (:q is null or :q = ''
+               or lower(u.name) like lower(concat('%', :q, '%'))
+               or lower(u.email) like lower(concat('%', :q, '%'))
+               or u.studentId like concat('%', :q, '%'))
+          and (:role is null or u.userRole = :role)
+          and (:team is null or u.team = :team)
         """)
-    Page<UserSummaryResponse> findSummaries(@Param("q") String q, Pageable pageable);
+    Page<UserSummaryResponse> findSummaries(
+            @Param("q") String q,
+            @Param("role") UserRole role,
+            @Param("team") TeamType team,
+            Pageable pageable
+    );
 
     @NotNull Optional<User> findById(@NotNull Long id);
 }
