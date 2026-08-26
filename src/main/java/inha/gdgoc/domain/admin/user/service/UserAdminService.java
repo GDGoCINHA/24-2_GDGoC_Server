@@ -26,10 +26,16 @@ public class UserAdminService {
 
     private final UserRepository userRepository;
 
+    /**
+     * 관리자 유저 목록. {@code role}·{@code team} 은 null 이면 걸지 않는다.
+     *
+     * <p>{@code q} 는 이름·이메일·학번을 훑는다. 학과(major)는 뺐다 — DB 에는 코드값이
+     * 들어 있고 화면은 한글 라벨을 보여 주므로, 보이는 대로 쳐도 걸리지 않는다.
+     */
     @Transactional(readOnly = true)
-    public Page<UserSummaryResponse> listUsers(String q, Pageable pageable) {
+    public Page<UserSummaryResponse> listUsers(String q, UserRole role, TeamType team, Pageable pageable) {
         Pageable fixed = rewriteSort(pageable);
-        return userRepository.findSummaries(q, fixed);
+        return userRepository.findSummaries(q, role, team, fixed);
     }
 
     private Pageable rewriteSort(Pageable pageable) {
