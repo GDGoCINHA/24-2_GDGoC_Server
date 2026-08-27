@@ -58,7 +58,7 @@ public class EventCheckinService {
   public CheckinTokenResponse issueToken(Long eventBoardId) {
     EventApplicationForm form = findForm(eventBoardId);
     return new CheckinTokenResponse(
-        eventBoardId, tokenService.issue(form.getId()), tokenService.remainingSeconds());
+        eventBoardId, tokenService.issue(form.getId()), tokenService.lifetimeSeconds());
   }
 
   @Transactional
