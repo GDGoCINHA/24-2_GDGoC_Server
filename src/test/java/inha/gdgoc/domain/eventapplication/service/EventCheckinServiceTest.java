@@ -163,6 +163,8 @@ class EventCheckinServiceTest {
             UserRole.MEMBER,
             true);
     ReflectionTestUtils.setField(form, "id", FORM_ID);
+    // 부원에게 보이는 경로는 발행된 폼만 찾는다. 픽스처도 발행 상태로 둔다.
+    form.publish(Instant.parse("2026-08-01T00:00:00Z"));
     return form;
   }
 

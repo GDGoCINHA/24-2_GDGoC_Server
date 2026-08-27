@@ -67,6 +67,15 @@ public class EventApplicationForm extends BaseEntity {
   @Column(name = "is_open", nullable = false)
   private boolean isOpen;
 
+  /**
+   * 발행 시각. NULL 이면 아직 만드는 중이라 부원에게 보이지 않는다.
+   *
+   * <p>{@code isOpen} 과는 다른 축이다 — 발행은 "존재를 드러냈는가", isOpen 은 "지금 받는가". 발행은 되돌리지 않는다. 이미 신청한
+   * 사람의 화면이 통째로 사라지면 안 되고, 그만 받고 싶을 때는 isOpen 을 내리면 된다.
+   */
+  @Column(name = "published_at")
+  private Instant publishedAt;
+
   @OneToMany(mappedBy = "form", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("sortOrder ASC, id ASC")
   private List<EventFormQuestion> questions = new ArrayList<>();
@@ -103,6 +112,17 @@ public class EventApplicationForm extends BaseEntity {
     if (capacity != null) this.capacity = capacity;
     if (minRole != null) this.minRole = minRole;
     if (isOpen != null) this.isOpen = isOpen;
+  }
+
+  /** 부원에게 공개한다. 이미 발행된 폼은 그대로 둔다 — 발행일이 밀리면 안 된다. */
+  public void publish(Instant now) {
+    if (this.publishedAt == null) {
+      this.publishedAt = now;
+    }
+  }
+
+  public boolean isPublished() {
+    return this.publishedAt != null;
   }
 
   /** 정원을 무제한으로 되돌린다. {@link #updateSettings} 로는 null 을 넣을 수 없기 때문이다. */

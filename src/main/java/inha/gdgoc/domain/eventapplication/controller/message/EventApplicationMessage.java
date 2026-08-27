@@ -4,6 +4,7 @@ public class EventApplicationMessage {
 
   public static final String FORM_CREATED = "신청 폼을 만들었습니다.";
   public static final String FORM_UPDATED = "신청 설정을 저장했습니다.";
+  public static final String FORM_PUBLISHED = "신청 폼을 공개했습니다.";
   public static final String FORM_DELETED = "신청 받기를 해제했습니다.";
   public static final String FORM_RETRIEVED = "신청 폼을 조회했습니다.";
   public static final String QUESTION_CREATED = "질문을 추가했습니다.";

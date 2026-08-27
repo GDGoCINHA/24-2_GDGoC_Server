@@ -15,11 +15,14 @@ import inha.gdgoc.domain.eventapplication.repository.EventApplicationFormReposit
 import inha.gdgoc.domain.eventapplication.repository.EventApplicationRepository;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.global.exception.BusinessException;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
  * 취소를 뺀 {@code APPLIED} 만 센다.
  */
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class EventFormAdminService {
 
@@ -38,6 +40,34 @@ public class EventFormAdminService {
   private final EventApplicationRepository applicationRepository;
   private final EventBoardRepository eventBoardRepository;
   private final EventFormValidator validator;
+  private final Clock clock;
+
+  @Autowired
+  public EventFormAdminService(
+      EventApplicationFormRepository formRepository,
+      EventApplicationRepository applicationRepository,
+      EventBoardRepository eventBoardRepository,
+      EventFormValidator validator) {
+    this(
+        formRepository,
+        applicationRepository,
+        eventBoardRepository,
+        validator,
+        Clock.system(ZoneId.of("Asia/Seoul")));
+  }
+
+  EventFormAdminService(
+      EventApplicationFormRepository formRepository,
+      EventApplicationRepository applicationRepository,
+      EventBoardRepository eventBoardRepository,
+      EventFormValidator validator,
+      Clock clock) {
+    this.formRepository = formRepository;
+    this.applicationRepository = applicationRepository;
+    this.eventBoardRepository = eventBoardRepository;
+    this.validator = validator;
+    this.clock = clock;
+  }
 
   public EventFormResponse getForm(Long eventBoardId) {
     EventApplicationForm form = findForm(eventBoardId);
@@ -82,6 +112,17 @@ public class EventFormAdminService {
         && !form.getOpensAt().isBefore(form.getClosesAt())) {
       throw new BusinessException(PERIOD_INVALID);
     }
+  }
+
+  /**
+   * 부원에게 공개한다.
+   *
+   * <p>되돌리는 길은 두지 않는다. 이미 신청한 사람의 화면이 통째로 사라지면 안 되기 때문이다. 그만 받고 싶으면 {@code isOpen} 을 내리고, 아무도
+   * 신청하지 않았다면 폼째로 지우면 된다.
+   */
+  @Transactional
+  public void publishForm(Long eventBoardId) {
+    findForm(eventBoardId).publish(Instant.now(clock));
   }
 
   /** 신청 받기를 해제한다. 신청자가 있으면 지우지 않고 마감으로 닫도록 안내한다. */
