@@ -45,6 +45,7 @@ public enum EventApplicationErrorCode implements ErrorCode {
   APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "신청 내역이 없습니다."),
 
   ANSWER_REQUIRED(HttpStatus.BAD_REQUEST, "필수 질문에 답하지 않았습니다."),
+  AGREEMENT_REQUIRED(HttpStatus.BAD_REQUEST, "필수 동의 항목에 동의해야 신청할 수 있습니다."),
   ANSWER_TYPE_INVALID(HttpStatus.BAD_REQUEST, "답변 형태가 질문 유형과 맞지 않습니다."),
   ANSWER_VALUE_INVALID(HttpStatus.BAD_REQUEST, "선택지에 없는 값입니다."),
   ANSWER_QUESTION_UNKNOWN(HttpStatus.BAD_REQUEST, "이 폼에 없는 질문에 답했습니다."),

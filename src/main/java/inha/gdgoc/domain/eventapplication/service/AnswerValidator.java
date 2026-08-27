@@ -84,8 +84,12 @@ public class AnswerValidator {
       }
       case DATE -> requireIsoDate(value);
       case AGREEMENT -> {
-        if (!(value instanceof Boolean)) {
+        if (!(value instanceof Boolean agreed)) {
           throw new BusinessException(ANSWER_TYPE_INVALID);
+        }
+        // 체크를 푼 것도 '답한 것'으로 보면 개인정보 동의에 동의하지 않고 신청이 된다.
+        if (question.isRequired() && !agreed) {
+          throw new BusinessException(AGREEMENT_REQUIRED);
         }
       }
       case SINGLE_CHOICE, DROPDOWN -> {

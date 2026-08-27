@@ -122,6 +122,26 @@ class AnswerValidatorTest {
   }
 
   @Test
+  @DisplayName("필수 동의 항목은 체크해야 통과한다")
+  void requiredAgreementMustBeTrue() {
+    EventFormQuestion q = required(build(1L, 0, QuestionType.AGREEMENT, null));
+
+    assertThat(validator.validateAndFilter(List.of(q), answers(1L, true))).containsKey(1L);
+    // 체크를 푼 것도 '답한 것'으로 보면 개인정보 동의 없이 신청이 된다.
+    assertError(
+        () -> validator.validateAndFilter(List.of(q), answers(1L, false)),
+        EventApplicationErrorCode.AGREEMENT_REQUIRED);
+  }
+
+  @Test
+  @DisplayName("선택 동의 항목은 체크하지 않아도 된다")
+  void optionalAgreementMayBeFalse() {
+    EventFormQuestion q = build(1L, 0, QuestionType.AGREEMENT, null);
+
+    assertThat(validator.validateAndFilter(List.of(q), answers(1L, false))).containsKey(1L);
+  }
+
+  @Test
   @DisplayName("폼에 없는 질문에 답하면 거절한다")
   void unknownQuestionRejected() {
     EventFormQuestion q = text(1L, 0);
