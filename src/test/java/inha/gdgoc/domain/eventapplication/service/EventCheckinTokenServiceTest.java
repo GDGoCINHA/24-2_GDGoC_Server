@@ -18,19 +18,22 @@ class EventCheckinTokenServiceTest {
   private static final String SECRET = "test-secret-for-checkin";
   private static final Instant BASE = Instant.parse("2026-09-01T03:00:00Z");
 
-  @Test
-  @DisplayName("같은 분 안에서는 같은 토큰이 나온다")
-  void stableWithinWindow() {
-    EventCheckinTokenService at00 = service(BASE);
-    EventCheckinTokenService at59 = service(BASE.plusSeconds(59));
+  /** 창 길이. 서비스의 WINDOW_SECONDS 와 같아야 한다. */
+  private static final long WINDOW = 180;
 
-    assertThat(at00.issue(1L)).isEqualTo(at59.issue(1L));
+  @Test
+  @DisplayName("같은 창 안에서는 같은 토큰이 나온다")
+  void stableWithinWindow() {
+    EventCheckinTokenService atStart = service(BASE);
+    EventCheckinTokenService atEnd = service(BASE.plusSeconds(WINDOW - 1));
+
+    assertThat(atStart.issue(1L)).isEqualTo(atEnd.issue(1L));
   }
 
   @Test
-  @DisplayName("1분이 지나면 토큰이 바뀐다")
-  void rotatesEveryMinute() {
-    assertThat(service(BASE).issue(1L)).isNotEqualTo(service(BASE.plusSeconds(60)).issue(1L));
+  @DisplayName("창이 지나면 토큰이 바뀐다")
+  void rotatesEveryWindow() {
+    assertThat(service(BASE).issue(1L)).isNotEqualTo(service(BASE.plusSeconds(WINDOW)).issue(1L));
   }
 
   @Test
@@ -42,14 +45,26 @@ class EventCheckinTokenServiceTest {
   }
 
   @Test
-  @DisplayName("직전 분에 발급된 토큰도 받아준다")
+  @DisplayName("직전 창에 발급된 토큰도 받아준다")
   void acceptsPreviousWindow() {
-    String issuedEarlier = service(BASE.plusSeconds(59)).issue(1L);
+    String issuedEarlier = service(BASE.plusSeconds(WINDOW - 1)).issue(1L);
 
-    // 59초에 QR 을 찍고 1초 뒤에 요청이 도착하는 것은 정상적인 상황이다.
-    EventCheckinTokenService oneSecondLater = service(BASE.plusSeconds(61));
+    // 창이 끝나갈 때 QR 을 찍고 1초 뒤에 요청이 도착하는 것은 정상적인 상황이다.
+    EventCheckinTokenService oneSecondLater = service(BASE.plusSeconds(WINDOW + 1));
 
     assertThat(oneSecondLater.verify(1L, issuedEarlier)).isTrue();
+  }
+
+  // 이 테스트가 지키는 것이 창을 늘린 이유 자체다. 창이 끝나갈 때 찍어도 최소 WINDOW 초가 남는다.
+  @Test
+  @DisplayName("창이 끝나갈 때 찍어도 로그인 왕복만큼은 버틴다")
+  void survivesLoginRoundTrip() {
+    String scannedAtWindowEnd = service(BASE.plusSeconds(WINDOW - 1)).issue(1L);
+
+    EventCheckinTokenService almostThreeMinutesLater =
+        service(BASE.plusSeconds(WINDOW - 1 + 175));
+
+    assertThat(almostThreeMinutesLater.verify(1L, scannedAtWindowEnd)).isTrue();
   }
 
   @Test
@@ -58,7 +73,7 @@ class EventCheckinTokenServiceTest {
     String old = service(BASE).issue(1L);
 
     // 사진으로 전달된 QR 이 걸리는 지점이다.
-    assertThat(service(BASE.plusSeconds(180)).verify(1L, old)).isFalse();
+    assertThat(service(BASE.plusSeconds(WINDOW * 3)).verify(1L, old)).isFalse();
   }
 
   @Test
@@ -89,10 +104,10 @@ class EventCheckinTokenServiceTest {
   }
 
   @Test
-  @DisplayName("남은 초는 다음 분까지의 거리다")
+  @DisplayName("남은 초는 다음 창까지의 거리다")
   void remainingSecondsCountsDown() {
-    assertThat(service(BASE).remainingSeconds()).isEqualTo(60);
-    assertThat(service(BASE.plusSeconds(45)).remainingSeconds()).isEqualTo(15);
+    assertThat(service(BASE).remainingSeconds()).isEqualTo(WINDOW);
+    assertThat(service(BASE.plusSeconds(45)).remainingSeconds()).isEqualTo(WINDOW - 45);
   }
 
   private static EventCheckinTokenService service(Instant now) {
