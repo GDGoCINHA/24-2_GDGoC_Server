@@ -93,6 +93,59 @@ class ApplicantCsvWriterTest {
     assertThat(csv.strip()).endsWith(",");
   }
 
+  @Test
+  @DisplayName("선택형 답변을 선택지 문구로 바꿔 적는다")
+  void optionValueBecomesLabel() {
+    // 폼 빌더가 만드는 value 는 OPT_1756... 같은 내부 값이다. 그대로 적으면 아무도 못 읽는다.
+    EventFormQuestion q =
+        choiceQuestion(
+            1L,
+            "식사 여부",
+            QuestionType.SINGLE_CHOICE,
+            List.of(new QuestionOption("OPT_1", "네, 먹습니다"), new QuestionOption("OPT_2", "아니요")));
+
+    String csv = text(writer.write(List.of(q), List.of(applicant(answers(1L, "OPT_1")))));
+
+    assertThat(csv).contains("\"네, 먹습니다\"").doesNotContain("OPT_1");
+  }
+
+  @Test
+  @DisplayName("다중선택도 선택지 문구로 바꿔 모아 적는다")
+  void multiChoiceValuesBecomeLabels() {
+    EventFormQuestion q =
+        choiceQuestion(
+            1L,
+            "관심 세션",
+            QuestionType.MULTI_CHOICE,
+            List.of(new QuestionOption("OPT_1", "서버리스"), new QuestionOption("OPT_2", "배포")));
+
+    String csv =
+        text(writer.write(List.of(q), List.of(applicant(answers(1L, List.of("OPT_1", "OPT_2"))))));
+
+    assertThat(csv).contains("\"서버리스, 배포\"");
+  }
+
+  @Test
+  @DisplayName("선택지에서 사라진 값은 저장된 그대로 적는다")
+  void unknownOptionValueStaysAsIs() {
+    // 운영진이 선택지를 지운 뒤에도 과거 답변은 남는다. 빈 칸으로 만들면 데이터를 잃는다.
+    EventFormQuestion q =
+        choiceQuestion(
+            1L, "식사 여부", QuestionType.SINGLE_CHOICE, List.of(new QuestionOption("OPT_1", "네")));
+
+    String csv = text(writer.write(List.of(q), List.of(applicant(answers(1L, "OPT_GONE")))));
+
+    assertThat(csv).contains("OPT_GONE");
+  }
+
+  private static EventFormQuestion choiceQuestion(
+      Long id, String label, QuestionType type, List<QuestionOption> options) {
+    EventFormQuestion question =
+        EventFormQuestion.create(null, type, label, null, false, 0, options, null, null);
+    ReflectionTestUtils.setField(question, "id", id);
+    return question;
+  }
+
   private static Map<Long, Object> answers(Long questionId, Object value) {
     Map<Long, Object> map = new LinkedHashMap<>();
     map.put(questionId, value);

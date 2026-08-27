@@ -2,6 +2,7 @@ package inha.gdgoc.domain.eventapplication.service;
 
 import inha.gdgoc.domain.eventapplication.dto.response.ApplicantResponse;
 import inha.gdgoc.domain.eventapplication.entity.EventFormQuestion;
+import inha.gdgoc.domain.eventapplication.entity.QuestionOption;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -56,7 +57,8 @@ public class ApplicantCsvWriter {
 
       Map<Long, Object> answers = applicant.answers();
       for (EventFormQuestion question : questions) {
-        cells.add(stringify(answers == null ? null : answers.get(question.getId())));
+        cells.add(
+            stringify(answers == null ? null : answers.get(question.getId()), labelsOf(question)));
       }
       sb.append(cells.stream().map(this::escape).collect(Collectors.joining(","))).append("\r\n");
     }
@@ -80,18 +82,40 @@ public class ApplicantCsvWriter {
     return instant == null ? "" : TIMESTAMP.format(instant);
   }
 
+  /** 답변에는 선택지의 value 가 들어 있다. 사람이 읽는 파일이므로 label 로 바꿔 적는다. */
+  private Map<String, String> labelsOf(EventFormQuestion question) {
+    if (question.getOptions() == null) {
+      return Map.of();
+    }
+    Map<String, String> labels = new java.util.HashMap<>();
+    for (QuestionOption option : question.getOptions()) {
+      if (option != null && option.value() != null && option.label() != null) {
+        labels.put(option.value(), option.label());
+      }
+    }
+    return labels;
+  }
+
   /** 다중선택은 한 칸에 모아 적는다. 셀 안의 쉼표는 escape 가 처리한다. */
-  private String stringify(Object value) {
+  private String stringify(Object value, Map<String, String> labels) {
     if (value == null) {
       return "";
     }
     if (value instanceof Collection<?> collection) {
-      return collection.stream().map(String::valueOf).collect(Collectors.joining(", "));
+      return collection.stream()
+          .map(item -> label(item, labels))
+          .collect(Collectors.joining(", "));
     }
     if (value instanceof Boolean b) {
       return b ? "O" : "X";
     }
-    return String.valueOf(value);
+    return label(value, labels);
+  }
+
+  /** 선택지가 지워졌거나 자유 입력이면 저장된 값을 그대로 쓴다. */
+  private String label(Object value, Map<String, String> labels) {
+    String raw = String.valueOf(value);
+    return labels.getOrDefault(raw, raw);
   }
 
   private String escape(String raw) {
