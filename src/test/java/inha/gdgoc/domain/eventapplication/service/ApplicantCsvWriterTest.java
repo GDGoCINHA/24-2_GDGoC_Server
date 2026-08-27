@@ -2,6 +2,7 @@ package inha.gdgoc.domain.eventapplication.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import inha.gdgoc.global.util.MajorNormalizer;
 import inha.gdgoc.domain.eventapplication.dto.response.ApplicantResponse;
 import inha.gdgoc.domain.eventapplication.entity.EventFormQuestion;
 import inha.gdgoc.domain.eventapplication.entity.QuestionOption;
@@ -19,7 +20,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 class ApplicantCsvWriterTest {
 
-  private final ApplicantCsvWriter writer = new ApplicantCsvWriter();
+  private final ApplicantCsvWriter writer = new ApplicantCsvWriter(new MajorNormalizer());
 
   @Test
   @DisplayName("UTF-8 BOM 으로 시작한다")
@@ -125,6 +126,39 @@ class ApplicantCsvWriterTest {
     assertThat(csv).contains("\"서버리스, 배포\"");
   }
 
+  // 스프레드시트를 여는 사람에게 'CSE' 는 아무 뜻이 없다. 화면 표는 예전부터 라벨로 보여 줬는데
+  // CSV 만 코드가 나갔다.
+  @Test
+  @DisplayName("학과는 코드가 아니라 학과명으로 적는다")
+  void majorCodeBecomesLabel() {
+    String csv = text(writer.write(List.of(), List.of(applicant(Map.of()))));
+
+    assertThat(csv).contains("컴퓨터공학과").doesNotContain("CSE");
+  }
+
+  // 학과가 신설되면 매핑에 없는 코드가 들어온다. 빈칸이 되면 누구 지원선지 알 수 없다.
+  @Test
+  @DisplayName("모르는 학과 값은 그대로 적는다")
+  void unknownMajorStaysAsIs() {
+    ApplicantResponse applicant =
+        new ApplicantResponse(
+            1L,
+            7L,
+            "홍길동",
+            "12201234",
+            "NEWDEPT",
+            "hong@test.io",
+            "01000000000",
+            ApplicationStatus.APPLIED,
+            EventAttendanceStatus.PENDING,
+            Instant.parse("2026-09-01T03:00:00Z"),
+            null,
+            null,
+            Map.of());
+
+    assertThat(text(writer.write(List.of(), List.of(applicant)))).contains("NEWDEPT");
+  }
+
   @Test
   @DisplayName("선택지에서 사라진 값은 저장된 그대로 적는다")
   void unknownOptionValueStaysAsIs() {
@@ -158,7 +192,8 @@ class ApplicantCsvWriterTest {
         7L,
         "홍길동",
         "12201234",
-        "컴퓨터공학과",
+        // DB 에 실제로 담기는 값은 코드다. 라벨을 넣어 두면 코드 노출 결함을 못 잡는다.
+        "CSE",
         "hong@test.io",
         "01000000000",
         ApplicationStatus.APPLIED,
