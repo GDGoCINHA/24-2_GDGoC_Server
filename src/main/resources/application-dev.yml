@@ -60,6 +60,10 @@ springdoc:
     enabled: false
 
 app:
+  # 비워두면 기동할 때마다 임의 키를 만든다. 60초짜리 QR 토큰이라 재시작으로 무효가 돼도
+  # 화면을 새로고침하면 그만이다. 다만 서버를 여러 대로 늘리면 반드시 채워야 한다.
+  event-checkin:
+    secret: ${EVENT_CHECKIN_SECRET:}
   s3:
     bucket: ${AWS_TEST_RESOURCE_BUCKET}
   admin:

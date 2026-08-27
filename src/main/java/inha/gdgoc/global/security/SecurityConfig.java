@@ -51,7 +51,6 @@ public class SecurityConfig {
                     "/api/v1/auth/**",
                     "/api/v1/test/**",
                     "/api/v1/game/**",
-                    "/api/v1/recruit/member/apply/**",
                     "/api/v1/recruit/member/check/**",
                     "/api/v1/recruit/member/memo",
                     "/api/v1/recruit/core/period",

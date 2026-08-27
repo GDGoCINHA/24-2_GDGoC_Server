@@ -94,28 +94,39 @@ public class RecruitMemberController {
         return ResponseEntity.ok(recruitMemberPeriodService.getPeriod());
     }
 
+    /**
+     * 지원 접수. 로그인이 필요하다.
+     *
+     * <p>이름·학번·이메일·전화·학과는 계정에서 가져오므로 폼이 보내도 무시한다. 이미 지원한 사람은 화면이 폼을 그리기 전에
+     * {@code GET /applications/me} 로 걸러낸다 — 다 채우고 제출한 뒤에 "중복" 을 보는 것은 사고로 읽힌다.
+     */
+    @PreAuthorize("isAuthenticated()")
     @PostMapping(value = "/apply", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Void, Void>> recruitMemberAdd(
+            @AuthenticationPrincipal CustomUserDetails me,
             @RequestBody Map<String, Object> applicationRequest
     ) {
         recruitMemberPeriodService.validateOpen();
-        recruitMemberService.addRecruitMember(applicationRequest, null);
+        recruitMemberService.addRecruitMember(applicationRequest, null, me.getUserId());
 
         return ResponseEntity.ok(ApiResponse.ok(MEMBER_SAVE_SUCCESS));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping(value = "/apply", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<Void, Void>> recruitMemberAddMultipart(
+            @AuthenticationPrincipal CustomUserDetails me,
             @RequestPart("request") Map<String, Object> applicationRequest,
             @RequestPart(value = "file", required = false) MultipartFile file
     ) {
         recruitMemberPeriodService.validateOpen();
-        recruitMemberService.addRecruitMember(applicationRequest, file);
+        recruitMemberService.addRecruitMember(applicationRequest, file, me.getUserId());
 
         return ResponseEntity.ok(ApiResponse.ok(MEMBER_SAVE_SUCCESS));
     }
 
     /** 증빙 파일도 지원의 일부다. 기간 밖에 업로드 URL 만 받아두는 길을 열어두지 않는다. */
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/apply/proof-file/presigned-upload")
     public ResponseEntity<ApiResponse<PresignedUploadResponse, Void>> createProofFilePresignedUpload(
             @Valid @RequestBody ProofFilePresignedUploadRequest request

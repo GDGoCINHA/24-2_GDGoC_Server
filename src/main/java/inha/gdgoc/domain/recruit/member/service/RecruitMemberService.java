@@ -36,6 +36,7 @@ import inha.gdgoc.global.util.MajorNormalizer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -61,8 +62,16 @@ public class RecruitMemberService {
     private final S3Service s3Service;
     private final MajorNormalizer majorNormalizer;
 
+    /**
+     * 지원을 접수한다.
+     *
+     * <p>신원(이름·학번·이메일·전화·학과)은 폼이 아니라 로그인한 계정에서 가져온다. 가입 때 이미 받은 값이고,
+     * 지원서와 계정을 잇는 키가 이메일이라 타이핑에 맡기면 오타 하나로 영영 안 이어진다.
+     */
     @Transactional
-    public void addRecruitMember(Map<String, Object> requestPayload, MultipartFile file) {
+    public void addRecruitMember(Map<String, Object> requestPayload, MultipartFile file, Long userId) {
+        User applicant = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
         RecruitMemberRequest memberRequest;
         Map<String, Object> answers;
 
@@ -74,6 +83,13 @@ public class RecruitMemberService {
             memberRequest = buildMemberFromNumberedPayload(requestPayload);
             answers = buildAnswersFromNumberedPayload(requestPayload);
         }
+
+        memberRequest = memberRequest.withIdentity(
+                applicant.getName(),
+                applicant.getStudentId(),
+                applicant.getEmail(),
+                applicant.getPhoneNumber(),
+                applicant.getMajor());
 
         log.info("[recruit-member] 지원 접수 - studentId={}, name={}, hasProofFile={}",
                 memberRequest.getStudentId(), memberRequest.getName(), file != null && !file.isEmpty());
@@ -207,12 +223,39 @@ public class RecruitMemberService {
     public SpecifiedMemberResponse findMyApplication(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
+        AdmissionSemester semester = semesterCalculator.currentSemester();
         RecruitMember member = recruitMemberRepository
-                .findByEmailIgnoreCaseAndAdmissionSemester(
-                        user.getEmail().trim(), semesterCalculator.currentSemester())
+                .findByEmailIgnoreCaseAndAdmissionSemester(user.getEmail().trim(), semester)
+                .or(() -> findByAccountStudentId(user, semester))
                 .orElseThrow(() -> new RecruitMemberException(RECRUIT_MEMBER_NOT_FOUND));
 
         return toSpecifiedMemberResponse(member);
+    }
+
+    /**
+     * 이메일로 못 찾았을 때의 대비책.
+     *
+     * <p>로그인 필수로 바뀌기 전에는 지원 폼에 이메일을 직접 적었다. 자기 계정과 다른 @inha.edu 주소를 적은 사람은
+     * 이메일만으로는 영영 안 이어진다.
+     *
+     * <p>학번만으로 찾으면 오타로 남의 학번을 적은 지원서가 걸릴 수 있어 <b>이름까지 같을 때만</b> 인정한다.
+     */
+    private Optional<RecruitMember> findByAccountStudentId(User user, AdmissionSemester semester) {
+        if (user.getStudentId() == null || user.getStudentId().isBlank()) {
+            return Optional.empty();
+        }
+        String accountName = compactName(user.getName());
+        if (accountName.isEmpty()) {
+            return Optional.empty();
+        }
+        return recruitMemberRepository
+                .findByStudentIdAndAdmissionSemester(user.getStudentId().trim(), semester)
+                .filter(found -> compactName(found.getName()).equals(accountName));
+    }
+
+    /** 이름 비교에서 공백만 다른 경우("홍 길동")를 같은 것으로 본다. */
+    private String compactName(String name) {
+        return name == null ? "" : name.replaceAll("\\s+", "");
     }
 
     private SpecifiedMemberResponse toSpecifiedMemberResponse(RecruitMember member) {
@@ -242,8 +285,8 @@ public class RecruitMemberService {
     /**
      * 한 학기에 한 번만 받는다 — 이메일·학번·전화번호 중 하나라도 겹치면 막는다.
      *
-     * <p>화면에서도 중복 확인 버튼으로 걸러내지만 그건 안내일 뿐이다. 지원 API 는 인증 없이 열려 있어
-     * 주소를 직접 치면 그대로 들어온다 — 실제 차단은 여기서 한다.
+     * <p>화면에서도 지원 이력을 먼저 조회해 폼 자체를 막지만 그건 안내일 뿐이다. 주소를 직접 치면
+     * 그대로 들어오므로 실제 차단은 여기서 한다.
      *
      * <p>학번·전화번호는 DB 에도 (값, 학기) 복합 UNIQUE 가 있다. 그것만 믿으면 중복 제출이
      * 제약 위반 500 으로 나가므로, 여기서 먼저 걸러 409 로 답한다.

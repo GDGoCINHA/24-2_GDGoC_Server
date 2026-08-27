@@ -9,6 +9,7 @@ import inha.gdgoc.domain.board.common.service.AttachmentPolicy;
 import inha.gdgoc.domain.board.event.dto.request.EventBoardUpdateRequest;
 import inha.gdgoc.domain.board.event.entity.EventBoard;
 import inha.gdgoc.domain.board.event.repository.EventBoardRepository;
+import inha.gdgoc.domain.eventapplication.repository.EventApplicationFormRepository;
 import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.user.enums.TeamType;
 import inha.gdgoc.domain.user.enums.UserRole;
@@ -42,13 +43,19 @@ class EventBoardServiceTest {
     @Mock
     private S3Service s3Service;
 
+  @Mock private EventApplicationFormRepository eventApplicationFormRepository;
+
     private EventBoardService eventBoardService;
 
     @BeforeEach
     void setUp() {
         eventBoardService =
                 new EventBoardService(
-                        eventBoardRepository, userRepository, s3Service, new AttachmentPolicy(s3Service));
+                        eventBoardRepository,
+                userRepository,
+                eventApplicationFormRepository,
+                s3Service,
+                new AttachmentPolicy(s3Service));
     }
 
     // --- 미공개 글 가시성 ---

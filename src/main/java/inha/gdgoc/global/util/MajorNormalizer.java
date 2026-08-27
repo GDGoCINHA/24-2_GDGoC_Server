@@ -2,6 +2,7 @@ package inha.gdgoc.global.util;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -101,6 +102,15 @@ public class MajorNormalizer {
 
     private static final Set<String> KNOWN_CODES = Set.copyOf(LABEL_TO_CODE.values());
 
+    /**
+     * 코드 → 사람이 읽는 학과명. ALIASES 는 넣지 않는다 — 별칭은 받아들이는 입력이지 내보낼 이름이 아니다.
+     *
+     * <p>LABEL_TO_CODE 에 같은 코드가 두 번 나오면 여기서 IllegalStateException 으로 기동이 실패한다. 이름이 하나로 정해지지 않는
+     * 상태를 조용히 넘기는 것보다 낫다.
+     */
+    private static final Map<String, String> CODE_TO_LABEL = LABEL_TO_CODE.entrySet().stream()
+            .collect(Collectors.toUnmodifiableMap(Map.Entry::getValue, Map.Entry::getKey));
+
     public String normalize(String major) {
         if (major == null) {
             return null;
@@ -125,5 +135,19 @@ public class MajorNormalizer {
 
     public boolean isKnownCode(String code) {
         return code != null && KNOWN_CODES.contains(code);
+    }
+
+    /**
+     * 저장된 코드를 사람이 읽는 학과명으로 되돌린다.
+     *
+     * <p>모르는 값은 그대로 돌려준다. 학과가 신설되거나 옛 데이터가 코드가 아닌 값을 들고 있어도 빈칸이 되지 않는다 — 원본이 보이는 편이
+     * 아무것도 안 보이는 것보다 낫다.
+     */
+    public String toLabel(String code) {
+        if (code == null) {
+            return null;
+        }
+        String trimmed = code.trim();
+        return CODE_TO_LABEL.getOrDefault(trimmed, trimmed);
     }
 }
