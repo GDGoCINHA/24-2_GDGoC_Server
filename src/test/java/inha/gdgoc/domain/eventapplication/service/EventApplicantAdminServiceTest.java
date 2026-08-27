@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import inha.gdgoc.global.util.MajorNormalizer;
 import inha.gdgoc.domain.eventapplication.dto.request.AttendanceUpdateRequest;
 import inha.gdgoc.domain.eventapplication.dto.request.ProxyApplicationRequest;
 import inha.gdgoc.domain.eventapplication.entity.EventApplication;
@@ -56,7 +57,7 @@ class EventApplicantAdminServiceTest {
             applicationRepository,
             userRepository,
             new AnswerCodec(new ObjectMapper()),
-            new ApplicantCsvWriter(),
+            new ApplicantCsvWriter(new MajorNormalizer()),
             Clock.fixed(NOW, ZoneOffset.UTC));
   }
 

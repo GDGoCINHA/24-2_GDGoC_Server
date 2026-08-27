@@ -3,6 +3,7 @@ package inha.gdgoc.domain.eventapplication.service;
 import inha.gdgoc.domain.eventapplication.dto.response.ApplicantResponse;
 import inha.gdgoc.domain.eventapplication.entity.EventFormQuestion;
 import inha.gdgoc.domain.eventapplication.entity.QuestionOption;
+import inha.gdgoc.global.util.MajorNormalizer;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -22,6 +23,12 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ApplicantCsvWriter {
+
+  private final MajorNormalizer majorNormalizer;
+
+  public ApplicantCsvWriter(MajorNormalizer majorNormalizer) {
+    this.majorNormalizer = majorNormalizer;
+  }
 
   private static final byte[] UTF8_BOM = {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
   private static final ZoneId KST = ZoneId.of("Asia/Seoul");
@@ -47,7 +54,8 @@ public class ApplicantCsvWriter {
       List<String> cells = new java.util.ArrayList<>();
       cells.add(applicant.name());
       cells.add(applicant.studentId());
-      cells.add(applicant.major());
+      // 저장된 값은 'ME' 같은 코드다. 스프레드시트를 여는 사람에게는 학과명이어야 한다.
+      cells.add(majorNormalizer.toLabel(applicant.major()));
       cells.add(applicant.email());
       cells.add(applicant.phoneNumber());
       cells.add(format(applicant.appliedAt()));
