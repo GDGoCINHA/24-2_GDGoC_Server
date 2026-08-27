@@ -79,9 +79,10 @@ class EventCheckinServiceTest {
     EventApplicationForm form = form();
     givenForm(form);
 
-    // 3분 전에 찍힌 QR 사진으로 시도하는 상황이다.
+    // 한참 전에 찍힌 QR 사진으로 시도하는 상황이다.
+    // 창 길이의 배수로 적으면 창을 늘릴 때마다 이 테스트가 조용히 무의미해진다 — 넉넉히 벌린다.
     String staleToken =
-        new EventCheckinTokenService("s", Clock.fixed(DURING_EVENT.minusSeconds(180), ZoneOffset.UTC))
+        new EventCheckinTokenService("s", Clock.fixed(DURING_EVENT.minusSeconds(3600), ZoneOffset.UTC))
             .issue(FORM_ID);
 
     assertError(

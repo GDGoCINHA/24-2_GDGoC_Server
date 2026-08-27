@@ -17,16 +17,21 @@ import org.springframework.stereotype.Component;
 /**
  * QR 체크인 토큰.
  *
- * <p>행사장에 띄운 QR 을 찍어서 안 온 사람에게 보내는 것이 이 방식의 유일한 약점이다. 토큰을 {@code HMAC(비밀키, 폼ID + 분단위 시각)} 으로 계산해 60
- * 초마다 갈아치우면 사진으로 받은 QR 은 무효가 된다. 저장 테이블이 필요 없다.
+ * <p>행사장에 띄운 QR 을 찍어서 안 온 사람에게 보내는 것이 이 방식의 유일한 약점이다. 토큰을 {@code HMAC(비밀키, 폼ID + 창 번호)} 로 계산해 주기적으로
+ * 갈아치우면 사진으로 받은 QR 은 무효가 된다. 저장 테이블이 필요 없다.
  *
- * <p>검증할 때 현재 분과 직전 분을 모두 받아준다. 59 초에 찍은 사람이 경계를 넘었다고 실패하면 안 되기 때문이다.
+ * <p>검증할 때 현재 창과 직전 창을 모두 받아준다. 창이 끝나갈 때 찍은 사람이 경계를 넘었다고 실패하면 안 되기 때문이다. 그래서 실제 유효 시간은 찍은 시점에
+ * 따라 {@link #WINDOW_SECONDS} 의 1~2 배다.
+ *
+ * <p><b>창을 60 초에서 180 초로 늘렸다(2026-08-27).</b> QR 을 찍은 사람이 로그인되어 있지 않으면 구글 로그인을 거쳐 돌아오는데, 60 초로는 그 왕복이
+ * 자주 넘쳤다. 만료되면 안내가 뜨고 다시 찍으면 되지만 입구에서 두 번 찍게 만든다. 늘려서 잃는 것은 QR 사진을 전달할 여유가 몇 분 늘어나는 것인데, 그건
+ * 애초에 토큰 수명으로 막을 수 없다 — 실질적인 억제는 운영진이 체크인 명단을 본다는 데서 온다.
  */
 @Slf4j
 @Component
 public class EventCheckinTokenService {
 
-  private static final long WINDOW_SECONDS = 60;
+  private static final long WINDOW_SECONDS = 180;
   private static final int TOKEN_LENGTH = 10;
 
   private final byte[] secret;
