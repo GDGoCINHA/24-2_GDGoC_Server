@@ -55,6 +55,13 @@ public class AdminEventFormController {
     return ResponseEntity.ok(ApiResponse.ok(FORM_UPDATED));
   }
 
+  /** 부원에게 공개한다. 이 요청 전까지 행사 상세에는 신청 영역이 아예 그려지지 않는다. */
+  @PostMapping("/publish")
+  public ResponseEntity<ApiResponse<Void, Void>> publishForm(@PathVariable Long eventBoardId) {
+    eventFormAdminService.publishForm(eventBoardId);
+    return ResponseEntity.ok(ApiResponse.ok(FORM_PUBLISHED));
+  }
+
   @DeleteMapping
   public ResponseEntity<ApiResponse<Void, Void>> deleteForm(@PathVariable Long eventBoardId) {
     eventFormAdminService.deleteForm(eventBoardId);

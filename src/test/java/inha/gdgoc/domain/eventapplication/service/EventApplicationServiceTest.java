@@ -188,6 +188,33 @@ class EventApplicationServiceTest {
     verify(applicationRepository, never()).delete(any());
   }
 
+  @Test
+  @DisplayName("발행 전 폼은 부원에게 없는 것으로 보인다")
+  void unpublishedFormIsInvisible() {
+    // 만드는 중인 폼이 행사 상세에 뜨면 질문을 다 넣기 전에 노출된다.
+    // 웹은 404 를 "신청을 받지 않는 행사" 로 읽어 신청 영역을 아예 그리지 않는다.
+    givenFormForRead(unpublishedForm());
+
+    assertError(
+        () -> service.getForm(BOARD_ID, USER_ID, UserRole.MEMBER),
+        EventApplicationErrorCode.FORM_NOT_FOUND);
+  }
+
+  @Test
+  @DisplayName("발행 전 폼에는 주소를 알아도 신청할 수 없다")
+  void cannotApplyToUnpublishedForm() {
+    givenForm(unpublishedForm());
+
+    assertError(() -> apply(UserRole.MEMBER), EventApplicationErrorCode.FORM_NOT_FOUND);
+    verify(applicationRepository, never()).save(any());
+  }
+
+  private static EventApplicationForm unpublishedForm() {
+    EventApplicationForm form = form(UserRole.MEMBER, null, null, null, true);
+    ReflectionTestUtils.setField(form, "publishedAt", null);
+    return form;
+  }
+
   private void apply(UserRole role) {
     service.apply(BOARD_ID, new EventApplicationSubmitRequest(List.of()), USER_ID, role);
   }
@@ -218,6 +245,8 @@ class EventApplicationServiceTest {
             minRole,
             isOpen);
     ReflectionTestUtils.setField(form, "id", FORM_ID);
+    // 부원에게 보이는 경로는 발행된 폼만 찾는다. 픽스처도 발행 상태로 둔다.
+    form.publish(Instant.parse("2026-08-01T00:00:00Z"));
     return form;
   }
 

@@ -104,6 +104,7 @@ public class EventApplicationService {
     EventApplicationForm form =
         formRepository
             .findByEventBoardIdForUpdate(eventBoardId)
+            .filter(EventApplicationForm::isPublished)
             .orElseThrow(() -> new BusinessException(FORM_NOT_FOUND));
 
     EventApplication existing =
@@ -189,9 +190,16 @@ public class EventApplicationService {
 
 
 
+  /**
+   * 부원에게 보이는 폼만 찾는다.
+   *
+   * <p>발행 전 폼은 없는 것으로 다룬다. 반쯤 만들어진 질문들이 행사 상세에 뜨면 안 되고, 웹은 404 를 "신청을 받지 않는 행사" 로 읽어 신청 영역을
+   * 통째로 그리지 않는다.
+   */
   private EventApplicationForm findForm(Long eventBoardId) {
     return formRepository
         .findByEventBoardId(eventBoardId)
+        .filter(EventApplicationForm::isPublished)
         .orElseThrow(() -> new BusinessException(FORM_NOT_FOUND));
   }
 
