@@ -11,7 +11,8 @@ public enum EventApplicationErrorCode implements ErrorCode {
   EVENT_BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "행사를 찾을 수 없습니다."),
   FORM_NOT_FOUND(HttpStatus.NOT_FOUND, "이 행사는 신청을 받고 있지 않습니다."),
   FORM_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 신청 폼이 있는 행사입니다."),
-  FORM_HAS_APPLICATIONS(HttpStatus.BAD_REQUEST, "신청자가 있어 신청 받기를 해제할 수 없습니다. 마감으로 닫아주세요."),
+  FORM_HAS_APPLICATIONS(HttpStatus.BAD_REQUEST, "신청자가 있어 신청 폼을 삭제할 수 없습니다. 그만 받으려면 마감해 주세요."),
+  EVENT_ENDED(HttpStatus.BAD_REQUEST, "이미 끝난 행사입니다."),
   QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "질문을 찾을 수 없습니다."),
 
   OPTIONS_REQUIRED(HttpStatus.BAD_REQUEST, "선택형 질문에는 선택지가 필요합니다."),

@@ -18,6 +18,7 @@ import inha.gdgoc.global.exception.BusinessException;
 import inha.gdgoc.global.exception.GlobalErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -34,6 +35,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 public class EventApplicationService {
+
+  /** 행사 날짜는 달력 날짜다. 테스트가 시계를 UTC 로 고정해도 판정은 한국 날짜로 한다. */
+  private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
   private final EventApplicationFormRepository formRepository;
   private final EventApplicationRepository applicationRepository;
@@ -163,6 +167,10 @@ public class EventApplicationService {
   /** 신청을 막는 첫 번째 사유. 없으면 null 이다. */
   private EventApplicationErrorCode blockedBy(
       EventApplicationForm form, UserRole role, long applied, Instant now) {
+    // 끝난 행사가 제일 먼저다. 되돌릴 수 없는 사유이고, 나머지 안내는 뒷북이 된다.
+    if (hasEnded(form, now)) {
+      return EVENT_ENDED;
+    }
     if (!form.isOpen()) {
       return FORM_CLOSED;
     }
@@ -179,6 +187,20 @@ public class EventApplicationService {
       return CAPACITY_FULL;
     }
     return null;
+  }
+
+  /**
+   * 행사가 끝났는가. 종료일 24:00 까지는 받는다.
+   *
+   * <p>closesAt 을 안 넣은 폼이 대부분이라 그것만 믿으면 끝난 행사에 신청이 계속 들어온다. 체크인은 예전부터 행사 기간을 봤는데 신청만 안 보고
+   * 있었다. 시작 전은 막지 않는다 — 현장에서 받는 경우가 있다.
+   */
+  private boolean hasEnded(EventApplicationForm form, Instant now) {
+    LocalDate endDate = form.getEventEndDate();
+    if (endDate == null) {
+      return false;
+    }
+    return now.atZone(KST).toLocalDate().isAfter(endDate);
   }
 
   private Map<Long, Object> toAnswerMap(EventApplicationSubmitRequest req) {

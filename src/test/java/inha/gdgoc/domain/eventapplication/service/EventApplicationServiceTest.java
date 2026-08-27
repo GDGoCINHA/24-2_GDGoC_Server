@@ -188,6 +188,35 @@ class EventApplicationServiceTest {
     verify(applicationRepository, never()).delete(any());
   }
 
+  // closesAt 을 안 넣은 폼이 대부분이라 그것만 믿으면 끝난 행사에 신청이 계속 들어온다.
+  @Test
+  @DisplayName("끝난 행사에는 신청할 수 없다")
+  void rejectsAfterEventEnded() {
+    givenForm(endedForm());
+    givenNoExistingApplication();
+
+    assertError(() -> apply(UserRole.MEMBER), EventApplicationErrorCode.EVENT_ENDED);
+    verify(applicationRepository, never()).save(any());
+  }
+
+  // 종료일 당일은 아직 행사 중이다. 뒤풀이 자리에서 받는 신청을 막으면 안 된다.
+  @Test
+  @DisplayName("행사 종료일 당일에는 신청할 수 있다")
+  void allowsOnLastEventDay() {
+    // NOW 는 2026-09-01 12:00 KST 이고 픽스처의 종료일이 그날이다.
+    EventApplicationForm form =
+        form(UserRole.MEMBER, null, null, null, true, LocalDate.of(2026, 9, 1));
+    givenForm(form);
+    givenNoExistingApplication();
+    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user()));
+
+    assertThatCode(() -> apply(UserRole.MEMBER)).doesNotThrowAnyException();
+  }
+
+  private static EventApplicationForm endedForm() {
+    return form(UserRole.MEMBER, null, null, null, true, LocalDate.of(2026, 8, 31));
+  }
+
   @Test
   @DisplayName("발행 전 폼은 부원에게 없는 것으로 보인다")
   void unpublishedFormIsInvisible() {
@@ -233,12 +262,22 @@ class EventApplicationServiceTest {
 
   private static EventApplicationForm form(
       UserRole minRole, Instant opensAt, Instant closesAt, Integer capacity, boolean isOpen) {
+    return form(minRole, opensAt, closesAt, capacity, isOpen, LocalDate.of(2026, 9, 2));
+  }
+
+  private static EventApplicationForm form(
+      UserRole minRole,
+      Instant opensAt,
+      Instant closesAt,
+      Integer capacity,
+      boolean isOpen,
+      LocalDate eventEndDate) {
     EventApplicationForm form =
         EventApplicationForm.create(
             BOARD_ID,
             "가을 해커톤",
             LocalDate.of(2026, 9, 1),
-            LocalDate.of(2026, 9, 2),
+            eventEndDate,
             opensAt,
             closesAt,
             capacity,

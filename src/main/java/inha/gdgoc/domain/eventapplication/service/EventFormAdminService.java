@@ -16,6 +16,7 @@ import inha.gdgoc.domain.eventapplication.repository.EventApplicationRepository;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.global.exception.BusinessException;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -81,6 +82,11 @@ public class EventFormAdminService {
       throw new BusinessException(FORM_ALREADY_EXISTS);
     }
     EventBoard board = findLiveBoard(eventBoardId);
+    // 끝난 행사에 신청 폼을 만들어 봐야 아무도 신청할 수 없다. 날짜를 잘못 넣었다면 글을 먼저 고친다.
+    if (board.getEventEndDate() != null
+        && board.getEventEndDate().isBefore(LocalDate.now(clock))) {
+      throw new BusinessException(EVENT_ENDED);
+    }
 
     EventApplicationForm form =
         EventApplicationForm.create(
