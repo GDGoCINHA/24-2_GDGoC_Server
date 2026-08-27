@@ -11,6 +11,7 @@ import inha.gdgoc.domain.board.event.dto.response.EventBoardSummaryResponse;
 import inha.gdgoc.domain.board.event.entity.EventBoard;
 import inha.gdgoc.domain.board.event.enums.EventBoardStatus;
 import inha.gdgoc.domain.board.event.repository.EventBoardRepository;
+import inha.gdgoc.domain.eventapplication.repository.EventApplicationFormRepository;
 import inha.gdgoc.domain.resource.service.S3Service;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.TeamType;
@@ -32,6 +33,7 @@ public class EventBoardService {
 
   private final EventBoardRepository eventBoardRepository;
   private final UserRepository userRepository;
+  private final EventApplicationFormRepository eventApplicationFormRepository;
   private final S3Service s3Service;
   private final AttachmentPolicy attachmentPolicy;
 
@@ -104,6 +106,15 @@ public class EventBoardService {
       board.getAttachments().clear();
       attachmentPolicy.apply(board, req.attachments());
     }
+
+    // 신청 폼은 행사명·기간의 복사본을 들고 있다. 게시글이 사라져도 신청 데이터가 살아 있게 하려는
+    // 것이지, 원본과 갈라지라는 뜻은 아니다. 평소에는 게시글이 원본이므로 여기서 맞춰준다.
+    eventApplicationFormRepository
+        .findByEventBoardId(id)
+        .ifPresent(
+            form ->
+                form.syncEventInfo(
+                    board.getTitle(), board.getEventStartDate(), board.getEventEndDate()));
   }
 
   @Transactional
