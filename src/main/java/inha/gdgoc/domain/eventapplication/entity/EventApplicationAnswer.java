@@ -45,8 +45,15 @@ public class EventApplicationAnswer extends BaseEntity {
   @Column(name = "question_id", nullable = false)
   private Long questionId;
 
+  /**
+   * 백틱은 Hibernate 에게 "이 이름을 인용하라" 는 뜻이고 방언마다 알맞은 따옴표로 바뀐다.
+   *
+   * <p>{@code value} 는 H2 2.x 의 예약어다. 인용하지 않으면 테스트 DB 의 DDL 이 조용히 실패해 이 표만 만들어지지 않는다 — 실제로
+   * 그래서 답변 관련 제약을 검증하는 테스트를 쓸 수 없었다. PostgreSQL 에서는 {@code "value"} 가 인용 없는 {@code value} 와 같은
+   * 컬럼이라 운영 동작은 그대로다.
+   */
   @JdbcTypeCode(SqlTypes.JSON)
-  @Column(name = "value", nullable = false, columnDefinition = "jsonb")
+  @Column(name = "`value`", nullable = false, columnDefinition = "jsonb")
   private String value;
 
   public static EventApplicationAnswer create(
