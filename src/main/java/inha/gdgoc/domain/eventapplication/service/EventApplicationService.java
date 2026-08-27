@@ -128,6 +128,10 @@ public class EventApplicationService {
       // 취소했던 신청은 같은 행을 되살린다. UNIQUE(form_id, user_id) 때문에 새로 만들 수 없다.
       existing.clearAnswers();
       existing.reapply(now);
+      // 옛 답변의 DELETE 를 여기서 먼저 내보낸다. 새 답변 INSERT 와 같은 flush 에 섞이면
+      // Hibernate 가 INSERT 를 먼저 실행해 UNIQUE(application_id, question_id) 를 밟는다.
+      // 같은 질문에 다시 답한 재신청이 500 으로 죽던 원인이다.
+      applicationRepository.flush();
       application = existing;
     } else {
       User user =
