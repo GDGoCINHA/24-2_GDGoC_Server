@@ -17,6 +17,8 @@ public interface RecruitMemberRepository
      */
     boolean existsByStudentIdAndAdmissionSemester(String studentId, AdmissionSemester admissionSemester);
 
+    Optional<RecruitMember> findByStudentIdAndAdmissionSemester(String studentId, AdmissionSemester admissionSemester);
+
     boolean existsByPhoneNumberAndAdmissionSemester(String phoneNumber, AdmissionSemester admissionSemester);
 
     boolean existsByEmailIgnoreCaseAndAdmissionSemester(String email, AdmissionSemester admissionSemester);

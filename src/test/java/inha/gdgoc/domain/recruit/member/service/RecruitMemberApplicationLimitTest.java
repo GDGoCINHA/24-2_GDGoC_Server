@@ -32,6 +32,9 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>전에는 서버가 중복을 전혀 보지 않았다. 화면의 중복 확인 버튼이 유일한 장치였고, 지원 API 는
  * 인증 없이 열려 있어 주소를 직접 치면 같은 사람이 몇 번이든 지원할 수 있었다.
  *
+ * <p>지금은 지원에 로그인이 필요하고 <b>신원(이름·학번·이메일·전화·학과)은 계정에서 가져온다.</b>
+ * 그래서 여기서 "같은 사람" 은 폼에 적은 값이 아니라 계정을 뜻한다.
+ *
  * <p>반대로 <b>학기가 바뀌어도 재지원이 안 되는</b> 문제도 있었다. 학번·전화번호에 전역 UNIQUE 가
  * 걸려 있어 2026-1 지원자가 2026-2 에 다시 내면 제약 위반 500 이 났다. 이제 (값, 학기) 복합이다.
  */
@@ -61,32 +64,48 @@ class RecruitMemberApplicationLimitTest {
     }
 
     @Test
-    void 같은_이메일로_같은_학기에_두_번_지원하면_막힌다() {
-        recruitMemberService.addRecruitMember(payload("12200001", "01000000001", "hong@inha.edu"), null);
+    void 같은_계정으로_같은_학기에_두_번_지원하면_막힌다() {
+        User account = userRepository.save(user("hong@inha.edu"));
+        apply(account);
 
-        // 학번·전화번호를 바꿔도 이메일이 같으면 막혀야 한다.
-        assertThatThrownBy(() ->
-            recruitMemberService.addRecruitMember(payload("12200002", "01000000002", "hong@inha.edu"), null))
+        assertThatThrownBy(() -> apply(account))
             .isInstanceOf(RecruitMemberException.class)
             .hasFieldOrPropertyWithValue("errorCode", RecruitMemberErrorCode.RECRUIT_MEMBER_ALREADY_APPLIED);
 
         assertThat(recruitMemberRepository.count()).isEqualTo(1);
     }
 
+    // 폼이 보낸 신원을 그대로 믿으면 남의 이름·학번으로 지원서를 밀어 넣을 수 있다.
+    @Test
+    void 신원은_폼이_아니라_계정에서_가져온다() {
+        User account = userRepository.save(user("hong@inha.edu"));
+
+        recruitMemberService.addRecruitMember(
+            payload("99999999", "01099999999", "someone-else@inha.edu"), null, account.getId());
+
+        RecruitMember saved = recruitMemberRepository.findAll().get(0);
+        assertThat(saved.getName()).isEqualTo("홍길동");
+        assertThat(saved.getStudentId()).isEqualTo("12200001");
+        assertThat(saved.getPhoneNumber()).isEqualTo("01000000001");
+        assertThat(saved.getEmail()).isEqualTo("hong@inha.edu");
+    }
+
     // 이메일은 대소문자를 가리지 않는다. Hong@ 으로 다시 내는 우회를 막는다.
     @Test
     void 대소문자만_다른_이메일도_같은_지원으로_본다() {
-        recruitMemberService.addRecruitMember(payload("12200001", "01000000001", "hong@inha.edu"), null);
+        // 학번·전화는 겹치지 않게 두어 이메일 검사만 걸리게 한다.
+        recruitMemberRepository.save(member("12209999", "01099999999", "hong@inha.edu"));
 
-        assertThatThrownBy(() ->
-            recruitMemberService.addRecruitMember(payload("12200002", "01000000002", "HONG@inha.edu"), null))
-            .isInstanceOf(RecruitMemberException.class);
+        User account = userRepository.save(user("HONG@inha.edu"));
+        assertThatThrownBy(() -> apply(account))
+            .isInstanceOf(RecruitMemberException.class)
+            .hasFieldOrPropertyWithValue("errorCode", RecruitMemberErrorCode.RECRUIT_MEMBER_ALREADY_APPLIED);
     }
 
     @Test
-    void 이메일이_다르면_지원할_수_있다() {
-        recruitMemberService.addRecruitMember(payload("12200001", "01000000001", "hong@inha.edu"), null);
-        recruitMemberService.addRecruitMember(payload("12200002", "01000000002", "kim@inha.edu"), null);
+    void 다른_계정이면_지원할_수_있다() {
+        apply(userRepository.save(user("hong@inha.edu", "12200001", "01000000001")));
+        apply(userRepository.save(user("kim@inha.edu", "12200002", "01000000002")));
 
         assertThat(recruitMemberRepository.count()).isEqualTo(2);
     }
@@ -98,28 +117,28 @@ class RecruitMemberApplicationLimitTest {
             member("12200001", "01000000001", "hong@inha.edu", PAST_SEMESTER));
 
         // 같은 사람(학번·전화·이메일 전부 동일)이 이번 학기에 다시 낸다.
-        recruitMemberService.addRecruitMember(
-            payload("12200001", "01000000001", "hong@inha.edu"), null);
+        apply(userRepository.save(user("hong@inha.edu")));
 
         assertThat(recruitMemberRepository.count()).isEqualTo(2);
     }
 
     @Test
     void 같은_학기에_학번이_겹치면_막힌다() {
-        recruitMemberService.addRecruitMember(payload("12200001", "01000000001", "a@inha.edu"), null);
+        apply(userRepository.save(user("a@inha.edu", "12200001", "01000000001")));
 
+        // 계정이 둘이어도 학번이 같으면 같은 사람이다.
         assertThatThrownBy(() ->
-            recruitMemberService.addRecruitMember(payload("12200001", "01000000002", "b@inha.edu"), null))
+            apply(userRepository.save(user("b@inha.edu", "12200001", "01000000002"))))
             .isInstanceOf(RecruitMemberException.class)
             .hasFieldOrPropertyWithValue("errorCode", RecruitMemberErrorCode.RECRUIT_MEMBER_ALREADY_APPLIED);
     }
 
     @Test
     void 같은_학기에_전화번호가_겹치면_막힌다() {
-        recruitMemberService.addRecruitMember(payload("12200001", "01000000001", "a@inha.edu"), null);
+        apply(userRepository.save(user("a@inha.edu", "12200001", "01000000001")));
 
         assertThatThrownBy(() ->
-            recruitMemberService.addRecruitMember(payload("12200002", "01000000001", "b@inha.edu"), null))
+            apply(userRepository.save(user("b@inha.edu", "12200002", "01000000001"))))
             .isInstanceOf(RecruitMemberException.class)
             .hasFieldOrPropertyWithValue("errorCode", RecruitMemberErrorCode.RECRUIT_MEMBER_ALREADY_APPLIED);
     }
@@ -137,7 +156,7 @@ class RecruitMemberApplicationLimitTest {
 
     @Test
     void 중복_확인_3종은_이번_학기_지원서를_센다() {
-        recruitMemberService.addRecruitMember(payload("12200001", "01000000001", "hong@inha.edu"), null);
+        apply(userRepository.save(user("hong@inha.edu")));
 
         assertThat(recruitMemberService.isRegisteredStudentId("12200001").isExists()).isTrue();
         assertThat(recruitMemberService.isRegisteredPhoneNumber("01000000001").isExists()).isTrue();
@@ -168,11 +187,46 @@ class RecruitMemberApplicationLimitTest {
         assertThat(response.admissionSemester()).isEqualTo(currentSemester());
     }
 
-    // 남의 지원서가 새어 나가면 안 된다. 이메일이 다르면 없는 것으로 본다.
+    // 남의 지원서가 새어 나가면 안 된다. 이메일도 학번도 다르면 없는 것으로 본다.
     @Test
     void 지원_이력이_없으면_찾을_수_없다() {
         recruitMemberRepository.save(member("12200001", "01000000001", "hong@inha.edu"));
-        User user = userRepository.save(user("kim@inha.edu"));
+        User user = userRepository.save(user("kim@inha.edu", "12209999", "01099999999"));
+
+        assertThatThrownBy(() -> recruitMemberService.findMyApplication(user.getId()))
+            .isInstanceOf(RecruitMemberException.class)
+            .hasFieldOrPropertyWithValue("errorCode", RecruitMemberErrorCode.RECRUIT_MEMBER_NOT_FOUND);
+    }
+
+    // 로그인 필수가 되기 전에는 폼에 이메일을 직접 적었다. 계정과 다른 @inha.edu 주소를 적은
+    // 사람은 이메일만으로는 영영 안 이어져 「지원 이력 없음」 을 보고 또 지원하게 된다.
+    @Test
+    void 이메일이_달라도_학번과_이름이_같으면_내_지원서로_본다() {
+        recruitMemberRepository.save(member("12200001", "01000000001", "typo@inha.edu"));
+        User user = userRepository.save(user("hong@inha.edu", "12200001", "01000000001"));
+
+        SpecifiedMemberResponse response = recruitMemberService.findMyApplication(user.getId());
+
+        assertThat(response.email()).isEqualTo("typo@inha.edu");
+    }
+
+    // 이름 표기에 공백이 섞이는 것까지 다른 사람으로 보면 대비책이 무용지물이 된다.
+    @Test
+    void 이름의_공백_차이는_같은_사람으로_본다() {
+        recruitMemberRepository.save(
+            member("홍 길동", "12200001", "01000000001", "typo@inha.edu", currentSemester()));
+        User user = userRepository.save(user("hong@inha.edu", "12200001", "01000000001"));
+
+        assertThat(recruitMemberService.findMyApplication(user.getId()).studentId())
+            .isEqualTo("12200001");
+    }
+
+    // 학번만으로 이어 붙이면 오타로 남의 학번을 적은 지원서가 딸려 나온다.
+    @Test
+    void 학번이_같아도_이름이_다르면_내_지원서가_아니다() {
+        recruitMemberRepository.save(
+            member("김철수", "12200001", "01000000001", "typo@inha.edu", currentSemester()));
+        User user = userRepository.save(user("hong@inha.edu", "12200001", "01000000009"));
 
         assertThatThrownBy(() -> recruitMemberService.findMyApplication(user.getId()))
             .isInstanceOf(RecruitMemberException.class)
@@ -180,11 +234,11 @@ class RecruitMemberApplicationLimitTest {
     }
 
     // 이메일이 지원서와 계정을 잇는 유일한 키다. 다른 도메인으로 들어오면 나중에 로그인해도
-    // 영영 이어지지 않아 MEMBER 승격이 안 된다. 화면이 도메인을 고정하지만 API 는 열려 있다.
+    // 영영 이어지지 않아 MEMBER 승격이 안 된다. 로그인이 @inha.edu 전용이라 여기까지 올 일은
+    // 거의 없지만, 계정 이메일을 그대로 쓰게 된 지금도 검사는 남겨 둔다.
     @Test
     void 인하대_이메일이_아니면_지원할_수_없다() {
-        assertThatThrownBy(() ->
-            recruitMemberService.addRecruitMember(payload("12200001", "01000000001", "hong@gmail.com"), null))
+        assertThatThrownBy(() -> apply(userRepository.save(user("hong@gmail.com"))))
             .isInstanceOf(RecruitMemberException.class)
             .hasFieldOrPropertyWithValue("errorCode", RecruitMemberErrorCode.RECRUIT_MEMBER_INVALID_EMAIL_DOMAIN);
 
@@ -193,7 +247,7 @@ class RecruitMemberApplicationLimitTest {
 
     @Test
     void 인하대_이메일은_대소문자를_가리지_않는다() {
-        recruitMemberService.addRecruitMember(payload("12200001", "01000000001", "hong@INHA.edu"), null);
+        apply(userRepository.save(user("hong@INHA.edu")));
 
         assertThat(recruitMemberRepository.count()).isEqualTo(1);
     }
@@ -201,8 +255,7 @@ class RecruitMemberApplicationLimitTest {
     // inha.edu 로 끝나기만 하면 통과하는 검사는 fake-inha.edu 같은 도메인을 놓친다.
     @Test
     void 인하대_도메인을_흉내낸_주소는_막힌다() {
-        assertThatThrownBy(() ->
-            recruitMemberService.addRecruitMember(payload("12200001", "01000000001", "hong@fake-inha.edu"), null))
+        assertThatThrownBy(() -> apply(userRepository.save(user("hong@fake-inha.edu"))))
             .isInstanceOf(RecruitMemberException.class)
             .hasFieldOrPropertyWithValue("errorCode", RecruitMemberErrorCode.RECRUIT_MEMBER_INVALID_EMAIL_DOMAIN);
     }
@@ -269,6 +322,12 @@ class RecruitMemberApplicationLimitTest {
         assertThat(recruitMemberRepository.findById(application.getId()).orElseThrow().getIsPayed()).isTrue();
     }
 
+    /** 지원 한 건. 신원은 계정에서 오므로 payload 에 적은 값은 무시된다. */
+    private void apply(User account) {
+        recruitMemberService.addRecruitMember(
+            payload("00000000", "01000000000", "ignored@inha.edu"), null, account.getId());
+    }
+
     private UserRole roleOf(User account) {
         return userRepository.findById(account.getId()).orElseThrow().getUserRole();
     }
@@ -306,8 +365,18 @@ class RecruitMemberApplicationLimitTest {
         String email,
         AdmissionSemester semester
     ) {
+        return member("홍길동", studentId, phoneNumber, email, semester);
+    }
+
+    private RecruitMember member(
+        String name,
+        String studentId,
+        String phoneNumber,
+        String email,
+        AdmissionSemester semester
+    ) {
         return RecruitMember.builder()
-            .name("홍길동")
+            .name(name)
             .studentId(studentId)
             .enrolledClassification(EnrolledClassification.FULL_REGISTRATION)
             .phoneNumber(phoneNumber)
@@ -329,12 +398,16 @@ class RecruitMemberApplicationLimitTest {
     }
 
     private User user(String email) {
+        return user(email, "12200001", "01000000001");
+    }
+
+    private User user(String email, String studentId, String phoneNumber) {
         return User.builder()
             .name("홍길동")
-            .oauthSubject("oauth-" + email)
+            .oauthSubject("oauth-" + email + "-" + studentId)
             .major("CSE")
-            .studentId("12200001")
-            .phoneNumber("01000000001")
+            .studentId(studentId)
+            .phoneNumber(phoneNumber)
             .email(email)
             .build();
     }

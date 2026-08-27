@@ -28,6 +28,27 @@ public class RecruitMemberRequest {
     private String major;
     private Boolean isPayed;
 
+    /**
+     * 신원을 로그인한 계정의 값으로 갈아끼운다.
+     *
+     * <p>폼이 이름·학번·이메일·전화·학과를 보내더라도 무시한다. 회원가입 때 이미 받은 값이고, 지원서와 계정을 잇는 키가
+     * 이메일이라 타이핑에 맡기면 오타 하나로 영영 안 이어진다.
+     */
+    public RecruitMemberRequest withIdentity(
+            String name, String studentId, String email, String phoneNumber, String major) {
+        return RecruitMemberRequest.builder()
+                .name(name)
+                .studentId(studentId)
+                .email(email)
+                .phoneNumber(phoneNumber)
+                .major(major)
+                .enrolledClassification(this.enrolledClassification)
+                .gender(this.gender)
+                .birth(this.birth)
+                .isPayed(this.isPayed)
+                .build();
+    }
+
     public RecruitMember toEntity(AdmissionSemester admissionSemester, MajorNormalizer majorNormalizer) {
         String cleanPhone = phoneNumber.replaceAll("[^0-9]", "");
         return RecruitMember.builder()
