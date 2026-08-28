@@ -31,6 +31,8 @@ public enum EventApplicationErrorCode implements ErrorCode {
   CONDITION_VALUE_INVALID(HttpStatus.BAD_REQUEST, "조건 값이 기준 질문의 선택지에 없습니다."),
   CONDITION_VALUES_EMPTY(HttpStatus.BAD_REQUEST, "조건 값을 하나 이상 지정해야 합니다."),
   CONDITION_REFERENCED(HttpStatus.BAD_REQUEST, "이 질문을 기준으로 삼는 조건이 있습니다. 조건을 먼저 푸세요."),
+  CONDITION_OPTION_REFERENCED(
+      HttpStatus.BAD_REQUEST, "다른 질문이 조건으로 삼는 선택지는 지울 수 없습니다. 조건을 먼저 푸세요."),
   CONDITION_ORDER_BROKEN(HttpStatus.BAD_REQUEST, "이 순서로 바꾸면 조건이 뒤 질문을 가리키게 됩니다."),
 
   CAPACITY_BELOW_APPLICANTS(HttpStatus.BAD_REQUEST, "현재 신청자 수보다 적은 정원으로는 줄일 수 없습니다."),
