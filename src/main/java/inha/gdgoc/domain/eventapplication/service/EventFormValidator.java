@@ -120,6 +120,44 @@ public class EventFormValidator {
     }
   }
 
+  /**
+   * 다른 질문이 조건으로 삼는 선택지는 지울 수 없다.
+   *
+   * <p>지우고 나면 그 조건은 어떤 답으로도 참이 되지 않는 값을 가리킨다. 조건을 건 질문은 폼에서 조용히 사라지는데, 관리자 화면에는 그대로 남아 있어 왜 아무도 답하지
+   * 않는지 알 길이 없다. 유형을 바꿀 때만 막고 선택지 하나를 지울 때는 놔두면 같은 구멍이 남는다.
+   */
+  public void validateOptionValuesNotReferenced(
+      Long questionId,
+      List<QuestionOption> before,
+      List<QuestionOption> after,
+      List<EventFormQuestion> siblings) {
+    if (before == null || before.isEmpty()) {
+      return;
+    }
+    Set<String> afterValues = new HashSet<>();
+    if (after != null) {
+      for (QuestionOption option : after) {
+        if (option != null && option.value() != null) {
+          afterValues.add(option.value());
+        }
+      }
+    }
+    for (QuestionOption option : before) {
+      if (option == null || option.value() == null || afterValues.contains(option.value())) {
+        continue;
+      }
+      for (EventFormQuestion sibling : siblings) {
+        if (sibling.getId().equals(questionId)) {
+          continue;
+        }
+        if (questionId.equals(sibling.getVisibleWhenQuestionId())
+            && sibling.referencesOptionValue(option.value())) {
+          throw new BusinessException(CONDITION_OPTION_REFERENCED);
+        }
+      }
+    }
+  }
+
   /** 새 순서에서도 모든 조건이 앞 질문을 가리키는지 본다. */
   public void validateOrderKeepsConditions(List<EventFormQuestion> inNewOrder) {
     for (int i = 0; i < inNewOrder.size(); i++) {
