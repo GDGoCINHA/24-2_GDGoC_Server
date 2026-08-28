@@ -194,6 +194,10 @@ public class EventFormAdminService {
       validator.validateNotReferenced(questionId, siblings);
     }
 
+    // 유형을 그대로 두고 선택지 하나만 지워도 그 값을 가리키던 조건은 죽는다.
+    validator.validateOptionValuesNotReferenced(
+        questionId, question.getOptions(), req.options(), siblings);
+
     validator.validateShape(req.type(), req.options());
     Long baseId = req.clearCondition() ? null : req.visibleWhenQuestionId();
     List<String> values = req.clearCondition() ? null : req.visibleWhenValues();
