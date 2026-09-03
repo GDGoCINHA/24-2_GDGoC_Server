@@ -53,7 +53,7 @@ public class UserAdminController {
     private final UserAdminService userAdminService;
 
     @Operation(summary = "사용자 요약 목록 조회", security = {@SecurityRequirement(name = "BearerAuth")})
-    @PreAuthorize(LEAD_OR_HR_RULE)
+    @PreAuthorize(CORE_OR_HIGHER_RULE)
     @GetMapping
     public ResponseEntity<ApiResponse<Page<UserSummaryResponse>, PageMeta>> list(
             @RequestParam(required = false) String q,

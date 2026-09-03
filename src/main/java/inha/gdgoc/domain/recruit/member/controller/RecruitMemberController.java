@@ -74,6 +74,11 @@ public class RecruitMemberController {
                     + "T(inha.gdgoc.domain.user.enums.UserRole).CORE,"
                     + " T(inha.gdgoc.domain.user.enums.TeamType).HR))";
 
+    private static final String CORE_OR_HIGHER_RULE =
+            "@accessGuard.check(authentication,"
+                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
+                    + "T(inha.gdgoc.domain.user.enums.UserRole).CORE))";
+
     private final RecruitMemberService recruitMemberService;
     private final RecruitMemberPeriodService recruitMemberPeriodService;
 
@@ -194,7 +199,7 @@ public class RecruitMemberController {
     }
 
     @Operation(summary = "특정 멤버 가입 신청서 조회", security = {@SecurityRequirement(name = "BearerAuth")})
-    @PreAuthorize(LEAD_OR_HR_RULE)
+    @PreAuthorize(CORE_OR_HIGHER_RULE)
     @GetMapping("/{memberId}")
     public ResponseEntity<ApiResponse<SpecifiedMemberResponse, Void>> getSpecifiedMember(
             @PathVariable Long memberId
@@ -231,7 +236,7 @@ public class RecruitMemberController {
             description = "전체 목록 또는 이름 검색 결과를 반환합니다. 검색어(question)를 주면 이름 포함 검색, 없으면 전체 조회. sort랑 dir은 example 값 그대로 코딩하는 것 추천...",
             security = { @SecurityRequirement(name = "BearerAuth") }
     )
-    @PreAuthorize(LEAD_OR_HR_RULE)
+    @PreAuthorize(CORE_OR_HIGHER_RULE)
     @GetMapping("")
     public ResponseEntity<ApiResponse<List<RecruitMemberSummaryResponse>, PageMeta>> getMembers(
             @Parameter(description = "검색어(이름 부분 일치). 없으면 전체 조회", example = "소연")

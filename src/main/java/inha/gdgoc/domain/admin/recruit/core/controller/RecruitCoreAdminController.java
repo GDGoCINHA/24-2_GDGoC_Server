@@ -37,9 +37,14 @@ public class RecruitCoreAdminController {
                     + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
                     + "T(inha.gdgoc.domain.user.enums.UserRole).LEAD))";
 
+    private static final String CORE_OR_HIGHER_RULE =
+            "@accessGuard.check(authentication,"
+                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
+                    + "T(inha.gdgoc.domain.user.enums.UserRole).CORE))";
+
     private final RecruitCoreAdminService adminService;
 
-    @PreAuthorize(LEAD_OR_HIGHER_RULE)
+    @PreAuthorize(CORE_OR_HIGHER_RULE)
     @GetMapping
     public RecruitCoreApplicationPageResponse list(
         @RequestParam String session,
@@ -63,7 +68,7 @@ public class RecruitCoreAdminController {
         );
     }
 
-    @PreAuthorize(LEAD_OR_HIGHER_RULE)
+    @PreAuthorize(CORE_OR_HIGHER_RULE)
     @GetMapping("/{applicationId}")
     public ResponseEntity<RecruitCoreApplicantDetailResponse> detail(@PathVariable Long applicationId) {
         return ResponseEntity.ok(adminService.getApplicationDetail(applicationId));
