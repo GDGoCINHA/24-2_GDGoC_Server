@@ -69,8 +69,9 @@ class EventApplicationReapplyTest {
         EventApplicationForm.create(
             BOARD_ID,
             "가을 해커톤",
-            LocalDate.of(2026, 9, 1),
-            LocalDate.of(2026, 9, 2),
+            // 날짜를 고정하면 그 날이 지난 뒤부터 EVENT_ENDED 가드에 걸려 테스트가 깨진다.
+            LocalDate.now().plusDays(1),
+            LocalDate.now().plusDays(2),
             null,
             null,
             null,
