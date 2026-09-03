@@ -35,10 +35,15 @@ public class RecruitMemberMemoAdminController {
                     + "T(inha.gdgoc.domain.user.enums.UserRole).CORE,"
                     + " T(inha.gdgoc.domain.user.enums.TeamType).HR))";
 
+    private static final String CORE_OR_HIGHER_RULE =
+            "@accessGuard.check(authentication,"
+                    + " T(inha.gdgoc.global.security.AccessGuard$AccessCondition).atLeast("
+                    + "T(inha.gdgoc.domain.user.enums.UserRole).CORE))";
+
     private final RecruitMemberMemoAdminService adminService;
 
     @Operation(summary = "신입생 지원 오픈 알림 메일 기본 문구 조회", security = {@SecurityRequirement(name = "BearerAuth")})
-    @PreAuthorize(LEAD_OR_HR_RULE)
+    @PreAuthorize(CORE_OR_HIGHER_RULE)
     @GetMapping("/template")
     public ResponseEntity<ApiResponse<RecruitMemberMemoNotificationTemplateResponse, Void>> getTemplate() {
         RecruitMemberMemoNotificationTemplateResponse response = adminService.getTemplate();
