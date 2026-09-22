@@ -68,6 +68,14 @@ public class EventApplicationForm extends BaseEntity {
   private boolean isOpen;
 
   /**
+   * 로그인 없이 신청을 받는가. 켜면 {@code minRole} 은 보지 않는다 — 누구나 받는 폼에서 로그인한 사람만 막을 이유가 없다.
+   *
+   * <p>{@code UserRole.GUEST} 와 헷갈리지 말 것. GUEST 는 가입했으나 부원 승인 전인 <b>로그인 사용자</b>다.
+   */
+  @Column(name = "allow_anonymous", nullable = false)
+  private boolean allowAnonymous;
+
+  /**
    * 발행 시각. NULL 이면 아직 만드는 중이라 부원에게 보이지 않는다.
    *
    * <p>{@code isOpen} 과는 다른 축이다 — 발행은 "존재를 드러냈는가", isOpen 은 "지금 받는가". 발행은 되돌리지 않는다. 이미 신청한
@@ -112,6 +120,10 @@ public class EventApplicationForm extends BaseEntity {
     if (capacity != null) this.capacity = capacity;
     if (minRole != null) this.minRole = minRole;
     if (isOpen != null) this.isOpen = isOpen;
+  }
+
+  public void changeAllowAnonymous(boolean allowAnonymous) {
+    this.allowAnonymous = allowAnonymous;
   }
 
   /** 부원에게 공개한다. 이미 발행된 폼은 그대로 둔다 — 발행일이 밀리면 안 된다. */

@@ -32,6 +32,9 @@ import lombok.NoArgsConstructor;
  * 취소를 삭제로 처리하면 재신청 때 이 제약과 충돌하기 때문이다. 재신청은 {@link #reapply} 로 같은 행을 되살린다.
  *
  * <p>참석 여부를 여기에 컬럼으로 둔 것은 신청자가 곧 참석 대상이어서다. 별도 참석 표를 만들 이유가 없다.
+ *
+ * <p>로그인 없이 낸 신청은 {@code user} 가 비어 있고 신원을 {@code applicant*} 에 직접 적는다. 계정 신청은 반대로 그 네 칸이 비어 있다.
+ * 누구의 신청인지 읽을 때는 {@link #resolvedName} 처럼 두 경우를 함께 보는 메서드를 쓴다.
  */
 @Entity
 @Table(
@@ -52,9 +55,23 @@ public class EventApplication extends BaseEntity {
   @JoinColumn(name = "form_id", nullable = false)
   private EventApplicationForm form;
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "user_id", nullable = false)
+  /** 로그인 없이 낸 신청이면 null 이다. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id")
   private User user;
+
+  @Column(name = "applicant_name", length = 50)
+  private String applicantName;
+
+  @Column(name = "applicant_student_id", length = 20)
+  private String applicantStudentId;
+
+  /** 계정과 같은 학과 코드('CSE' 등)다. */
+  @Column(name = "applicant_major", length = 100)
+  private String applicantMajor;
+
+  @Column(name = "applicant_phone", length = 20)
+  private String applicantPhone;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 16)
@@ -86,6 +103,38 @@ public class EventApplication extends BaseEntity {
     application.appliedAt = now;
     application.answers = new ArrayList<>();
     return application;
+  }
+
+  /** 로그인 없이 낸 신청. 스스로 취소할 길이 없으므로 이 행은 되살릴 일도 없다. */
+  public static EventApplication createAnonymous(
+      EventApplicationForm form,
+      String name,
+      String studentId,
+      String major,
+      String phone,
+      Instant now) {
+    EventApplication application = create(form, null, now);
+    application.applicantName = name;
+    application.applicantStudentId = studentId;
+    application.applicantMajor = major;
+    application.applicantPhone = phone;
+    return application;
+  }
+
+  public String resolvedName() {
+    return user != null ? user.getName() : applicantName;
+  }
+
+  public String resolvedStudentId() {
+    return user != null ? user.getStudentId() : applicantStudentId;
+  }
+
+  public String resolvedMajor() {
+    return user != null ? user.getMajor() : applicantMajor;
+  }
+
+  public String resolvedPhoneNumber() {
+    return user != null ? user.getPhoneNumber() : applicantPhone;
   }
 
   public void cancel(Instant now) {

@@ -44,6 +44,11 @@ public class SecurityConfig {
                 // anyRequest().authenticated() 가 받는다. NoticeBoardSecurityTest 가 지킨다.
                 .requestMatchers(HttpMethod.GET, "/api/v1/board/events").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/board/events/{id:[0-9]+}").permitAll()
+                // 로그인 없이 받는 행사 신청. 폼마다 켜고 끄는 판정은 서비스가 한다.
+                // 같은 행사의 /form·/applications·/checkin(계정용)은 여기 없다.
+                .requestMatchers(HttpMethod.GET, "/api/v1/board/events/{id:[0-9]+}/anonymous/form").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/board/events/{id:[0-9]+}/anonymous/applications").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/board/events/{id:[0-9]+}/anonymous/checkin").permitAll()
                 .requestMatchers(
                     "/swagger-ui/**",
                     "/v3/api-docs/**",

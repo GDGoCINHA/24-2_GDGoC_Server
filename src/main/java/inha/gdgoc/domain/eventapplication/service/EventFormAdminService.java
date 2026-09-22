@@ -99,6 +99,7 @@ public class EventFormAdminService {
             req.capacity(),
             req.minRole() != null ? req.minRole() : UserRole.MEMBER,
             req.isOpen() == null || req.isOpen());
+    form.changeAllowAnonymous(Boolean.TRUE.equals(req.allowAnonymous()));
     return formRepository.save(form).getId();
   }
 
@@ -110,6 +111,9 @@ public class EventFormAdminService {
       throw new BusinessException(CAPACITY_BELOW_APPLICANTS);
     }
     form.updateSettings(req.opensAt(), req.closesAt(), req.capacity(), req.minRole(), req.isOpen());
+    if (req.allowAnonymous() != null) {
+      form.changeAllowAnonymous(req.allowAnonymous());
+    }
     if (req.clearCapacity()) {
       form.clearCapacity();
     }
