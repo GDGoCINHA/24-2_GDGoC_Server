@@ -24,6 +24,7 @@ public record EventFormResponse(
     Integer capacity,
     UserRole minRole,
     boolean isOpen,
+    boolean allowAnonymous,
     Instant publishedAt,
     long appliedCount,
     List<QuestionResponse> questions) {
@@ -40,6 +41,7 @@ public record EventFormResponse(
         form.getCapacity(),
         form.getMinRole(),
         form.isOpen(),
+        form.isAllowAnonymous(),
         form.getPublishedAt(),
         appliedCount,
         form.activeQuestions().stream().map(QuestionResponse::from).toList());

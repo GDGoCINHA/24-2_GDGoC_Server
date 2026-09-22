@@ -19,7 +19,9 @@ import inha.gdgoc.domain.eventapplication.repository.EventApplicationRepository;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.domain.user.repository.UserRepository;
+import inha.gdgoc.domain.eventapplication.dto.request.AnonymousApplicationRequest;
 import inha.gdgoc.global.exception.BusinessException;
+import inha.gdgoc.global.util.MajorNormalizer;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -30,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -57,6 +60,7 @@ class EventApplicationServiceTest {
             userRepository,
             new AnswerValidator(),
             new AnswerCodec(new ObjectMapper()),
+            new MajorNormalizer(),
             Clock.fixed(NOW, ZoneOffset.UTC));
   }
 
@@ -241,6 +245,125 @@ class EventApplicationServiceTest {
   private static EventApplicationForm unpublishedForm() {
     EventApplicationForm form = form(UserRole.MEMBER, null, null, null, true);
     ReflectionTestUtils.setField(form, "publishedAt", null);
+    return form;
+  }
+
+  /* ---------------- 로그인 없이 신청 ---------------- */
+
+  @Test
+  @DisplayName("로그인 없이 받지 않는 폼에는 비로그인 신청을 막는다")
+  void anonymousRejectedWhenFormRequiresLogin() {
+    givenForm(form(UserRole.GUEST, null, null, null, true));
+
+    // GUEST 는 "가입했으나 승인 전" 이지 외부인이 아니다. GUEST 폼이라도 비로그인은 못 낸다.
+    assertError(() -> applyAnonymously("CSE"), EventApplicationErrorCode.LOGIN_REQUIRED);
+    verify(applicationRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("로그인 없이 받는 폼은 적어 낸 신원으로 신청이 들어간다")
+  void anonymousApplicationStoresIdentity() {
+    givenForm(anonymousForm());
+
+    applyAnonymously("컴퓨터공학과");
+
+    ArgumentCaptor<EventApplication> saved = ArgumentCaptor.forClass(EventApplication.class);
+    verify(applicationRepository).save(saved.capture());
+    EventApplication application = saved.getValue();
+    assertThat(application.getUser()).isNull();
+    assertThat(application.getApplicantName()).isEqualTo("김링크");
+    assertThat(application.getApplicantStudentId()).isEqualTo("12241234");
+    // 학과명으로 와도 계정과 같은 코드로 저장한다. CSV 가 코드를 학과명으로 되돌린다.
+    assertThat(application.getApplicantMajor()).isEqualTo("CSE");
+    assertThat(application.getStatus()).isEqualTo(ApplicationStatus.APPLIED);
+  }
+
+  @Test
+  @DisplayName("같은 학번으로 이미 들어온 신청이 있으면 막는다")
+  void anonymousRejectsDuplicateStudentId() {
+    EventApplicationForm form = anonymousForm();
+    givenForm(form);
+    when(applicationRepository.findByFormIdAndStudentId(
+            FORM_ID, "12241234", ApplicationStatus.APPLIED))
+        .thenReturn(List.of(EventApplication.create(form, user(), NOW)));
+
+    assertError(() -> applyAnonymously("CSE"), EventApplicationErrorCode.ALREADY_APPLIED);
+    verify(applicationRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("목록에 없는 학과는 받지 않는다")
+  void anonymousRejectsUnknownMajor() {
+    givenForm(anonymousForm());
+
+    assertError(() -> applyAnonymously("없는학과"), EventApplicationErrorCode.MAJOR_INVALID);
+  }
+
+  @Test
+  @DisplayName("로그인 없이 받는 폼도 마감은 지킨다")
+  void anonymousRespectsClosedForm() {
+    EventApplicationForm form = anonymousForm();
+    form.updateSettings(null, null, null, null, false);
+    givenForm(form);
+
+    assertError(() -> applyAnonymously("CSE"), EventApplicationErrorCode.FORM_CLOSED);
+  }
+
+  @Test
+  @DisplayName("로그인 없이 받는 폼은 역할과 상관없이 로그인한 사람도 신청할 수 있다")
+  void loggedInGuestCanApplyToAnonymousForm() {
+    givenForm(anonymousForm());
+    givenNoExistingApplication();
+    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user()));
+
+    assertThatCode(() -> apply(UserRole.GUEST)).doesNotThrowAnyException();
+  }
+
+  @Test
+  @DisplayName("로그인 없이 먼저 낸 학번으로 계정 신청하면 막는다")
+  void accountApplicationRejectedWhenAnonymousExists() {
+    EventApplicationForm form = anonymousForm();
+    givenForm(form);
+    givenNoExistingApplication();
+    User user = user();
+    ReflectionTestUtils.setField(user, "studentId", "12241234");
+    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(applicationRepository.findByFormIdAndStudentId(
+            FORM_ID, "12241234", ApplicationStatus.APPLIED))
+        .thenReturn(
+            List.of(
+                EventApplication.createAnonymous(
+                    form, "김링크", "12241234", "CSE", "01012345678", NOW)));
+
+    // 한 사람이 정원을 두 자리 차지하면 안 된다.
+    assertError(() -> apply(UserRole.MEMBER), EventApplicationErrorCode.ALREADY_APPLIED);
+    verify(applicationRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("비로그인으로 로그인 필수 폼을 열면 로그인 안내를 사유로 내려준다")
+  void anonymousViewOfLoginOnlyForm() {
+    givenFormForRead(form(UserRole.MEMBER, null, null, null, true));
+
+    var response = service.getForm(BOARD_ID, null, null);
+
+    assertThat(response.canApply()).isFalse();
+    assertThat(response.allowAnonymous()).isFalse();
+    assertThat(response.blockedReason())
+        .isEqualTo(EventApplicationErrorCode.LOGIN_REQUIRED.getMessage());
+    assertThat(response.myApplication()).isNull();
+  }
+
+  private void applyAnonymously(String major) {
+    service.applyAnonymously(
+        BOARD_ID,
+        new AnonymousApplicationRequest(
+            " 김링크 ", "12241234", major, "010-1234-5678", true, List.of()));
+  }
+
+  private static EventApplicationForm anonymousForm() {
+    EventApplicationForm form = form(UserRole.MEMBER, null, null, null, true);
+    form.changeAllowAnonymous(true);
     return form;
   }
 

@@ -128,6 +128,6 @@ class EventFormAdminServiceTest {
   }
 
   private static EventFormSaveRequest request() {
-    return new EventFormSaveRequest(null, null, null, false, UserRole.MEMBER, true);
+    return new EventFormSaveRequest(null, null, null, false, UserRole.MEMBER, true, null);
   }
 }
