@@ -43,6 +43,8 @@ public enum EventApplicationErrorCode implements ErrorCode {
   ALREADY_CLOSED(HttpStatus.BAD_REQUEST, "신청이 마감되었습니다."),
   FORM_CLOSED(HttpStatus.BAD_REQUEST, "지금은 신청을 받지 않습니다."),
   NOT_ELIGIBLE(HttpStatus.FORBIDDEN, "이 행사에 신청할 수 있는 권한이 아닙니다."),
+  LOGIN_REQUIRED(HttpStatus.FORBIDDEN, "로그인 후 신청할 수 있는 행사입니다."),
+  MAJOR_INVALID(HttpStatus.BAD_REQUEST, "학과를 목록에서 골라주세요."),
   CAPACITY_FULL(HttpStatus.BAD_REQUEST, "정원이 찼습니다."),
   ALREADY_APPLIED(HttpStatus.CONFLICT, "이미 신청한 행사입니다."),
   APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "신청 내역이 없습니다."),
@@ -56,7 +58,9 @@ public enum EventApplicationErrorCode implements ErrorCode {
 
   CHECKIN_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "QR 이 만료되었습니다. 화면의 QR 을 다시 찍어주세요."),
   CHECKIN_NOT_IN_PERIOD(HttpStatus.BAD_REQUEST, "행사 기간에만 체크인할 수 있습니다."),
-  CHECKIN_NOT_APPLIED(HttpStatus.BAD_REQUEST, "신청 내역이 없습니다. 먼저 신청해주세요.");
+  CHECKIN_NOT_APPLIED(HttpStatus.BAD_REQUEST, "신청 내역이 없습니다. 먼저 신청해주세요."),
+  CHECKIN_IDENTITY_NOT_FOUND(
+      HttpStatus.BAD_REQUEST, "학번·이름과 일치하는 신청이 없습니다. 신청할 때 적은 그대로 입력해주세요.");
 
   private final HttpStatus status;
   private final String message;

@@ -10,6 +10,8 @@ import java.util.Map;
  * 운영진이 보는 신청자 한 명.
  *
  * <p>{@code checkedInAt} 이 있으면 QR 로 체크인한 것이고, 비어 있는데 참석으로 되어 있으면 운영진이 수기로 찍은 것이다.
+ *
+ * <p>{@code userId} 가 null 이면 로그인 없이 낸 신청이다. 이메일을 받지 않으므로 {@code email} 도 비어 있다.
  */
 public record ApplicantResponse(
     Long applicationId,
@@ -30,12 +32,12 @@ public record ApplicantResponse(
     var user = application.getUser();
     return new ApplicantResponse(
         application.getId(),
-        user.getId(),
-        user.getName(),
-        user.getStudentId(),
-        user.getMajor(),
-        user.getEmail(),
-        user.getPhoneNumber(),
+        user == null ? null : user.getId(),
+        application.resolvedName(),
+        application.resolvedStudentId(),
+        application.resolvedMajor(),
+        user == null ? null : user.getEmail(),
+        application.resolvedPhoneNumber(),
         application.getStatus(),
         application.getAttendanceStatus(),
         application.getAppliedAt(),

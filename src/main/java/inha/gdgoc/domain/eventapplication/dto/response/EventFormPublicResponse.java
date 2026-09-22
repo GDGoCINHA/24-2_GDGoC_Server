@@ -13,6 +13,8 @@ import java.util.Map;
  * 부원이 보는 신청 폼.
  *
  * <p>화면이 버튼 상태를 스스로 계산하지 않도록 {@code canApply} 와 그 사유를 함께 내려준다. 같은 판정을 두 곳에서 하면 어긋난다.
+ *
+ * <p>{@code allowAnonymous} 는 비로그인 화면이 신원 입력칸을 그릴지, 로그인 안내를 띄울지 가르는 값이다.
  */
 public record EventFormPublicResponse(
     Long eventBoardId,
@@ -26,6 +28,7 @@ public record EventFormPublicResponse(
     Integer remainingSeats,
     boolean canApply,
     String blockedReason,
+    boolean allowAnonymous,
     List<QuestionResponse> questions,
     MyApplication myApplication) {
 
@@ -64,6 +67,7 @@ public record EventFormPublicResponse(
         remaining,
         canApply,
         blockedReason,
+        form.isAllowAnonymous(),
         form.activeQuestions().stream().map(QuestionResponse::from).toList(),
         myApplication);
   }

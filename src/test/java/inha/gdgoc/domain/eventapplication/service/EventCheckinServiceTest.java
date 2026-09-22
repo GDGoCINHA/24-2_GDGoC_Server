@@ -12,12 +12,15 @@ import inha.gdgoc.domain.eventapplication.exception.EventApplicationErrorCode;
 import inha.gdgoc.domain.eventapplication.repository.EventApplicationFormRepository;
 import inha.gdgoc.domain.eventapplication.repository.EventApplicationRepository;
 import inha.gdgoc.domain.user.entity.User;
+import inha.gdgoc.domain.eventapplication.enums.ApplicationStatus;
 import inha.gdgoc.domain.user.enums.UserRole;
+import inha.gdgoc.domain.user.repository.UserRepository;
 import inha.gdgoc.global.exception.BusinessException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,12 +35,14 @@ class EventCheckinServiceTest {
   private static final Long BOARD_ID = 10L;
   private static final Long FORM_ID = 100L;
   private static final Long USER_ID = 7L;
+  private static final String STUDENT_ID = "12241234";
 
   /** 행사 기간(9/1~9/2) 안. KST 로 9월 1일 낮이다. */
   private static final Instant DURING_EVENT = Instant.parse("2026-09-01T03:00:00Z");
 
   @Mock private EventApplicationFormRepository formRepository;
   @Mock private EventApplicationRepository applicationRepository;
+  @Mock private UserRepository userRepository;
 
   @Test
   @DisplayName("신청자가 유효한 토큰으로 찍으면 참석으로 바뀐다")
@@ -126,10 +131,81 @@ class EventCheckinServiceTest {
         EventApplicationErrorCode.CHECKIN_NOT_APPLIED);
   }
 
+  @Test
+  @DisplayName("로그인하지 않은 폰은 학번·이름으로 체크인한다 — 띄어쓰기 차이는 무시한다")
+  void anonymousCheckInByStudentIdAndName() {
+    EventApplicationForm form = form();
+    EventApplication application = anonymousApplication(form);
+    givenForm(form);
+    when(applicationRepository.findByFormIdAndStudentId(
+            FORM_ID, STUDENT_ID, ApplicationStatus.APPLIED))
+        .thenReturn(List.of(application));
+
+    CheckinResponse result =
+        service(DURING_EVENT).checkInAnonymously(BOARD_ID, token(), STUDENT_ID, "김 링크");
+
+    assertThat(result.alreadyCheckedIn()).isFalse();
+    assertThat(application.getAttendanceStatus()).isEqualTo(EventAttendanceStatus.ATTENDED);
+  }
+
+  @Test
+  @DisplayName("학번이 맞아도 이름이 다르면 체크인하지 않는다")
+  void anonymousCheckInRejectsNameMismatch() {
+    EventApplicationForm form = form();
+    EventApplication application = anonymousApplication(form);
+    givenForm(form);
+    when(applicationRepository.findByFormIdAndStudentId(
+            FORM_ID, STUDENT_ID, ApplicationStatus.APPLIED))
+        .thenReturn(List.of(application));
+
+    // 학번 오타 하나로 남의 신청에 체크인되면 안 된다.
+    assertError(
+        () -> service(DURING_EVENT).checkInAnonymously(BOARD_ID, token(), STUDENT_ID, "홍길동"),
+        EventApplicationErrorCode.CHECKIN_IDENTITY_NOT_FOUND);
+    assertThat(application.getCheckedInAt()).isNull();
+  }
+
+  @Test
+  @DisplayName("학번·이름 체크인도 만료된 토큰은 거절한다")
+  void anonymousCheckInRejectsExpiredToken() {
+    givenForm(form());
+    String staleToken =
+        new EventCheckinTokenService("s", Clock.fixed(DURING_EVENT.minusSeconds(3600), ZoneOffset.UTC))
+            .issue(FORM_ID);
+
+    assertError(
+        () -> service(DURING_EVENT).checkInAnonymously(BOARD_ID, staleToken, STUDENT_ID, "김링크"),
+        EventApplicationErrorCode.CHECKIN_TOKEN_INVALID);
+  }
+
+  @Test
+  @DisplayName("링크로 먼저 신청하고 나중에 로그인한 사람도 QR 로 체크인된다")
+  void loggedInUserFindsOwnAnonymousApplication() {
+    EventApplicationForm form = form();
+    EventApplication application = anonymousApplication(form);
+    givenForm(form);
+    when(applicationRepository.findByFormIdAndUserId(FORM_ID, USER_ID)).thenReturn(Optional.empty());
+    User user = User.builder().name("김링크").studentId(STUDENT_ID).build();
+    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(applicationRepository.findByFormIdAndStudentId(
+            FORM_ID, STUDENT_ID, ApplicationStatus.APPLIED))
+        .thenReturn(List.of(application));
+
+    service(DURING_EVENT).checkIn(BOARD_ID, token(), USER_ID);
+
+    assertThat(application.getAttendanceStatus()).isEqualTo(EventAttendanceStatus.ATTENDED);
+  }
+
+  private static EventApplication anonymousApplication(EventApplicationForm form) {
+    return EventApplication.createAnonymous(
+        form, "김링크", STUDENT_ID, "CSE", "01012345678", DURING_EVENT.minusSeconds(86400));
+  }
+
   private EventCheckinService service(Instant now) {
     return new EventCheckinService(
         formRepository,
         applicationRepository,
+        userRepository,
         new EventCheckinTokenService("s", Clock.fixed(now, ZoneOffset.UTC)),
         Clock.fixed(now, ZoneOffset.UTC));
   }
