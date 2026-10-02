@@ -73,16 +73,14 @@ public class ClubCompletionService {
   // --- 조회 ---------------------------------------------------------------
 
   public ClubCompletionResponse getCompletion(Long clubId) {
-    Club club = clubAccessService.getClub(clubId);
-    ClubCompletion completion = clubCompletionRepository.findByClubId(clubId).orElse(null);
-    List<LocalDate> restWeeks = restWeeksOf(clubId);
-    return ClubCompletionResponse.of(calculate(club, completion, restWeeks), restWeeks, completion);
+    return getCompletion(clubAccessService.getClub(clubId));
   }
 
-  /** 운영진 현황 표도 같은 계산을 쓴다. */
-  public CompletionResult calculate(Club club) {
+  /** 운영진 현황 표도 같은 계산을 쓴다 — 팀 화면과 현황 표의 숫자가 어긋나면 안 된다. */
+  public ClubCompletionResponse getCompletion(Club club) {
     ClubCompletion completion = clubCompletionRepository.findByClubId(club.getId()).orElse(null);
-    return calculate(club, completion, restWeeksOf(club.getId()));
+    List<LocalDate> restWeeks = restWeeksOf(club.getId());
+    return ClubCompletionResponse.of(calculate(club, completion, restWeeks), restWeeks, completion);
   }
 
   private CompletionResult calculate(

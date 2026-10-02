@@ -114,8 +114,16 @@ public final class CompletionCalculator {
   }
 
   /** 필요 참석 인원 = ceil(명단 × 비율). 부동소수 오차를 피하려고 BigDecimal 로 센다 (0.1 × 30 같은 경우). */
-  static int required(int roster, BigDecimal ratio) {
+  public static int required(int roster, BigDecimal ratio) {
     return BigDecimal.valueOf(roster).multiply(ratio).setScale(0, RoundingMode.CEILING).intValueExact();
+  }
+
+  /**
+   * 필요 인원을 채웠는가. 명단이 비어 있으면(0/0) 채운 것으로 보지 않는다 — ceil(0 × 비율) = 0 이라 그대로 두면 아무도 없는 기록이
+   * 인정 활동이 된다.
+   */
+  public static boolean meetsRequired(int roster, int attended, int required) {
+    return roster > 0 && attended >= required;
   }
 
   /** 그 날짜가 속한 주의 월요일. 쉬는 주 저장 시에도 이것으로 맞춘다. */
@@ -148,7 +156,9 @@ public final class CompletionCalculator {
 
   private static WeekActivity toRow(Activity a, BigDecimal ratio) {
     int required = required(a.roster(), ratio);
-    boolean counted = a.status() == ClubActivityStatus.APPROVED && a.attended() >= required;
+    boolean counted =
+        a.status() == ClubActivityStatus.APPROVED
+            && meetsRequired(a.roster(), a.attended(), required);
     return new WeekActivity(
         a.activityId(), a.date(), a.status(), a.attended(), a.roster(), required, counted);
   }

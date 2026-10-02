@@ -211,6 +211,25 @@ class CompletionCalculatorTest {
     }
 
     @Test
+    @DisplayName("명단이 비어 있는(0/0) 기록은 인증 완료여도 인정되지 않는다")
+    void emptyRosterIsNotCounted() {
+      CompletionResult r =
+          CompletionCalculator.calculate(
+              base()
+                  .activities(
+                      List.of(
+                          act(W1.plusDays(1), APPROVED, 0, 0),
+                          act(W2.plusDays(1), APPROVED, 5, 3),
+                          act(W3.plusDays(1), APPROVED, 5, 3)))
+                  .build());
+
+      assertThat(week(r, W1).activities().get(0).required()).isZero();
+      assertThat(week(r, W1).activities().get(0).counted()).isFalse();
+      assertThat(week(r, W1).satisfied()).isFalse();
+      assertThat(r.eligible()).isFalse();
+    }
+
+    @Test
     @DisplayName("인증 완료가 아닌 기록은 인원을 채워도 인정되지 않는다")
     void onlyApprovedCounts() {
       CompletionResult r =

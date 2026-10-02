@@ -48,6 +48,15 @@ class ClubCompletionSecurityTest {
   }
 
   @Test
+  void reviewAndAdminStatus_requireAuthentication() throws Exception {
+    expect401(get("/api/v1/admin/club-activities"));
+    expect401(post("/api/v1/admin/club-activities/1/approve"));
+    expect401(post("/api/v1/admin/club-activities/1/request-revision"));
+    expect401(get("/api/v1/admin/clubs"));
+    expect401(get("/api/v1/admin/clubs/export"));
+  }
+
+  @Test
   void goalAndRestWeeks_requireAuthentication() throws Exception {
     expect401(put("/api/v1/clubs/1/rest-weeks"));
     expect401(put("/api/v1/clubs/1/goal"));
