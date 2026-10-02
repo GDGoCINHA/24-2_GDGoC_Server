@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 운영진(CORE 이상) — 개설 신청 심사, 이끔이 권한, 소모임 상태·이끔이 교체. */
+/** 운영진(CORE 이상) — 개설 신청 심사, 리더 권한, 소모임 상태·리더 교체. */
 @RestController
 @RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
@@ -48,7 +48,7 @@ public class ClubAdminController {
         ApiResponse.ok("CLUB_OPEN_REQUEST_LIST_RETRIEVED", clubLeaderService.findRequests(status)));
   }
 
-  /** 승인하면 이끔이 권한이 생긴다. 소모임은 신청자가 직접 연다. */
+  /** 승인하면 리더 권한이 생긴다. 소모임은 신청자가 직접 연다. */
   @PostMapping("/club-open-requests/{requestId}/approve")
   public ResponseEntity<ApiResponse<Void, Void>> approve(
       @AuthenticationPrincipal CustomUserDetails me, @PathVariable Long requestId) {

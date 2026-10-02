@@ -63,14 +63,14 @@ class ClubAccessServiceTest {
   }
 
   @Test
-  @DisplayName("이끔이는 club.leader_id 로 판정한다")
+  @DisplayName("리더는 club.leader_id 로 판정한다")
   void leaderPasses() {
     givenClub();
     assertThat(service.requireLeader(CLUB_ID, LEADER_ID)).isNotNull();
   }
 
   @Test
-  @DisplayName("이끔이가 아니면 403 — 운영진 역할이어도 마찬가지다")
+  @DisplayName("리더가 아니면 403 — 운영진 역할이어도 마찬가지다")
   void nonLeaderIsForbidden() {
     givenClub();
     assertError(() -> service.requireLeader(CLUB_ID, OTHER_ID), ClubErrorCode.NOT_CLUB_LEADER);
@@ -86,7 +86,7 @@ class ClubAccessServiceTest {
   }
 
   @Test
-  @DisplayName("회수된 이끔이 권한으로는 개설할 수 없다")
+  @DisplayName("회수된 리더 권한으로는 개설할 수 없다")
   void revokedGrantCannotOpen() {
     given(clubLeaderGrantRepository.existsByUserIdAndRevokedAtIsNull(OTHER_ID)).willReturn(false);
     assertError(() -> service.requireLeaderGrant(OTHER_ID), ClubErrorCode.LEADER_GRANT_REQUIRED);

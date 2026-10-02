@@ -17,9 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 참여 신청·승인·탈퇴·강퇴·이끔이 교체.
+ * 참여 신청·승인·탈퇴·강퇴·리더 교체.
  *
- * <p>막는 것은 중복 신청, 모집 중이 아닐 때 신청, 위임 전 이끔이 탈퇴뿐이다. 정원 초과 승인은 막지 않는다(경고는 화면이 한다).
+ * <p>막는 것은 중복 신청, 모집 중이 아닐 때 신청, 위임 전 리더 탈퇴뿐이다. 정원 초과 승인은 막지 않는다(경고는 화면이 한다).
  */
 @Service
 @RequiredArgsConstructor
@@ -45,7 +45,7 @@ public class ClubMemberService {
     clubMemberRepository.save(ClubMember.apply(club, getUser(userId), message, Instant.now()));
   }
 
-  /** 신청 취소 또는 탈퇴. 이끔이는 넘기기 전에는 나갈 수 없다. */
+  /** 신청 취소 또는 탈퇴. 리더는 넘기기 전에는 나갈 수 없다. */
   @Transactional
   public void leave(Long clubId, Long userId) {
     Club club = clubAccessService.getClub(clubId);
@@ -99,7 +99,7 @@ public class ClubMemberService {
     target.kick(Instant.now());
   }
 
-  /** 이끔이가 다른 ACTIVE 멤버에게 넘긴다. 넘긴 사람은 일반 멤버로 남는다. */
+  /** 리더가 다른 ACTIVE 멤버에게 넘긴다. 넘긴 사람은 일반 멤버로 남는다. */
   @Transactional
   public void changeLeader(Long clubId, Long userId, Long newLeaderId) {
     Club club = clubAccessService.requireLeader(clubId, userId);

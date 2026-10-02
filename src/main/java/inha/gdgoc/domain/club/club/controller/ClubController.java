@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 소모임 게시판. 조회는 로그인만, 개설·수정은 MEMBER 이상 + 데이터 권한(이끔이 권한·이끔이). */
+/** 소모임 게시판. 조회는 로그인만, 개설·수정은 MEMBER 이상 + 데이터 권한(리더 권한·리더). */
 @RestController
 @RequestMapping("/api/v1/clubs")
 @RequiredArgsConstructor
