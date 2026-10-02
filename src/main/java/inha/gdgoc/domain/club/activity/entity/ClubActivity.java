@@ -115,6 +115,17 @@ public class ClubActivity extends BaseEntity {
     this.submittedAt = now;
   }
 
+  /**
+   * 출석 수정 요청을 받아들여 출석만 바뀌었다. 운영진이 본 출석이 바뀌었으므로 다시 확인 중으로 돌리고 검토 목록 맨 뒤로 보낸다.
+   *
+   * <p>보완 요청 사유는 그대로 둔다 — 보완해야 할 다른 내용이 남아 있을 수 있다.
+   */
+  public void reopenAfterAttendanceFix(Instant now) {
+    requireEditable();
+    this.status = ClubActivityStatus.PENDING;
+    this.submittedAt = now;
+  }
+
   /** 운영진의 인증 완료. 최종 상태라 이후로는 출석을 포함해 아무것도 바꿀 수 없다. */
   public void approve(Long reviewerId, Instant now) {
     requireEditable();
