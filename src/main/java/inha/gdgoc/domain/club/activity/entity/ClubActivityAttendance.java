@@ -47,4 +47,9 @@ public class ClubActivityAttendance extends BaseEntity {
     row.attended = attended;
     return row;
   }
+
+  /** 출석 수정 요청을 받아들일 때만 쓴다. 활동 기록이 인증 완료가 아닌지는 부르는 쪽이 먼저 확인한다. */
+  public void mark(boolean attended) {
+    this.attended = attended;
+  }
 }

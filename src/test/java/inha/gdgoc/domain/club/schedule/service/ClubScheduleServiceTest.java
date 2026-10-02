@@ -217,6 +217,27 @@ class ClubScheduleServiceTest {
     assertThat(clubScheduleService.list(club.getId(), minji.getId(), false, false)).hasSize(1);
   }
 
+  @Test
+  @DisplayName("기록이 연결된 일정에는 그 기록 id 가, 없는 일정에는 null 이 나온다")
+  void scheduleCarriesLinkedActivityId() {
+    ClubSchedule recorded = schedule(club, inDays(-2));
+    ClubSchedule notYet = schedule(club, inDays(-3));
+    ClubActivity activity =
+        persist(
+            ClubActivity.create(
+                club, recorded, LocalDate.now(KST), "모임", null, leader.getId(), NOW));
+    flushAndClear();
+
+    List<ClubScheduleResponse> past =
+        clubScheduleService.list(club.getId(), minji.getId(), false, true);
+
+    assertThat(past)
+        .extracting(ClubScheduleResponse::id, ClubScheduleResponse::activityId)
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple(recorded.getId(), activity.getId()),
+            org.assertj.core.groups.Tuple.tuple(notYet.getId(), null));
+  }
+
   // ---- 참석 응답 ----
 
   @Test

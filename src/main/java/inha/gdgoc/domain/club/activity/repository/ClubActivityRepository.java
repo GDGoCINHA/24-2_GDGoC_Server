@@ -5,6 +5,7 @@ import inha.gdgoc.domain.club.activity.entity.ClubActivity;
 import inha.gdgoc.domain.club.activity.enums.ClubActivityStatus;
 import jakarta.persistence.LockModeType;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,6 +25,10 @@ public interface ClubActivityRepository extends JpaRepository<ClubActivity, Long
   boolean existsByScheduleId(Long scheduleId);
 
   boolean existsByScheduleIdAndIdNot(Long scheduleId, Long activityId);
+
+  /** 일정마다 연결된 기록 id. [scheduleId, activityId]. 일정 목록이 「기록 작성」 대신 「기록 보기」 를 띄우는 데 쓴다. */
+  @Query("select a.schedule.id, a.id from ClubActivity a where a.schedule.id in :scheduleIds")
+  List<Object[]> findScheduleLinks(@Param("scheduleIds") Collection<Long> scheduleIds);
 
   /**
    * 일정을 지울 때 연결만 끊는다. 기록은 일정 없이 진행한 활동으로 남는다.

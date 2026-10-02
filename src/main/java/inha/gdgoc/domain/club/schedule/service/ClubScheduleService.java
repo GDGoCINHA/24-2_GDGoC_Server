@@ -88,6 +88,11 @@ public class ClubScheduleService {
             .filter(r -> currentMembers.contains(r.getUser().getId()))
             .collect(Collectors.groupingBy(r -> r.getSchedule().getId()));
     boolean insider = member || staff;
+    Map<Long, Long> activityBySchedule =
+        clubActivityRepository
+            .findScheduleLinks(schedules.stream().map(ClubSchedule::getId).toList())
+            .stream()
+            .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
 
     return schedules.stream()
         .map(
@@ -108,6 +113,7 @@ public class ClubScheduleService {
                   s.getLocation(),
                   insider ? s.getOnlineLink() : null,
                   s.getDescription(),
+                  activityBySchedule.get(s.getId()),
                   attend,
                   absent,
                   Math.max(0, currentMembers.size() - rsvps.size()),
