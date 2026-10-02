@@ -32,6 +32,16 @@ public class ClubActivityQueryService {
   }
 
   /**
+   * 상태와 무관한 버전. 완주 현황이 검토 대기·보완 요청 기록도 주차 표에 보여주고 기간 밖 기록을 세는 데 쓴다.
+   *
+   * <p>{@link ApprovedActivity} 를 그대로 쓰지만 여기서는 인증 완료가 아닌 기록도 담긴다.
+   */
+  public List<ApprovedActivity> findByStatus(
+      Long clubId, ClubActivityStatus status, LocalDate from, LocalDate to) {
+    return clubActivityRepository.summarizeByStatus(clubId, status, from, to);
+  }
+
+  /**
    * 상태를 바꿀 기록을 잠가서 읽는다. 검토({@link ClubActivity#approve}·{@link ClubActivity#requestRevision})와 출석 수정
    * 수락은 반드시 이걸로 읽는다.
    *
