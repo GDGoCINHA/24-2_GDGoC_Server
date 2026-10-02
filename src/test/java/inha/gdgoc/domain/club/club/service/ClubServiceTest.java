@@ -85,6 +85,24 @@ class ClubServiceTest {
   }
 
   @Test
+  @DisplayName("비로그인은 링크도 신청 상태도 받지 않는다")
+  void anonymousGetsNoLink() {
+    var detail = service.getDetail(CLUB_ID, null, false);
+    assertThat(detail.kakaoLink()).isNull();
+    assertThat(detail.myMembership()).isNull();
+  }
+
+  @Test
+  @DisplayName("비로그인에게 숨긴 소모임은 없는 것처럼 보인다")
+  void hiddenClubIsNotFoundForAnonymous() {
+    ReflectionTestUtils.setField(club, "status", ClubStatus.HIDDEN);
+    assertThatThrownBy(() -> service.getDetail(CLUB_ID, null, false))
+        .isInstanceOf(BusinessException.class)
+        .extracting("errorCode")
+        .isEqualTo(ClubErrorCode.CLUB_NOT_FOUND);
+  }
+
+  @Test
   @DisplayName("신청 중(PENDING)이어도 단톡방 링크를 주지 않는다")
   void pendingGetsNoLink() {
     givenMembership(membership(false));

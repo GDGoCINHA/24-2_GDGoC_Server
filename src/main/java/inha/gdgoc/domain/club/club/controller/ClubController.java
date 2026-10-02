@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 소모임 게시판. 조회는 로그인만, 개설·수정은 MEMBER 이상 + 데이터 권한(리더 권한·리더). */
+/** 소모임 게시판. 목록·상세는 누구나, 개설·수정은 MEMBER 이상 + 데이터 권한(리더 권한·리더). */
 @RestController
 @RequestMapping("/api/v1/clubs")
 @RequiredArgsConstructor
@@ -74,7 +74,7 @@ public class ClubController {
       @AuthenticationPrincipal CustomUserDetails me, @PathVariable Long clubId) {
     return ResponseEntity.ok(
         ApiResponse.ok(
-            "CLUB_RETRIEVED", clubService.getDetail(clubId, me.getUserId(), isStaff(me))));
+            "CLUB_RETRIEVED", clubService.getDetail(clubId, me == null ? null : me.getUserId(), isStaff(me))));
   }
 
   @Authorize(@Condition(atLeast = UserRole.MEMBER))
@@ -94,7 +94,8 @@ public class ClubController {
     return ResponseEntity.ok(ApiResponse.ok("CLUB_UPDATED"));
   }
 
+  /** 목록·상세는 비로그인도 부른다(SecurityConfig). 그때 {@code me} 는 null 이다. */
   private boolean isStaff(CustomUserDetails me) {
-    return accessGuard.check(me, AccessCondition.atLeast(UserRole.CORE));
+    return me != null && accessGuard.check(me, AccessCondition.atLeast(UserRole.CORE));
   }
 }
