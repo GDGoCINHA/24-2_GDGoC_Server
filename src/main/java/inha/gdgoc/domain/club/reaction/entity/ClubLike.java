@@ -41,4 +41,12 @@ public class ClubLike extends BaseEntity {
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
+
+  public static ClubLike of(ClubTargetType targetType, long targetId, User user) {
+    ClubLike like = new ClubLike();
+    like.targetType = targetType;
+    like.targetId = targetId;
+    like.user = user;
+    return like;
+  }
 }

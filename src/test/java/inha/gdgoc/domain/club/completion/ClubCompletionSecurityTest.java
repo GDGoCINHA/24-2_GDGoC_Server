@@ -1,5 +1,6 @@
 package inha.gdgoc.domain.club.completion;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -54,6 +55,15 @@ class ClubCompletionSecurityTest {
     expect401(post("/api/v1/admin/club-activities/1/request-revision"));
     expect401(get("/api/v1/admin/clubs"));
     expect401(get("/api/v1/admin/clubs/export"));
+  }
+
+  @Test
+  void reactions_requireAuthentication() throws Exception {
+    expect401(put("/api/v1/club-reactions/POST/1/like"));
+    expect401(delete("/api/v1/club-reactions/POST/1/like"));
+    expect401(get("/api/v1/club-reactions/ACTIVITY/1/comments"));
+    expect401(post("/api/v1/club-reactions/ACTIVITY/1/comments"));
+    expect401(delete("/api/v1/club-comments/1"));
   }
 
   @Test
