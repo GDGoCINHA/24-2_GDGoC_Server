@@ -1,6 +1,7 @@
 package inha.gdgoc.domain.club.activity.repository;
 
 import inha.gdgoc.domain.club.activity.entity.ClubActivityAttendance;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,6 +23,12 @@ public interface ClubActivityAttendanceRepository
           + "where a.activity.id = :activityId and a.user.id = :userId")
   Optional<ClubActivityAttendance> findByActivityIdAndUserId(
       @Param("activityId") Long activityId, @Param("userId") Long userId);
+
+  /** 피드 카드의 인원 수. [activityId, 명단 수, 출석 수]. 명단 행이 없는 기록은 빠진다(0/0 으로 본다). */
+  @Query(
+      "select a.activity.id, count(a), sum(case when a.attended = true then 1L else 0L end) "
+          + "from ClubActivityAttendance a where a.activity.id in :activityIds group by a.activity.id")
+  List<Object[]> countByActivityIds(@Param("activityIds") Collection<Long> activityIds);
 
   /** 한 소모임에서 내가 명단에 든 회차. 최근 활동일부터. */
   @Query(
