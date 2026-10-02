@@ -54,7 +54,7 @@ public class ClubService {
       boolean staff,
       Pageable pageable) {
     ClubStatus hidden = staff ? null : ClubStatus.HIDDEN;
-    String kw = keyword == null || keyword.isBlank() ? null : keyword.trim();
+    String kw = keyword == null ? "" : keyword.trim();
     Page<Club> page = clubRepository.search(hidden, category, recruitStatus, kw, pageable);
     Map<Long, Long> counts = countActive(page.getContent().stream().map(Club::getId).toList());
     return page.map(c -> ClubSummaryResponse.of(c, counts.getOrDefault(c.getId(), 0L)));
