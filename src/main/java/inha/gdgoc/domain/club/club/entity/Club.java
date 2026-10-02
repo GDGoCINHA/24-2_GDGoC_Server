@@ -24,7 +24,7 @@ import lombok.NoArgsConstructor;
 /**
  * 소모임.
  *
- * <p>이끔이는 {@code users.role} 이 아니라 {@link #leader} 다. 일반 부원도 이끔이가 될 수 있다.
+ * <p>리더는 {@code users.role} 이 아니라 {@link #leader} 다. 일반 부원도 리더가 될 수 있다.
  */
 @Entity
 @Table(name = "club")
@@ -114,7 +114,7 @@ public class Club extends BaseEntity {
     return club;
   }
 
-  /** 이끔이가 고칠 수 있는 항목. null 인 항목은 건드리지 않는다. 검증하지 않는다 — 정원·기간은 경고로만 보여준다. */
+  /** 리더가 고칠 수 있는 항목. null 인 항목은 건드리지 않는다. 검증하지 않는다 — 정원·기간은 경고로만 보여준다. */
   public void update(
       String name,
       ClubCategory category,

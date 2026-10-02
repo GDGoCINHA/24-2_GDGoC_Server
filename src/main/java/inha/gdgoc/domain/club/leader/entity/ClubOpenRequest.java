@@ -21,7 +21,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 부원의 소모임 개설 신청. 승인하면 이끔이 권한이 생긴다.
+ * 부원의 소모임 개설 신청. 승인하면 리더 권한이 생긴다.
  */
 @Entity
 @Table(name = "club_open_request")

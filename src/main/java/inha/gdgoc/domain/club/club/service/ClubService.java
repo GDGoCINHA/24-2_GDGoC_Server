@@ -92,7 +92,7 @@ public class ClubService {
     return ClubDetailResponse.of(club, count, active || staff, membership);
   }
 
-  /** 개설. 이끔이 권한이 있어야 하고, 개설자는 바로 ACTIVE 멤버가 된다. 기수를 안 주면 최신 기수. */
+  /** 개설. 리더 권한이 있어야 하고, 개설자는 바로 ACTIVE 멤버가 된다. 기수를 안 주면 최신 기수. */
   @Transactional
   public Long create(Long userId, ClubCreateRequest req) {
     clubAccessService.requireLeaderGrant(userId);

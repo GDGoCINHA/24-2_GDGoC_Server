@@ -23,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 이끔이 권한과 개설 신청. 권한은 「새 소모임을 열 수 있는가」만 정한다. */
+/** 리더 권한과 개설 신청. 권한은 「새 소모임을 열 수 있는가」만 정한다. */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)

@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 내 이끔이 권한과 개설 신청. */
+/** 내 리더 권한과 개설 신청. */
 @RestController
 @RequiredArgsConstructor
 @Authorize(@Condition(atLeast = UserRole.MEMBER))

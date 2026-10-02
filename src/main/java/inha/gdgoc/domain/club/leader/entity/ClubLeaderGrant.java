@@ -17,7 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 이끔이 권한(소모임 개설 권한). {@code revokedAt} 이 null 이면 유효하다.
+ * 리더 권한(소모임 개설 권한). {@code revokedAt} 이 null 이면 유효하다.
  */
 @Entity
 @Table(name = "club_leader_grant")
@@ -50,7 +50,7 @@ public class ClubLeaderGrant extends BaseEntity {
     return grant;
   }
 
-  /** 회수해도 이미 연 소모임의 이끔이 지위는 그대로다. 새로 여는 것만 막힌다. */
+  /** 회수해도 이미 연 소모임의 리더 지위는 그대로다. 새로 여는 것만 막힌다. */
   public void revoke(Instant now) {
     this.revokedAt = now;
   }

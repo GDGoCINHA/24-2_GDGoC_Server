@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 참여·탈퇴·승인·강퇴·이끔이 교체. GUEST 는 참여할 수 없다. */
+/** 참여·탈퇴·승인·강퇴·리더 교체. GUEST 는 참여할 수 없다. */
 @RestController
 @RequestMapping("/api/v1/clubs/{clubId}")
 @RequiredArgsConstructor

@@ -35,7 +35,7 @@ public class ClubMemberQueryService {
         .toList();
   }
 
-  /** 지금 팀원 수 (이끔이 포함). */
+  /** 지금 팀원 수 (리더 포함). */
   public long countActive(Long clubId) {
     return clubMemberRepository.countByClubIdAndStatus(clubId, ClubMemberStatus.ACTIVE);
   }

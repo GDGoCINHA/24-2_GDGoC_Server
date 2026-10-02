@@ -5,7 +5,7 @@ import inha.gdgoc.domain.club.club.enums.ClubRecruitStatus;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
-/** 이끔이 수정. null 인 항목은 그대로 둔다. */
+/** 리더 수정. null 인 항목은 그대로 둔다. */
 public record ClubUpdateRequest(
     @Size(max = 100) String name,
     ClubCategory category,

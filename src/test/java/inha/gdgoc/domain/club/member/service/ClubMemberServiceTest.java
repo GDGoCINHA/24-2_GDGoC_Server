@@ -97,7 +97,7 @@ class ClubMemberServiceTest {
   }
 
   @Test
-  @DisplayName("이끔이는 넘기기 전에 탈퇴할 수 없다")
+  @DisplayName("리더는 넘기기 전에 탈퇴할 수 없다")
   void leaderCannotLeave() {
     given(clubAccessService.getClub(CLUB_ID)).willReturn(club);
     given(clubMemberRepository.findFirstByClubIdAndUserIdAndStatusIn(any(), any(), anyCollection()))
@@ -118,7 +118,7 @@ class ClubMemberServiceTest {
   }
 
   @Test
-  @DisplayName("이끔이는 자기 자신을 내보낼 수 없다")
+  @DisplayName("리더는 자기 자신을 내보낼 수 없다")
   void cannotKickSelf() {
     given(clubMemberRepository.findById(1L)).willReturn(Optional.of(member(1L, leader, true)));
     assertError(() -> service.kick(CLUB_ID, 1L, LEADER_ID), ClubErrorCode.CANNOT_KICK_SELF);
@@ -152,7 +152,7 @@ class ClubMemberServiceTest {
   }
 
   @Test
-  @DisplayName("멤버가 아닌 사람에게는 이끔이를 넘길 수 없다")
+  @DisplayName("멤버가 아닌 사람에게는 리더를 넘길 수 없다")
   void cannotHandOverToOutsider() {
     given(clubAccessService.requireLeader(CLUB_ID, LEADER_ID)).willReturn(club);
     given(clubAccessService.isActiveMember(CLUB_ID, USER_ID)).willReturn(false);
