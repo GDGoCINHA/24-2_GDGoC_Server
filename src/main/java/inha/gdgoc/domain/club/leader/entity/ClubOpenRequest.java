@@ -62,4 +62,29 @@ public class ClubOpenRequest extends BaseEntity {
 
   @Column(name = "reviewed_at")
   private Instant reviewedAt;
+
+  public static ClubOpenRequest create(
+      User user, String name, ClubCategory category, String summary, String goal) {
+    ClubOpenRequest request = new ClubOpenRequest();
+    request.user = user;
+    request.name = name;
+    request.category = category;
+    request.summary = summary;
+    request.goal = goal;
+    request.status = ClubOpenRequestStatus.PENDING;
+    return request;
+  }
+
+  public void approve(Long reviewerId, Instant now) {
+    this.status = ClubOpenRequestStatus.APPROVED;
+    this.reviewedBy = reviewerId;
+    this.reviewedAt = now;
+  }
+
+  public void reject(Long reviewerId, String reason, Instant now) {
+    this.status = ClubOpenRequestStatus.REJECTED;
+    this.rejectReason = reason;
+    this.reviewedBy = reviewerId;
+    this.reviewedAt = now;
+  }
 }

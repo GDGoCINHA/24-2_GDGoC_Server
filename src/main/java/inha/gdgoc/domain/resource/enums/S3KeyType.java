@@ -12,7 +12,8 @@ public enum S3KeyType {
     boardEvent("board/event"),
     boardNotice("board/notice"),
     boardFree("board/free"),
-    landing("landing");
+    landing("landing"),
+    club("club");
 
     private final String value;
 
