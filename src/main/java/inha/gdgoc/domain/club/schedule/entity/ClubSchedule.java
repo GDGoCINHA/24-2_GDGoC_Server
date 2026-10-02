@@ -50,4 +50,23 @@ public class ClubSchedule extends BaseEntity {
 
   @Column(name = "created_by")
   private Long createdBy;
+
+  public static ClubSchedule create(
+      Club club,
+      String title,
+      Instant startsAt,
+      String location,
+      String onlineLink,
+      String description,
+      Long creatorId) {
+    ClubSchedule schedule = new ClubSchedule();
+    schedule.club = club;
+    schedule.title = title;
+    schedule.startsAt = startsAt;
+    schedule.location = location;
+    schedule.onlineLink = onlineLink;
+    schedule.description = description;
+    schedule.createdBy = creatorId;
+    return schedule;
+  }
 }

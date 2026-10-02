@@ -11,8 +11,6 @@ import inha.gdgoc.domain.club.activity.exception.ClubActivityErrorCode;
 import inha.gdgoc.domain.club.club.entity.Club;
 import inha.gdgoc.domain.club.club.entity.ClubTerm;
 import inha.gdgoc.domain.club.club.enums.ClubCategory;
-import inha.gdgoc.domain.club.club.enums.ClubRecruitStatus;
-import inha.gdgoc.domain.club.club.enums.ClubStatus;
 import inha.gdgoc.domain.user.entity.User;
 import inha.gdgoc.global.exception.BusinessException;
 import jakarta.persistence.EntityManager;
@@ -178,7 +176,7 @@ class ClubActivityQueryServiceTest {
     return user;
   }
 
-  // ClubTerm·Club 의 생성 메서드는 A 담당이라 아직 없다. 생기면 그걸로 바꾼다.
+  // ClubTerm 의 생성 메서드는 아직 없다(A·C 담당). 생기면 그걸로 바꾼다.
   private ClubTerm term() {
     ClubTerm term = BeanUtils.instantiateClass(ClubTerm.class);
     ReflectionTestUtils.setField(term, "name", "2026-2");
@@ -188,14 +186,10 @@ class ClubActivityQueryServiceTest {
   }
 
   private Club club(ClubTerm term, User leader, String name) {
-    Club club = BeanUtils.instantiateClass(Club.class);
-    ReflectionTestUtils.setField(club, "term", term);
-    ReflectionTestUtils.setField(club, "leader", leader);
-    ReflectionTestUtils.setField(club, "name", name);
-    ReflectionTestUtils.setField(club, "category", ClubCategory.STUDY);
-    ReflectionTestUtils.setField(club, "summary", name + " 소개");
-    ReflectionTestUtils.setField(club, "recruitStatus", ClubRecruitStatus.RECRUITING);
-    ReflectionTestUtils.setField(club, "status", ClubStatus.ACTIVE);
+    Club club =
+        Club.create(
+            term, leader, name, ClubCategory.STUDY, name + " 소개", null, null, null, null, null,
+            null, null);
     entityManager.persist(club);
     return club;
   }
