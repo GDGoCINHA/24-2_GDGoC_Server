@@ -3,6 +3,7 @@ package inha.gdgoc.domain.club.completion.service;
 import static java.time.temporal.TemporalAdjusters.previousOrSame;
 
 import inha.gdgoc.domain.club.activity.enums.ClubActivityStatus;
+import inha.gdgoc.domain.club.activity.service.RequiredAttendance;
 import inha.gdgoc.domain.club.completion.dto.CompletionInput;
 import inha.gdgoc.domain.club.completion.dto.CompletionInput.Activity;
 import inha.gdgoc.domain.club.completion.dto.CompletionResult;
@@ -12,7 +13,6 @@ import inha.gdgoc.domain.club.completion.dto.CompletionResult.WeekActivity;
 import inha.gdgoc.domain.club.completion.enums.ClubCompletionWarning;
 import inha.gdgoc.domain.club.completion.enums.ClubGoalStatus;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -113,9 +113,9 @@ public final class CompletionCalculator {
         warnings.stream().sorted(Comparator.naturalOrder()).toList());
   }
 
-  /** 필요 참석 인원 = ceil(명단 × 비율). 부동소수 오차를 피하려고 BigDecimal 로 센다 (0.1 × 30 같은 경우). */
+  /** 필요 참석 인원 = ceil(명단 × 비율). B 의 활동 기록 화면과 같은 값이어야 하므로 B 의 계산을 그대로 쓴다. */
   public static int required(int roster, BigDecimal ratio) {
-    return BigDecimal.valueOf(roster).multiply(ratio).setScale(0, RoundingMode.CEILING).intValueExact();
+    return Math.toIntExact(RequiredAttendance.of(roster, ratio));
   }
 
   /**
