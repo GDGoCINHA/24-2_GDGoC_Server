@@ -8,6 +8,8 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
@@ -25,6 +27,21 @@ public interface ClubActivityRepository extends JpaRepository<ClubActivity, Long
   boolean existsByScheduleId(Long scheduleId);
 
   boolean existsByScheduleIdAndIdNot(Long scheduleId, Long activityId);
+
+  /** 피드 한 페이지의 기록. 필요 참석 인원을 계산하려고 기수까지 함께 읽는다. 순서는 부르는 쪽이 맞춘다. */
+  @Query("select a from ClubActivity a join fetch a.club c join fetch c.term where a.id in :ids")
+  List<ClubActivity> findAllWithClub(@Param("ids") Collection<Long> ids);
+
+  /** 전체 활동 피드. 숨김 소모임은 빼고 올라온 순서대로. 상태는 가리지 않는다(카드에 상태 배지를 단다). */
+  @Query(
+      value =
+          "select a from ClubActivity a join fetch a.club c join fetch c.term "
+              + "where c.status <> inha.gdgoc.domain.club.club.enums.ClubStatus.HIDDEN "
+              + "order by a.createdAt desc, a.id desc",
+      countQuery =
+          "select count(a) from ClubActivity a "
+              + "where a.club.status <> inha.gdgoc.domain.club.club.enums.ClubStatus.HIDDEN")
+  Page<ClubActivity> findGlobalFeed(Pageable pageable);
 
   /** 일정마다 연결된 기록 id. [scheduleId, activityId]. 일정 목록이 「기록 작성」 대신 「기록 보기」 를 띄우는 데 쓴다. */
   @Query("select a.schedule.id, a.id from ClubActivity a where a.schedule.id in :scheduleIds")

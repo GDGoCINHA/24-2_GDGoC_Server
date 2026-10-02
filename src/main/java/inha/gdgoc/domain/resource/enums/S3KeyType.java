@@ -15,6 +15,7 @@ public enum S3KeyType {
     landing("landing"),
     club("club"),
     clubActivity("club/activity"),
+    clubPost("club/post"),
     clubGoal("club/goal");
 
     private final String value;
