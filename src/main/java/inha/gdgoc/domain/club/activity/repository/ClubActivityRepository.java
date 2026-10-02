@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -23,6 +24,16 @@ public interface ClubActivityRepository extends JpaRepository<ClubActivity, Long
   boolean existsByScheduleId(Long scheduleId);
 
   boolean existsByScheduleIdAndIdNot(Long scheduleId, Long activityId);
+
+  /**
+   * 일정을 지울 때 연결만 끊는다. 기록은 일정 없이 진행한 활동으로 남는다.
+   *
+   * <p>운영 DB 는 {@code ON DELETE SET NULL} 로도 끊지만 테스트 DB(H2)에는 그 제약이 없다. 인증 완료된 기록도 끊는다 — 일정 연결은 완주
+   * 계산에 쓰이지 않는다.
+   */
+  @Modifying(flushAutomatically = true)
+  @Query("update ClubActivity a set a.schedule = null where a.schedule.id = :scheduleId")
+  void detachSchedule(@Param("scheduleId") Long scheduleId);
 
   /** 기간 안의 기록마다 명단 수와 출석 수. 명단 행이 하나도 없는 기록도 0/0 으로 나온다. */
   @Query(

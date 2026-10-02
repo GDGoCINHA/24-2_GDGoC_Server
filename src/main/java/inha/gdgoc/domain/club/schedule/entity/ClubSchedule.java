@@ -69,4 +69,13 @@ public class ClubSchedule extends BaseEntity {
     schedule.createdBy = creatorId;
     return schedule;
   }
+
+  public void update(
+      String title, Instant startsAt, String location, String onlineLink, String description) {
+    this.title = title;
+    this.startsAt = startsAt;
+    this.location = location;
+    this.onlineLink = onlineLink;
+    this.description = description;
+  }
 }
