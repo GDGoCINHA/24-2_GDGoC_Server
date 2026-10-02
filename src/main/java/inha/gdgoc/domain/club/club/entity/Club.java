@@ -114,7 +114,33 @@ public class Club extends BaseEntity {
     return club;
   }
 
-  /** 리더가 고칠 수 있는 항목. null 인 항목은 건드리지 않는다. 검증하지 않는다 — 정원·기간은 경고로만 보여준다. */
+  /**
+   * 수정 화면 저장. 보낸 값으로 통째로 바꾼다 — null 이면 비운다. 모집 상태·운영 상태·기수·리더는 건드리지 않는다.
+   */
+  public void replace(
+      String name,
+      ClubCategory category,
+      String summary,
+      String description,
+      String activityMethod,
+      String imageUrl,
+      String kakaoLink,
+      Integer capacity,
+      LocalDate startDate,
+      LocalDate endDate) {
+    this.name = name;
+    this.category = category;
+    this.summary = summary;
+    this.description = description;
+    this.activityMethod = activityMethod;
+    this.imageUrl = imageUrl;
+    this.kakaoLink = kakaoLink;
+    this.capacity = capacity;
+    this.startDate = startDate;
+    this.endDate = endDate;
+  }
+
+  /** 부분 수정(모집 마감 버튼 등). null 인 항목은 건드리지 않는다. 검증하지 않는다 — 정원·기간은 경고로만 보여준다. */
   public void update(
       String name,
       ClubCategory category,

@@ -39,4 +39,12 @@ public class ClubScheduleCheckin extends BaseEntity {
 
   @Column(name = "checked_at", nullable = false)
   private Instant checkedAt;
+
+  public static ClubScheduleCheckin of(ClubSchedule schedule, User user, Instant checkedAt) {
+    ClubScheduleCheckin checkin = new ClubScheduleCheckin();
+    checkin.schedule = schedule;
+    checkin.user = user;
+    checkin.checkedAt = checkedAt;
+    return checkin;
+  }
 }

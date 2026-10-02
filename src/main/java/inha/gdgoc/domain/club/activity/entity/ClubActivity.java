@@ -74,7 +74,7 @@ public class ClubActivity extends BaseEntity {
   @Column(name = "created_by")
   private Long createdBy;
 
-  /** 이끔이가 제출한다. 제출하면 바로 확인 중(PENDING)이다. */
+  /** 리더가 제출한다. 제출하면 바로 확인 중(PENDING)이다. */
   public static ClubActivity create(
       Club club,
       ClubSchedule schedule,
@@ -126,7 +126,7 @@ public class ClubActivity extends BaseEntity {
   /**
    * 운영진의 보완 요청.
    *
-   * <p>사유는 이끔이가 고쳐서 다시 낸 뒤에도 남겨 둔다 — 운영진이 재검토할 때 무엇을 요청했는지 봐야 한다. 다시 보완 요청하면 덮어쓴다.
+   * <p>사유는 리더가 고쳐서 다시 낸 뒤에도 남겨 둔다 — 운영진이 재검토할 때 무엇을 요청했는지 봐야 한다. 다시 보완 요청하면 덮어쓴다.
    */
   public void requestRevision(Long reviewerId, String reason, Instant now) {
     requireEditable();

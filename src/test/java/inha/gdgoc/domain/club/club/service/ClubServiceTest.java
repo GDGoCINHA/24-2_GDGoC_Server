@@ -5,9 +5,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 
+import inha.gdgoc.domain.club.club.dto.request.ClubCreateRequest;
 import inha.gdgoc.domain.club.club.entity.Club;
 import inha.gdgoc.domain.club.club.entity.ClubTerm;
+import inha.gdgoc.domain.club.club.enums.ClubCategory;
+import inha.gdgoc.domain.club.club.enums.ClubRecruitStatus;
 import inha.gdgoc.domain.club.club.enums.ClubStatus;
 import inha.gdgoc.domain.club.club.repository.ClubRepository;
 import inha.gdgoc.domain.club.club.repository.ClubTermRepository;
@@ -59,7 +63,7 @@ class ClubServiceTest {
     ReflectionTestUtils.setField(club, "term", BeanUtils.instantiateClass(ClubTerm.class));
     ReflectionTestUtils.setField(club, "status", ClubStatus.ACTIVE);
     ReflectionTestUtils.setField(club, "kakaoLink", LINK);
-    given(clubAccessService.getClub(CLUB_ID)).willReturn(club);
+    lenient().when(clubAccessService.getClub(CLUB_ID)).thenReturn(club);
   }
 
   private void givenMembership(ClubMember m) {
@@ -82,6 +86,44 @@ class ClubServiceTest {
   void outsiderGetsNoLink() {
     givenMembership(null);
     assertThat(service.getDetail(CLUB_ID, USER_ID, false).kakaoLink()).isNull();
+  }
+
+  @Test
+  @DisplayName("수정 화면 저장은 비운 칸을 비운다 — 모집 상태는 그대로")
+  void replaceClearsBlankFields() {
+    ReflectionTestUtils.setField(club, "description", "소개");
+    ReflectionTestUtils.setField(club, "capacity", 6);
+    ReflectionTestUtils.setField(club, "recruitStatus", ClubRecruitStatus.CLOSED);
+    given(clubAccessService.requireLeader(CLUB_ID, LEADER_ID)).willReturn(club);
+
+    service.replace(
+        CLUB_ID,
+        LEADER_ID,
+        new ClubCreateRequest(
+            "이름", ClubCategory.ETC, "한 줄", null, null, null, null, null, null, null, null));
+
+    assertThat(club.getKakaoLink()).isNull();
+    assertThat(club.getDescription()).isNull();
+    assertThat(club.getCapacity()).isNull();
+    assertThat(club.getRecruitStatus()).isEqualTo(ClubRecruitStatus.CLOSED);
+  }
+
+  @Test
+  @DisplayName("비로그인은 링크도 신청 상태도 받지 않는다")
+  void anonymousGetsNoLink() {
+    var detail = service.getDetail(CLUB_ID, null, false);
+    assertThat(detail.kakaoLink()).isNull();
+    assertThat(detail.myMembership()).isNull();
+  }
+
+  @Test
+  @DisplayName("비로그인에게 숨긴 소모임은 없는 것처럼 보인다")
+  void hiddenClubIsNotFoundForAnonymous() {
+    ReflectionTestUtils.setField(club, "status", ClubStatus.HIDDEN);
+    assertThatThrownBy(() -> service.getDetail(CLUB_ID, null, false))
+        .isInstanceOf(BusinessException.class)
+        .extracting("errorCode")
+        .isEqualTo(ClubErrorCode.CLUB_NOT_FOUND);
   }
 
   @Test

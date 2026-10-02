@@ -14,10 +14,15 @@ import org.springframework.data.repository.query.Param;
 
 public interface ClubActivityRepository extends JpaRepository<ClubActivity, Long> {
 
-  /** 상태를 바꾸기 전에 잠가서 읽는다. 운영진 검토와 이끔이의 출석 수정 수락이 같은 기록을 동시에 바꾸지 못하게 한다. */
+  /** 상태를 바꾸기 전에 잠가서 읽는다. 운영진 검토와 리더의 출석 수정 수락이 같은 기록을 동시에 바꾸지 못하게 한다. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("select a from ClubActivity a where a.id = :id")
   Optional<ClubActivity> findByIdForUpdate(@Param("id") Long id);
+
+  /** 일정 하나에 기록은 하나다. 운영 DB 는 유니크 제약으로도 막지만 테스트 DB(H2)에는 그 제약이 없다. */
+  boolean existsByScheduleId(Long scheduleId);
+
+  boolean existsByScheduleIdAndIdNot(Long scheduleId, Long activityId);
 
   /** 기간 안의 기록마다 명단 수와 출석 수. 명단 행이 하나도 없는 기록도 0/0 으로 나온다. */
   @Query(

@@ -36,4 +36,13 @@ public class ClubActivityPhoto extends BaseEntity {
 
   @Column(name = "sort_order", nullable = false)
   private int sortOrder;
+
+  /** 첫 번째(0) 사진이 피드의 대표 사진이다. */
+  public static ClubActivityPhoto of(ClubActivity activity, String url, int sortOrder) {
+    ClubActivityPhoto photo = new ClubActivityPhoto();
+    photo.activity = activity;
+    photo.url = url;
+    photo.sortOrder = sortOrder;
+    return photo;
+  }
 }

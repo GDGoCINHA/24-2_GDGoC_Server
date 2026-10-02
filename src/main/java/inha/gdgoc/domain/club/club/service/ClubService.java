@@ -73,17 +73,20 @@ public class ClubService {
         .toList();
   }
 
-  /** 상세. 단톡방 링크는 ACTIVE 멤버와 운영진에게만 준다. */
+  /** 상세. 단톡방 링크는 ACTIVE 멤버와 운영진에게만 준다. {@code userId} 는 비로그인이면 null. */
   public ClubDetailResponse getDetail(Long clubId, Long userId, boolean staff) {
     Club club = clubAccessService.getClub(clubId);
+    // 비로그인이면 userId 가 null 이다 — 신청 상태도 없고 링크도 받지 않는다.
     ClubMembershipResponse membership =
-        clubMemberRepository
-            .findFirstByClubIdAndUserIdAndStatusIn(clubId, userId, MINE)
-            .map(
-                m ->
-                    new ClubMembershipResponse(
-                        m.getStatus(), userId.equals(club.getLeader().getId())))
-            .orElse(null);
+        userId == null
+            ? null
+            : clubMemberRepository
+                .findFirstByClubIdAndUserIdAndStatusIn(clubId, userId, MINE)
+                .map(
+                    m ->
+                        new ClubMembershipResponse(
+                            m.getStatus(), userId.equals(club.getLeader().getId())))
+                .orElse(null);
     if (club.getStatus() == ClubStatus.HIDDEN && !staff && membership == null) {
       throw new BusinessException(ClubErrorCode.CLUB_NOT_FOUND);
     }
@@ -115,6 +118,24 @@ public class ClubService {
                 req.endDate()));
     clubMemberRepository.save(ClubMember.founder(club, leader, Instant.now()));
     return club.getId();
+  }
+
+  /** 수정 화면 저장. 비운 칸은 비운다. {@code termId} 는 무시한다 — 기수는 운영진이 바꾼다. */
+  @Transactional
+  public void replace(Long clubId, Long userId, ClubCreateRequest req) {
+    clubAccessService
+        .requireLeader(clubId, userId)
+        .replace(
+            req.name(),
+            req.category(),
+            req.summary(),
+            req.description(),
+            req.activityMethod(),
+            req.imageUrl(),
+            req.kakaoLink(),
+            req.capacity(),
+            req.startDate(),
+            req.endDate());
   }
 
   @Transactional
