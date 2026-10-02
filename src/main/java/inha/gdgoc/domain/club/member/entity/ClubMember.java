@@ -61,7 +61,7 @@ public class ClubMember extends BaseEntity {
   @Column(name = "left_at")
   private Instant leftAt;
 
-  /** 참여 신청. 이끔이가 승인하기 전까지 PENDING 이다. */
+  /** 참여 신청. 리더가 승인하기 전까지 PENDING 이다. */
   public static ClubMember apply(Club club, User user, String applyMessage, Instant now) {
     ClubMember member = new ClubMember();
     member.club = club;

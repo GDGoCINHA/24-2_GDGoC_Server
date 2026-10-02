@@ -15,8 +15,19 @@ import org.springframework.http.HttpStatus;
 public enum ClubErrorCode implements ErrorCode {
   CLUB_NOT_FOUND(HttpStatus.NOT_FOUND, "소모임을 찾을 수 없습니다."),
   NOT_CLUB_MEMBER(HttpStatus.FORBIDDEN, "이 소모임의 멤버만 할 수 있습니다."),
-  NOT_CLUB_LEADER(HttpStatus.FORBIDDEN, "이 소모임의 이끔이만 할 수 있습니다."),
-  LEADER_GRANT_REQUIRED(HttpStatus.FORBIDDEN, "이끔이 권한이 있어야 소모임을 개설할 수 있습니다.");
+  NOT_CLUB_LEADER(HttpStatus.FORBIDDEN, "이 소모임의 리더만 할 수 있습니다."),
+  LEADER_GRANT_REQUIRED(HttpStatus.FORBIDDEN, "리더 권한이 있어야 소모임을 개설할 수 있습니다."),
+  TERM_NOT_FOUND(HttpStatus.BAD_REQUEST, "기수가 없습니다. 운영진에게 기수를 먼저 만들어 달라고 요청해 주세요."),
+  USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
+  NOT_RECRUITING(HttpStatus.BAD_REQUEST, "지금은 참여 신청을 받지 않는 소모임입니다."),
+  ALREADY_APPLIED(HttpStatus.CONFLICT, "이미 신청했거나 참여 중인 소모임입니다."),
+  MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "멤버 정보를 찾을 수 없습니다."),
+  INVALID_MEMBER_STATE(HttpStatus.CONFLICT, "이미 처리된 신청이거나 지금 상태에서는 할 수 없습니다."),
+  LEADER_CANNOT_LEAVE(HttpStatus.CONFLICT, "리더는 다른 멤버에게 리더를 넘긴 뒤 탈퇴할 수 있습니다."),
+  CANNOT_KICK_SELF(HttpStatus.BAD_REQUEST, "자기 자신은 내보낼 수 없습니다."),
+  TARGET_NOT_ACTIVE_MEMBER(HttpStatus.BAD_REQUEST, "이 소모임의 멤버에게만 리더를 넘길 수 있습니다."),
+  OPEN_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "개설 신청을 찾을 수 없습니다."),
+  OPEN_REQUEST_ALREADY_HANDLED(HttpStatus.CONFLICT, "이미 처리된 개설 신청입니다.");
 
   private final HttpStatus status;
   private final String message;

@@ -38,4 +38,13 @@ public class ClubActivityAttendance extends BaseEntity {
 
   @Column(name = "attended", nullable = false)
   private boolean attended;
+
+  /** 명단 한 줄. 활동일 당시 명단의 모든 사람이 행을 가지며, 출석하지 않았으면 {@code attended=false} 다. */
+  public static ClubActivityAttendance of(ClubActivity activity, User user, boolean attended) {
+    ClubActivityAttendance row = new ClubActivityAttendance();
+    row.activity = activity;
+    row.user = user;
+    row.attended = attended;
+    return row;
+  }
 }

@@ -14,8 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 소모임 단위 권한 검사. B·C 가 서비스 첫 줄에서 부른다.
  *
- * <p>역할(MEMBER·CORE) 검사는 여기서 하지 않는다 — 컨트롤러의 {@code @Authorize} 가 한다. 여기는 「이 팀의 멤버인가 / 이끔이인가」처럼
- * 데이터로만 알 수 있는 것을 본다. 이끔이는 {@code users.role} 이 아니라 {@code club.leader_id} 다.
+ * <p>역할(MEMBER·CORE) 검사는 여기서 하지 않는다 — 컨트롤러의 {@code @Authorize} 가 한다. 여기는 「이 팀의 멤버인가 / 리더인가」처럼
+ * 데이터로만 알 수 있는 것을 본다. 리더는 {@code users.role} 이 아니라 {@code club.leader_id} 다.
  */
 @Service
 @RequiredArgsConstructor
@@ -48,7 +48,7 @@ public class ClubAccessService {
     return userId != null && userId.equals(getClub(clubId).getLeader().getId());
   }
 
-  /** 이끔이가 아니면 403. 소모임이 없으면 404 가 먼저 난다. */
+  /** 리더가 아니면 403. 소모임이 없으면 404 가 먼저 난다. */
   public Club requireLeader(Long clubId, Long userId) {
     Club club = getClub(clubId);
     if (userId == null || !userId.equals(club.getLeader().getId())) {
@@ -57,7 +57,7 @@ public class ClubAccessService {
     return club;
   }
 
-  /** 소모임을 새로 열 수 있는가 — 회수되지 않은 이끔이 권한이 있는가. */
+  /** 소모임을 새로 열 수 있는가 — 회수되지 않은 리더 권한이 있는가. */
   public boolean hasLeaderGrant(Long userId) {
     return clubLeaderGrantRepository.existsByUserIdAndRevokedAtIsNull(userId);
   }
