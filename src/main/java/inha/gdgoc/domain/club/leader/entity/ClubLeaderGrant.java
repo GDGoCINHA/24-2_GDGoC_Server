@@ -41,4 +41,17 @@ public class ClubLeaderGrant extends BaseEntity {
 
   @Column(name = "revoked_at")
   private Instant revokedAt;
+
+  public static ClubLeaderGrant grant(User user, Long grantedBy, Instant now) {
+    ClubLeaderGrant grant = new ClubLeaderGrant();
+    grant.user = user;
+    grant.grantedBy = grantedBy;
+    grant.grantedAt = now;
+    return grant;
+  }
+
+  /** 회수해도 이미 연 소모임의 이끔이 지위는 그대로다. 새로 여는 것만 막힌다. */
+  public void revoke(Instant now) {
+    this.revokedAt = now;
+  }
 }
