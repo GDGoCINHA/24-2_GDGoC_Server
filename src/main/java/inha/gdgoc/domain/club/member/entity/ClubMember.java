@@ -16,6 +16,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -58,4 +60,59 @@ public class ClubMember extends BaseEntity {
 
   @Column(name = "left_at")
   private Instant leftAt;
+
+  /** 참여 신청. 이끔이가 승인하기 전까지 PENDING 이다. */
+  public static ClubMember apply(Club club, User user, String applyMessage, Instant now) {
+    ClubMember member = new ClubMember();
+    member.club = club;
+    member.user = user;
+    member.status = ClubMemberStatus.PENDING;
+    member.applyMessage = applyMessage;
+    member.appliedAt = now;
+    return member;
+  }
+
+  /** 개설자. 신청 없이 바로 ACTIVE 로 들어간다. */
+  public static ClubMember founder(Club club, User user, Instant now) {
+    ClubMember member = apply(club, user, null, now);
+    member.approve(now);
+    return member;
+  }
+
+  public void approve(Instant now) {
+    this.status = ClubMemberStatus.ACTIVE;
+    this.joinedAt = now;
+  }
+
+  public void reject() {
+    this.status = ClubMemberStatus.REJECTED;
+  }
+
+  public void cancel() {
+    this.status = ClubMemberStatus.CANCELED;
+  }
+
+  public void leave(Instant now) {
+    this.status = ClubMemberStatus.LEFT;
+    this.leftAt = now;
+  }
+
+  public void kick(Instant now) {
+    this.status = ClubMemberStatus.KICKED;
+    this.leftAt = now;
+  }
+
+  /**
+   * 그 날짜의 명단에 드는가.
+   *
+   * <p>그날 합류한 사람은 들고, 그날 나간 사람은 빠진다 — 경계는 다음 날 0시(zone 기준)다. 탈퇴·강퇴 뒤에도 행이 남으므로 지난 회차 명단이 바뀌지
+   * 않는다.
+   */
+  public boolean wasActiveOn(LocalDate date, ZoneId zone) {
+    if (joinedAt == null) {
+      return false;
+    }
+    Instant nextDayStart = date.plusDays(1).atStartOfDay(zone).toInstant();
+    return joinedAt.isBefore(nextDayStart) && (leftAt == null || !leftAt.isBefore(nextDayStart));
+  }
 }
