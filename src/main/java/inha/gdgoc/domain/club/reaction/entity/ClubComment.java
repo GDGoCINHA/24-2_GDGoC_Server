@@ -48,4 +48,25 @@ public class ClubComment extends BaseEntity {
 
   @Column(name = "deleted_at")
   private Instant deletedAt;
+
+  public static ClubComment create(
+      ClubTargetType targetType, long targetId, User author, String content) {
+    ClubComment comment = new ClubComment();
+    comment.targetType = targetType;
+    comment.targetId = targetId;
+    comment.author = author;
+    comment.content = content;
+    return comment;
+  }
+
+  /** 소프트 삭제. 이미 지운 댓글을 다시 지워도 처음 지운 시각을 유지한다. */
+  public void softDelete(Instant now) {
+    if (deletedAt == null) {
+      deletedAt = now;
+    }
+  }
+
+  public boolean isDeleted() {
+    return deletedAt != null;
+  }
 }

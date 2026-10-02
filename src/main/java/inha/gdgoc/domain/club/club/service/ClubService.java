@@ -120,6 +120,24 @@ public class ClubService {
     return club.getId();
   }
 
+  /** 수정 화면 저장. 비운 칸은 비운다. {@code termId} 는 무시한다 — 기수는 운영진이 바꾼다. */
+  @Transactional
+  public void replace(Long clubId, Long userId, ClubCreateRequest req) {
+    clubAccessService
+        .requireLeader(clubId, userId)
+        .replace(
+            req.name(),
+            req.category(),
+            req.summary(),
+            req.description(),
+            req.activityMethod(),
+            req.imageUrl(),
+            req.kakaoLink(),
+            req.capacity(),
+            req.startDate(),
+            req.endDate());
+  }
+
   @Transactional
   public void update(Long clubId, Long userId, ClubUpdateRequest req) {
     apply(clubAccessService.requireLeader(clubId, userId), req);
