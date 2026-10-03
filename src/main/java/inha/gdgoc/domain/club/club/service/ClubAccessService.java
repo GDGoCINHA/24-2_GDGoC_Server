@@ -3,7 +3,6 @@ package inha.gdgoc.domain.club.club.service;
 import inha.gdgoc.domain.club.club.entity.Club;
 import inha.gdgoc.domain.club.club.repository.ClubRepository;
 import inha.gdgoc.domain.club.common.exception.ClubErrorCode;
-import inha.gdgoc.domain.club.leader.repository.ClubLeaderGrantRepository;
 import inha.gdgoc.domain.club.member.enums.ClubMemberStatus;
 import inha.gdgoc.domain.club.member.repository.ClubMemberRepository;
 import inha.gdgoc.global.exception.BusinessException;
@@ -24,7 +23,6 @@ public class ClubAccessService {
 
   private final ClubRepository clubRepository;
   private final ClubMemberRepository clubMemberRepository;
-  private final ClubLeaderGrantRepository clubLeaderGrantRepository;
 
   public Club getClub(Long clubId) {
     return clubRepository
@@ -55,16 +53,5 @@ public class ClubAccessService {
       throw new BusinessException(ClubErrorCode.NOT_CLUB_LEADER);
     }
     return club;
-  }
-
-  /** 소모임을 새로 열 수 있는가 — 회수되지 않은 리더 권한이 있는가. */
-  public boolean hasLeaderGrant(Long userId) {
-    return clubLeaderGrantRepository.existsByUserIdAndRevokedAtIsNull(userId);
-  }
-
-  public void requireLeaderGrant(Long userId) {
-    if (!hasLeaderGrant(userId)) {
-      throw new BusinessException(ClubErrorCode.LEADER_GRANT_REQUIRED);
-    }
   }
 }

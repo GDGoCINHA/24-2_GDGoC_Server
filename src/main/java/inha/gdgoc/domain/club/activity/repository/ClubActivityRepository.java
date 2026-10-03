@@ -32,15 +32,15 @@ public interface ClubActivityRepository extends JpaRepository<ClubActivity, Long
   @Query("select a from ClubActivity a join fetch a.club c join fetch c.term where a.id in :ids")
   List<ClubActivity> findAllWithClub(@Param("ids") Collection<Long> ids);
 
-  /** 전체 활동 피드. 숨김 소모임은 빼고 올라온 순서대로. 상태는 가리지 않는다(카드에 상태 배지를 단다). */
+  /** 전체 활동 피드. 공개(ACTIVE·ENDED) 소모임만 올라온 순서대로. 상태는 가리지 않는다(카드에 상태 배지를 단다). */
   @Query(
       value =
           "select a from ClubActivity a join fetch a.club c join fetch c.term "
-              + "where c.status <> inha.gdgoc.domain.club.club.enums.ClubStatus.HIDDEN "
+              + "where c.status in (inha.gdgoc.domain.club.club.enums.ClubStatus.ACTIVE, inha.gdgoc.domain.club.club.enums.ClubStatus.ENDED) "
               + "order by a.createdAt desc, a.id desc",
       countQuery =
           "select count(a) from ClubActivity a "
-              + "where a.club.status <> inha.gdgoc.domain.club.club.enums.ClubStatus.HIDDEN")
+              + "where a.club.status in (inha.gdgoc.domain.club.club.enums.ClubStatus.ACTIVE, inha.gdgoc.domain.club.club.enums.ClubStatus.ENDED)")
   Page<ClubActivity> findGlobalFeed(Pageable pageable);
 
   /** 일정마다 연결된 기록 id. [scheduleId, activityId]. 일정 목록이 「기록 작성」 대신 「기록 보기」 를 띄우는 데 쓴다. */
