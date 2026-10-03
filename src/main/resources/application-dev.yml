@@ -64,6 +64,9 @@ app:
   # 화면을 새로고침하면 그만이다. 다만 서버를 여러 대로 늘리면 반드시 채워야 한다.
   event-checkin:
     secret: ${EVENT_CHECKIN_SECRET:}
+  # 소모임 QR 체크인 서명 키. 비워 두면 기동마다 임의 키 — 단일 인스턴스에서만 유효하다.
+  club-checkin:
+    secret: ${CLUB_CHECKIN_SECRET:}
   s3:
     bucket: ${AWS_TEST_RESOURCE_BUCKET}
   admin:

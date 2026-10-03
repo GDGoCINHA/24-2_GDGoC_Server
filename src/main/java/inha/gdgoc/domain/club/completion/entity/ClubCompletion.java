@@ -71,4 +71,43 @@ public class ClubCompletion extends BaseEntity {
 
   @Column(name = "confirmed_at")
   private Instant confirmedAt;
+
+  /** 목표 미제출·진행 중으로 시작한다. 행이 없을 때 조회 응답의 기본값도 이것과 같다. */
+  public static ClubCompletion create(Club club) {
+    ClubCompletion completion = new ClubCompletion();
+    completion.club = club;
+    completion.goalStatus = ClubGoalStatus.NOT_SUBMITTED;
+    completion.completionStatus = ClubCompletionStatus.IN_PROGRESS;
+    return completion;
+  }
+
+  /** 리더의 목표·달성 기준 등록. 목표 상태는 바꾸지 않는다 — 결과를 제출해야 SUBMITTED 가 된다. */
+  public void updateGoal(String goal, String goalCriteria) {
+    this.goal = goal;
+    this.goalCriteria = goalCriteria;
+  }
+
+  /** 리더의 최종 결과 제출. 이미 판정된 뒤에 다시 내도 SUBMITTED 로 돌아가 운영진이 다시 본다. */
+  public void submitResult(String goalResult, List<String> evidenceUrls) {
+    this.goalResult = goalResult;
+    this.goalEvidenceUrls = evidenceUrls == null ? List.of() : List.copyOf(evidenceUrls);
+    this.goalStatus = ClubGoalStatus.SUBMITTED;
+  }
+
+  /** 운영진의 목표 달성 판정. 결과 제출 전이어도 막지 않는다. */
+  public void judgeGoal(ClubGoalStatus status) {
+    this.goalStatus = status;
+  }
+
+  /** 운영진의 완주 확정. 계산값과 무관하다 — 미충족이어도 확정할 수 있고, 다시 확정하면 덮어쓴다. */
+  public void confirm(ClubCompletionStatus status, String memo, Long confirmerId, Instant now) {
+    this.completionStatus = status;
+    this.completionMemo = memo;
+    this.confirmedBy = confirmerId;
+    this.confirmedAt = now;
+  }
+
+  public boolean hasGoal() {
+    return goal != null && !goal.isBlank();
+  }
 }

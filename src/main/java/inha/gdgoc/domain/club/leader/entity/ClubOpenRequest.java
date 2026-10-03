@@ -21,7 +21,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 부원의 소모임 개설 신청. 승인하면 이끔이 권한이 생긴다.
+ * 부원의 소모임 개설 신청. 승인하면 리더 권한이 생긴다.
  */
 @Entity
 @Table(name = "club_open_request")
@@ -62,4 +62,29 @@ public class ClubOpenRequest extends BaseEntity {
 
   @Column(name = "reviewed_at")
   private Instant reviewedAt;
+
+  public static ClubOpenRequest create(
+      User user, String name, ClubCategory category, String summary, String goal) {
+    ClubOpenRequest request = new ClubOpenRequest();
+    request.user = user;
+    request.name = name;
+    request.category = category;
+    request.summary = summary;
+    request.goal = goal;
+    request.status = ClubOpenRequestStatus.PENDING;
+    return request;
+  }
+
+  public void approve(Long reviewerId, Instant now) {
+    this.status = ClubOpenRequestStatus.APPROVED;
+    this.reviewedBy = reviewerId;
+    this.reviewedAt = now;
+  }
+
+  public void reject(Long reviewerId, String reason, Instant now) {
+    this.status = ClubOpenRequestStatus.REJECTED;
+    this.rejectReason = reason;
+    this.reviewedBy = reviewerId;
+    this.reviewedAt = now;
+  }
 }

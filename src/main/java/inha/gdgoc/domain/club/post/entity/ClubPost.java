@@ -57,4 +57,34 @@ public class ClubPost extends BaseEntity {
 
   @Column(name = "deleted_at")
   private Instant deletedAt;
+
+  public static ClubPost create(
+      Club club, User author, ClubPostCategory category, String content, List<String> imageUrls) {
+    ClubPost post = new ClubPost();
+    post.club = club;
+    post.author = author;
+    post.category = category;
+    post.content = content;
+    post.imageUrls = imageUrls;
+    return post;
+  }
+
+  public void update(ClubPostCategory category, String content, List<String> imageUrls) {
+    this.category = category;
+    this.content = content;
+    this.imageUrls = imageUrls;
+  }
+
+  /** 지워도 행은 남는다 — 좋아요·댓글이 이 글을 가리키고 있다. */
+  public void softDelete(Instant now) {
+    this.deletedAt = now;
+  }
+
+  public boolean isDeleted() {
+    return deletedAt != null;
+  }
+
+  public boolean isWrittenBy(Long userId) {
+    return userId != null && userId.equals(author.getId());
+  }
 }

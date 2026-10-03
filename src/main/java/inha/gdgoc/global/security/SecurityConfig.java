@@ -49,6 +49,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/board/events/{id:[0-9]+}/anonymous/form").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/board/events/{id:[0-9]+}/anonymous/applications").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/board/events/{id:[0-9]+}/anonymous/checkin").permitAll()
+                // 소모임은 목록·상세 기본 정보만 공개다(공유 링크용). 단톡방 링크·명단은 서비스가 가린다.
+                // /clubs/me·멤버·관리 경로는 여기 없다. ClubSecurityTest 가 지킨다.
+                .requestMatchers(HttpMethod.GET, "/api/v1/clubs").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/clubs/{id:[0-9]+}").permitAll()
                 .requestMatchers(
                     "/swagger-ui/**",
                     "/v3/api-docs/**",

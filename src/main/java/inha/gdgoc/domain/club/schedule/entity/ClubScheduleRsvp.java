@@ -42,4 +42,16 @@ public class ClubScheduleRsvp extends BaseEntity {
   @Enumerated(EnumType.STRING)
   @Column(name = "response", nullable = false, length = 16)
   private ClubRsvp response;
+
+  public static ClubScheduleRsvp of(ClubSchedule schedule, User user, ClubRsvp response) {
+    ClubScheduleRsvp rsvp = new ClubScheduleRsvp();
+    rsvp.schedule = schedule;
+    rsvp.user = user;
+    rsvp.response = response;
+    return rsvp;
+  }
+
+  public void change(ClubRsvp response) {
+    this.response = response;
+  }
 }

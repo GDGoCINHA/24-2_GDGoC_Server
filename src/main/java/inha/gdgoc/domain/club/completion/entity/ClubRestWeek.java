@@ -35,4 +35,12 @@ public class ClubRestWeek extends BaseEntity {
 
   @Column(name = "week_start", nullable = false)
   private LocalDate weekStart;
+
+  /** {@code weekStart} 는 부르는 쪽이 월요일로 맞춰서 넘긴다. */
+  public static ClubRestWeek create(Club club, LocalDate weekStart) {
+    ClubRestWeek restWeek = new ClubRestWeek();
+    restWeek.club = club;
+    restWeek.weekStart = weekStart;
+    return restWeek;
+  }
 }
