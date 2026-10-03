@@ -11,7 +11,6 @@ import inha.gdgoc.domain.club.activity.repository.ClubActivityAttendanceReposito
 import inha.gdgoc.domain.club.activity.repository.ClubActivityPhotoRepository;
 import inha.gdgoc.domain.club.activity.repository.ClubActivityRepository;
 import inha.gdgoc.domain.club.club.entity.Club;
-import inha.gdgoc.domain.club.club.enums.ClubStatus;
 import inha.gdgoc.domain.club.club.service.ClubAccessService;
 import inha.gdgoc.domain.club.common.exception.ClubErrorCode;
 import inha.gdgoc.domain.club.member.entity.ClubMember;
@@ -128,14 +127,14 @@ public class ClubActivityService {
   /**
    * 상세. 출석 명단과 보완 사유는 팀 멤버와 운영진에게만 준다.
    *
-   * <p>숨김(HIDDEN) 소모임은 운영진과 그 팀 멤버가 아니면 없는 것으로 본다 — A 의 소모임 상세({@code ClubService#getDetail})와 같은
+   * <p>공개 전(PENDING·REJECTED)·숨김(HIDDEN) 소모임은 운영진과 그 팀 멤버가 아니면 없는 것으로 본다 — A 의 소모임 상세({@code ClubService#getDetail})와 같은
    * 규칙이다.
    */
   public ClubActivityDetailResponse detail(
       Long clubId, Long activityId, Long userId, boolean staff) {
     Club club = clubAccessService.getClub(clubId);
     boolean member = clubAccessService.isActiveMember(clubId, userId);
-    if (club.getStatus() == ClubStatus.HIDDEN && !staff && !member) {
+    if (!club.getStatus().isPublic() && !staff && !member) {
       throw new BusinessException(ClubErrorCode.CLUB_NOT_FOUND);
     }
     ClubActivity activity =

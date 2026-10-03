@@ -426,7 +426,8 @@ class ClubActivityServiceTest {
   }
 
   private Club club(User clubLeader) {
-    return persist(
+    // 개설 직후는 승인 대기(PENDING)다. 공개된 소모임으로 테스트한다.
+    Club club =
         Club.create(
             term,
             clubLeader,
@@ -439,6 +440,8 @@ class ClubActivityServiceTest {
             null,
             null,
             null,
-            null));
+            null);
+    club.approve();
+    return persist(club);
   }
 }

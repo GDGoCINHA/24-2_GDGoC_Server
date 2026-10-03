@@ -7,7 +7,6 @@ import static org.mockito.BDDMockito.given;
 import inha.gdgoc.domain.club.club.entity.Club;
 import inha.gdgoc.domain.club.club.repository.ClubRepository;
 import inha.gdgoc.domain.club.common.exception.ClubErrorCode;
-import inha.gdgoc.domain.club.leader.repository.ClubLeaderGrantRepository;
 import inha.gdgoc.domain.club.member.enums.ClubMemberStatus;
 import inha.gdgoc.domain.club.member.repository.ClubMemberRepository;
 import inha.gdgoc.domain.user.entity.User;
@@ -31,13 +30,12 @@ class ClubAccessServiceTest {
 
   @Mock private ClubRepository clubRepository;
   @Mock private ClubMemberRepository clubMemberRepository;
-  @Mock private ClubLeaderGrantRepository clubLeaderGrantRepository;
 
   private ClubAccessService service;
 
   @BeforeEach
   void setUp() {
-    service = new ClubAccessService(clubRepository, clubMemberRepository, clubLeaderGrantRepository);
+    service = new ClubAccessService(clubRepository, clubMemberRepository);
   }
 
   private void givenClub() {
@@ -83,12 +81,5 @@ class ClubAccessServiceTest {
     given(clubMemberRepository.existsByClubIdAndUserIdAndStatus(CLUB_ID, OTHER_ID, ClubMemberStatus.ACTIVE))
         .willReturn(false);
     assertError(() -> service.requireActiveMember(CLUB_ID, OTHER_ID), ClubErrorCode.NOT_CLUB_MEMBER);
-  }
-
-  @Test
-  @DisplayName("회수된 리더 권한으로는 개설할 수 없다")
-  void revokedGrantCannotOpen() {
-    given(clubLeaderGrantRepository.existsByUserIdAndRevokedAtIsNull(OTHER_ID)).willReturn(false);
-    assertError(() -> service.requireLeaderGrant(OTHER_ID), ClubErrorCode.LEADER_GRANT_REQUIRED);
   }
 }

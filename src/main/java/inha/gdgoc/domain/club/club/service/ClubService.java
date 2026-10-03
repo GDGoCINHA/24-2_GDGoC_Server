@@ -46,16 +46,18 @@ public class ClubService {
   private final ClubMemberRepository clubMemberRepository;
   private final UserRepository userRepository;
 
-  /** 목록. 숨김 소모임은 운영진에게만 보인다. */
+  /** 목록. 공개(ACTIVE·ENDED)가 아닌 소모임은 운영진에게만 보인다. {@code status} 는 운영진만 쓴다(승인 대기 목록). */
   public Page<ClubSummaryResponse> search(
       ClubCategory category,
       ClubRecruitStatus recruitStatus,
+      ClubStatus status,
       String keyword,
       boolean staff,
       Pageable pageable) {
-    ClubStatus hidden = staff ? null : ClubStatus.HIDDEN;
+    List<ClubStatus> statuses =
+        !staff ? ClubStatus.PUBLIC : status != null ? List.of(status) : List.of(ClubStatus.values());
     String kw = keyword == null ? "" : keyword.trim();
-    Page<Club> page = clubRepository.search(hidden, category, recruitStatus, kw, pageable);
+    Page<Club> page = clubRepository.search(statuses, category, recruitStatus, kw, pageable);
     Map<Long, Long> counts = countActive(page.getContent().stream().map(Club::getId).toList());
     return page.map(c -> ClubSummaryResponse.of(c, counts.getOrDefault(c.getId(), 0L)));
   }
@@ -87,7 +89,7 @@ public class ClubService {
                         new ClubMembershipResponse(
                             m.getStatus(), userId.equals(club.getLeader().getId())))
                 .orElse(null);
-    if (club.getStatus() == ClubStatus.HIDDEN && !staff && membership == null) {
+    if (!club.getStatus().isPublic() && !staff && membership == null) {
       throw new BusinessException(ClubErrorCode.CLUB_NOT_FOUND);
     }
     boolean active = membership != null && membership.status() == ClubMemberStatus.ACTIVE;
@@ -95,10 +97,9 @@ public class ClubService {
     return ClubDetailResponse.of(club, count, active || staff, membership);
   }
 
-  /** 개설. 리더 권한이 있어야 하고, 개설자는 바로 ACTIVE 멤버가 된다. 기수를 안 주면 최신 기수. */
+  /** 개설. 승인 대기(PENDING)로 생기고, 개설자는 바로 ACTIVE 멤버(리더)가 된다. 기수를 안 주면 최신 기수. */
   @Transactional
   public Long create(Long userId, ClubCreateRequest req) {
-    clubAccessService.requireLeaderGrant(userId);
     User leader = getUser(userId);
     ClubTerm term = req.termId() != null ? getTerm(req.termId()) : latestTerm();
     Club club =
@@ -141,6 +142,24 @@ public class ClubService {
   @Transactional
   public void update(Long clubId, Long userId, ClubUpdateRequest req) {
     apply(clubAccessService.requireLeader(clubId, userId), req);
+  }
+
+  @Transactional
+  public void approve(Long clubId) {
+    getPending(clubId).approve();
+  }
+
+  @Transactional
+  public void reject(Long clubId, String reason) {
+    getPending(clubId).reject(reason);
+  }
+
+  private Club getPending(Long clubId) {
+    Club club = clubAccessService.getClub(clubId);
+    if (club.getStatus() != ClubStatus.PENDING) {
+      throw new BusinessException(ClubErrorCode.CLUB_NOT_PENDING);
+    }
+    return club;
   }
 
   @Transactional

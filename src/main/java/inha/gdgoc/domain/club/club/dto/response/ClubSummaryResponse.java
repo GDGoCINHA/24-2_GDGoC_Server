@@ -3,6 +3,7 @@ package inha.gdgoc.domain.club.club.dto.response;
 import inha.gdgoc.domain.club.club.entity.Club;
 import inha.gdgoc.domain.club.club.enums.ClubCategory;
 import inha.gdgoc.domain.club.club.enums.ClubRecruitStatus;
+import inha.gdgoc.domain.club.club.enums.ClubStatus;
 
 /** 목록 카드. */
 public record ClubSummaryResponse(
@@ -14,7 +15,8 @@ public record ClubSummaryResponse(
     String leaderName,
     long memberCount,
     Integer capacity,
-    ClubRecruitStatus recruitStatus) {
+    ClubRecruitStatus recruitStatus,
+    ClubStatus status) {
 
   public static ClubSummaryResponse of(Club club, long memberCount) {
     return new ClubSummaryResponse(
@@ -26,6 +28,7 @@ public record ClubSummaryResponse(
         club.getLeader().getName(),
         memberCount,
         club.getCapacity(),
-        club.getRecruitStatus());
+        club.getRecruitStatus(),
+        club.getStatus());
   }
 }

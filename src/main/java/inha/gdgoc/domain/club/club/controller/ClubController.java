@@ -7,6 +7,7 @@ import inha.gdgoc.domain.club.club.dto.response.ClubSummaryResponse;
 import inha.gdgoc.domain.club.club.dto.response.MyClubResponse;
 import inha.gdgoc.domain.club.club.enums.ClubCategory;
 import inha.gdgoc.domain.club.club.enums.ClubRecruitStatus;
+import inha.gdgoc.domain.club.club.enums.ClubStatus;
 import inha.gdgoc.domain.club.club.service.ClubService;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.global.config.jwt.TokenProvider.CustomUserDetails;
@@ -48,6 +49,7 @@ public class ClubController {
       @AuthenticationPrincipal CustomUserDetails me,
       @RequestParam(required = false) ClubCategory category,
       @RequestParam(required = false) ClubRecruitStatus recruitStatus,
+      @RequestParam(required = false) ClubStatus status,
       @RequestParam(required = false) String keyword,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
@@ -55,6 +57,7 @@ public class ClubController {
         clubService.search(
             category,
             recruitStatus,
+            status,
             keyword,
             isStaff(me),
             PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id")));
