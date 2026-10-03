@@ -25,7 +25,9 @@ public enum ClubErrorCode implements ErrorCode {
   LEADER_CANNOT_LEAVE(HttpStatus.CONFLICT, "리더는 다른 멤버에게 리더를 넘긴 뒤 탈퇴할 수 있습니다."),
   CANNOT_KICK_SELF(HttpStatus.BAD_REQUEST, "자기 자신은 내보낼 수 없습니다."),
   TARGET_NOT_ACTIVE_MEMBER(HttpStatus.BAD_REQUEST, "이 소모임의 멤버에게만 리더를 넘길 수 있습니다."),
-  CLUB_NOT_PENDING(HttpStatus.CONFLICT, "승인 대기 중인 소모임만 승인하거나 반려할 수 있습니다.");
+  CLUB_NOT_PENDING(HttpStatus.CONFLICT, "승인 대기 중인 소모임만 승인하거나 반려할 수 있습니다."),
+  CLUB_DELETE_NOT_ALLOWED(
+      HttpStatus.CONFLICT, "공개된 소모임은 리더가 삭제할 수 없습니다. 운영진에게 요청해 주세요.");
 
   private final HttpStatus status;
   private final String message;

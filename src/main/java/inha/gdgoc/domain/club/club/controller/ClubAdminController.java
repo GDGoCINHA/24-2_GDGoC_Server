@@ -2,6 +2,7 @@ package inha.gdgoc.domain.club.club.controller;
 
 import inha.gdgoc.domain.club.club.dto.request.AdminClubUpdateRequest;
 import inha.gdgoc.domain.club.club.dto.request.ClubRejectRequest;
+import inha.gdgoc.domain.club.club.service.ClubDeleteService;
 import inha.gdgoc.domain.club.club.service.ClubService;
 import inha.gdgoc.domain.club.member.dto.request.ClubLeaderChangeRequest;
 import inha.gdgoc.domain.club.member.service.ClubMemberService;
@@ -12,6 +13,7 @@ import inha.gdgoc.global.security.annotation.Condition;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ClubAdminController {
 
   private final ClubService clubService;
+  private final ClubDeleteService clubDeleteService;
   private final ClubMemberService clubMemberService;
 
   @PostMapping("/clubs/{clubId}/approve")
@@ -40,6 +43,13 @@ public class ClubAdminController {
       @PathVariable Long clubId, @Valid @RequestBody(required = false) ClubRejectRequest req) {
     clubService.reject(clubId, req == null ? null : req.reason());
     return ResponseEntity.ok(ApiResponse.ok("CLUB_REJECTED"));
+  }
+
+  /** 공개된 소모임까지 지운다. 딸린 기록도 함께 지워져 되돌릴 수 없다. */
+  @DeleteMapping("/clubs/{clubId}")
+  public ResponseEntity<ApiResponse<Void, Void>> delete(@PathVariable Long clubId) {
+    clubDeleteService.deleteByStaff(clubId);
+    return ResponseEntity.ok(ApiResponse.ok("CLUB_DELETED"));
   }
 
   @PatchMapping("/clubs/{clubId}")
