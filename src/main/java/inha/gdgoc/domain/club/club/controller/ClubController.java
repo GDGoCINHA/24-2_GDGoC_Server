@@ -8,6 +8,7 @@ import inha.gdgoc.domain.club.club.dto.response.MyClubResponse;
 import inha.gdgoc.domain.club.club.enums.ClubCategory;
 import inha.gdgoc.domain.club.club.enums.ClubRecruitStatus;
 import inha.gdgoc.domain.club.club.enums.ClubStatus;
+import inha.gdgoc.domain.club.club.service.ClubDeleteService;
 import inha.gdgoc.domain.club.club.service.ClubService;
 import inha.gdgoc.domain.user.enums.UserRole;
 import inha.gdgoc.global.config.jwt.TokenProvider.CustomUserDetails;
@@ -25,6 +26,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,6 +44,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ClubController {
 
   private final ClubService clubService;
+  private final ClubDeleteService clubDeleteService;
   private final AccessGuard accessGuard;
 
   @GetMapping
@@ -100,6 +103,15 @@ public class ClubController {
   }
 
   /** 부분 수정(모집 마감 등). null 인 항목은 그대로 둔다. */
+  /** 승인 전(대기·반려) 소모임만 리더가 지운다. 공개된 소모임은 운영진이 지운다. */
+  @Authorize(@Condition(atLeast = UserRole.MEMBER))
+  @DeleteMapping("/{clubId}")
+  public ResponseEntity<ApiResponse<Void, Void>> delete(
+      @AuthenticationPrincipal CustomUserDetails me, @PathVariable Long clubId) {
+    clubDeleteService.deleteByLeader(clubId, me.getUserId());
+    return ResponseEntity.ok(ApiResponse.ok("CLUB_DELETED"));
+  }
+
   @Authorize(@Condition(atLeast = UserRole.MEMBER))
   @PatchMapping("/{clubId}")
   public ResponseEntity<ApiResponse<Void, Void>> update(
