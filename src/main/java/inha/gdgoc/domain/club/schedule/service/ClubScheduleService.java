@@ -2,7 +2,6 @@ package inha.gdgoc.domain.club.schedule.service;
 
 import inha.gdgoc.domain.club.activity.repository.ClubActivityRepository;
 import inha.gdgoc.domain.club.club.entity.Club;
-import inha.gdgoc.domain.club.club.enums.ClubStatus;
 import inha.gdgoc.domain.club.club.service.ClubAccessService;
 import inha.gdgoc.domain.club.common.exception.ClubErrorCode;
 import inha.gdgoc.domain.club.member.service.ClubMemberQueryService;
@@ -60,7 +59,7 @@ public class ClubScheduleService {
   public List<ClubScheduleResponse> list(Long clubId, Long userId, boolean staff, boolean past) {
     Club club = clubAccessService.getClub(clubId);
     boolean member = clubAccessService.isActiveMember(clubId, userId);
-    if (club.getStatus() == ClubStatus.HIDDEN && !staff && !member) {
+    if (!club.getStatus().isPublic() && !staff && !member) {
       throw new BusinessException(ClubErrorCode.CLUB_NOT_FOUND);
     }
 

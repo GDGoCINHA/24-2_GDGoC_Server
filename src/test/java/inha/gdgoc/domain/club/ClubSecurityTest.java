@@ -49,7 +49,7 @@ class ClubSecurityTest {
   }
 
   @Test
-  void leaderGrant_requiresAuthentication() throws Exception {
-    mockMvc.perform(get("/api/v1/clubs/leader-grant/me")).andExpect(status().isUnauthorized());
+  void approve_requiresAuthentication() throws Exception {
+    mockMvc.perform(post("/api/v1/admin/clubs/1/approve")).andExpect(status().isUnauthorized());
   }
 }

@@ -7,7 +7,6 @@ import inha.gdgoc.domain.club.activity.repository.ClubActivityPhotoRepository;
 import inha.gdgoc.domain.club.activity.repository.ClubActivityRepository;
 import inha.gdgoc.domain.club.activity.service.RequiredAttendance;
 import inha.gdgoc.domain.club.club.entity.Club;
-import inha.gdgoc.domain.club.club.enums.ClubStatus;
 import inha.gdgoc.domain.club.club.service.ClubAccessService;
 import inha.gdgoc.domain.club.common.exception.ClubErrorCode;
 import inha.gdgoc.domain.club.feed.dto.response.ClubFeedItemResponse;
@@ -60,7 +59,7 @@ public class ClubFeedService {
       Long clubId, Long userId, boolean staff, int page, int size) {
     Club club = clubAccessService.getClub(clubId);
     boolean member = clubAccessService.isActiveMember(clubId, userId);
-    if (club.getStatus() == ClubStatus.HIDDEN && !staff && !member) {
+    if (!club.getStatus().isPublic() && !staff && !member) {
       throw new BusinessException(ClubErrorCode.CLUB_NOT_FOUND);
     }
     PageRequest pageable = pageOf(page, size);

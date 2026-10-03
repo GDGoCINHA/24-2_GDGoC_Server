@@ -83,6 +83,11 @@ public class Club extends BaseEntity {
   @Column(name = "status", nullable = false, length = 16)
   private ClubStatus status;
 
+  /** 반려 사유. 승인하면 지운다. */
+  @Column(name = "reject_reason", length = 500)
+  private String rejectReason;
+
+  /** 개설하면 승인 대기다. 운영진이 승인해야 게시판에 올라간다. */
   public static Club create(
       ClubTerm term,
       User leader,
@@ -110,12 +115,13 @@ public class Club extends BaseEntity {
     club.startDate = startDate;
     club.endDate = endDate;
     club.recruitStatus = ClubRecruitStatus.RECRUITING;
-    club.status = ClubStatus.ACTIVE;
+    club.status = ClubStatus.PENDING;
     return club;
   }
 
   /**
-   * 수정 화면 저장. 보낸 값으로 통째로 바꾼다 — null 이면 비운다. 모집 상태·운영 상태·기수·리더는 건드리지 않는다.
+   * 수정 화면 저장. 보낸 값으로 통째로 바꾼다 — null 이면 비운다. 모집 상태·기수·리더는 건드리지 않는다.
+   * 반려된 소모임을 고쳐 저장하면 다시 승인 대기로 올린다.
    */
   public void replace(
       String name,
@@ -138,6 +144,9 @@ public class Club extends BaseEntity {
     this.capacity = capacity;
     this.startDate = startDate;
     this.endDate = endDate;
+    if (this.status == ClubStatus.REJECTED) {
+      this.status = ClubStatus.PENDING;
+    }
   }
 
   /** 부분 수정(모집 마감 버튼 등). null 인 항목은 건드리지 않는다. 검증하지 않는다 — 정원·기간은 경고로만 보여준다. */
@@ -170,6 +179,16 @@ public class Club extends BaseEntity {
   public void updateByStaff(ClubStatus status, ClubTerm term) {
     if (status != null) this.status = status;
     if (term != null) this.term = term;
+  }
+
+  public void approve() {
+    this.status = ClubStatus.ACTIVE;
+    this.rejectReason = null;
+  }
+
+  public void reject(String reason) {
+    this.status = ClubStatus.REJECTED;
+    this.rejectReason = reason;
   }
 
   public void changeLeader(User newLeader) {
