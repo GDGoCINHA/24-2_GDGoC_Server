@@ -26,7 +26,11 @@ services:
     image: redis:7-alpine
     container_name: gdgoc-redis
     restart: always
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    # 로그인 토큰이 여기 있다. 배포 스크립트가 `down` 으로 컨테이너를 지우므로 데이터를 이름 있는 볼륨에 둔다.
+    # 볼륨이 없으면 배포할 때마다 모든 사용자가 로그아웃된다.
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    volumes:
+      - redis-data:/data
     env_file:
       - .env
 
@@ -43,3 +47,6 @@ services:
     restart: always
     env_file:
       - .env
+
+volumes:
+  redis-data:
