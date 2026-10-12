@@ -2,6 +2,9 @@ package inha.gdgoc.domain.club.member.controller;
 
 import inha.gdgoc.domain.club.member.dto.request.ClubApplyRequest;
 import inha.gdgoc.domain.club.member.dto.request.ClubLeaderChangeRequest;
+import inha.gdgoc.domain.club.member.dto.request.ClubMemberAddRequest;
+import inha.gdgoc.domain.club.member.dto.response.ClubMemberAddResponse;
+import inha.gdgoc.domain.club.member.dto.response.ClubMemberCandidateResponse;
 import inha.gdgoc.domain.club.member.dto.response.ClubMemberResponse;
 import inha.gdgoc.domain.club.member.service.ClubMemberService;
 import inha.gdgoc.domain.user.enums.UserRole;
@@ -22,9 +25,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 참여·탈퇴·승인·강퇴·리더 교체. GUEST 는 참여할 수 없다. */
+/** 참여·탈퇴·승인·강퇴·리더 교체·일괄 추가. GUEST 는 참여할 수 없다. */
 @RestController
 @RequestMapping("/api/v1/clubs/{clubId}")
 @RequiredArgsConstructor
@@ -59,6 +63,32 @@ public class ClubMemberController {
         ApiResponse.ok(
             "CLUB_MEMBER_LIST_RETRIEVED",
             clubMemberService.findActive(clubId, me.getUserId(), staff)));
+  }
+
+  /** 멤버 추가 화면의 이름 검색. 리더와 운영진만. */
+  @GetMapping("/members/candidates")
+  public ResponseEntity<ApiResponse<List<ClubMemberCandidateResponse>, Void>> candidates(
+      @AuthenticationPrincipal CustomUserDetails me,
+      @PathVariable Long clubId,
+      @RequestParam(required = false) String q) {
+    boolean staff = accessGuard.check(me, AccessCondition.atLeast(UserRole.CORE));
+    return ResponseEntity.ok(
+        ApiResponse.ok(
+            "CLUB_MEMBER_CANDIDATES_RETRIEVED",
+            clubMemberService.findCandidates(clubId, me.getUserId(), staff, q)));
+  }
+
+  /** 여러 명을 신청 없이 바로 멤버로 넣는다. 리더와 운영진만. */
+  @PostMapping("/members/bulk")
+  public ResponseEntity<ApiResponse<ClubMemberAddResponse, Void>> addMembers(
+      @AuthenticationPrincipal CustomUserDetails me,
+      @PathVariable Long clubId,
+      @Valid @RequestBody ClubMemberAddRequest req) {
+    boolean staff = accessGuard.check(me, AccessCondition.atLeast(UserRole.CORE));
+    return ResponseEntity.ok(
+        ApiResponse.ok(
+            "CLUB_MEMBERS_ADDED",
+            clubMemberService.addMembers(clubId, me.getUserId(), staff, req.userIds())));
   }
 
   @GetMapping("/members/pending")

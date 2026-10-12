@@ -72,7 +72,7 @@ public class ClubMember extends BaseEntity {
     return member;
   }
 
-  /** 개설자. 신청 없이 바로 ACTIVE 로 들어간다. */
+  /** 개설자, 또는 리더·운영진이 넣은 사람. 신청 없이 바로 ACTIVE 로 들어간다. */
   public static ClubMember founder(Club club, User user, Instant now) {
     ClubMember member = apply(club, user, null, now);
     member.approve(now);

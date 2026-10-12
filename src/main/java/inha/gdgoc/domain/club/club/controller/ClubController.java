@@ -88,7 +88,8 @@ public class ClubController {
   @PostMapping
   public ResponseEntity<ApiResponse<Long, Void>> create(
       @AuthenticationPrincipal CustomUserDetails me, @Valid @RequestBody ClubCreateRequest req) {
-    return ResponseEntity.ok(ApiResponse.ok("CLUB_CREATED", clubService.create(me.getUserId(), req)));
+    return ResponseEntity.ok(
+        ApiResponse.ok("CLUB_CREATED", clubService.create(me.getUserId(), isStaff(me), req)));
   }
 
   /** 수정 화면 저장. 보낸 값으로 통째로 바꾼다 — 비운 칸은 비운다. */
