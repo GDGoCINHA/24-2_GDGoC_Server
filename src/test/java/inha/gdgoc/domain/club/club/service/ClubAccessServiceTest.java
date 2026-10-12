@@ -75,6 +75,22 @@ class ClubAccessServiceTest {
   }
 
   @Test
+  @DisplayName("멤버 추가 권한 — 운영진은 리더가 아니어도 통과한다")
+  void staffPassesLeaderOrStaff() {
+    givenClub();
+    assertThat(service.requireLeaderOrStaff(CLUB_ID, OTHER_ID, true)).isNotNull();
+  }
+
+  @Test
+  @DisplayName("멤버 추가 권한 — 운영진이 아니면 리더만 통과한다")
+  void nonStaffNeedsLeader() {
+    givenClub();
+    assertThat(service.requireLeaderOrStaff(CLUB_ID, LEADER_ID, false)).isNotNull();
+    assertError(
+        () -> service.requireLeaderOrStaff(CLUB_ID, OTHER_ID, false), ClubErrorCode.NOT_CLUB_LEADER);
+  }
+
+  @Test
   @DisplayName("ACTIVE 가 아니면 멤버가 아니다")
   void nonActiveMemberIsForbidden() {
     givenClub();

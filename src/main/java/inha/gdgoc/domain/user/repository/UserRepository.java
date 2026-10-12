@@ -67,5 +67,18 @@ public interface UserRepository extends JpaRepository<User, Long>, UserRepositor
             Pageable pageable
     );
 
+    // 소모임 멤버 추가 화면의 이름 검색. q 에 null 을 넘기지 마라 — PostgreSQL 에서 lower(bytea) 로 500 이 난다.
+    @Query("""
+        select u from User u
+        where lower(u.name) like lower(concat('%', :q, '%'))
+          and u.userRole in :roles
+        order by u.name asc, u.id asc
+        """)
+    List<User> searchByName(
+            @Param("q") String q,
+            @Param("roles") Collection<UserRole> roles,
+            Pageable pageable
+    );
+
     @NotNull Optional<User> findById(@NotNull Long id);
 }

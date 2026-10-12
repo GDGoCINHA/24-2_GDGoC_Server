@@ -105,7 +105,7 @@ class ClubServiceTest {
         CLUB_ID,
         LEADER_ID,
         new ClubCreateRequest(
-            "이름", ClubCategory.ETC, "한 줄", null, null, null, null, null, null, null, null));
+            "이름", ClubCategory.ETC, "한 줄", null, null, null, null, null, null, null, null, null));
 
     assertThat(club.getKakaoLink()).isNull();
     assertThat(club.getDescription()).isNull();
@@ -175,12 +175,55 @@ class ClubServiceTest {
 
     service.create(
         LEADER_ID,
+        false,
         new ClubCreateRequest(
-            "이름", ClubCategory.ETC, "한 줄", null, null, null, null, null, null, null, null));
+            "이름", ClubCategory.ETC, "한 줄", null, null, null, null, null, null, null, null, null));
 
     verify(clubRepository).save(saved.capture());
     assertThat(saved.getValue().getStatus()).isEqualTo(ClubStatus.PENDING);
     verify(clubMemberRepository).save(any(ClubMember.class));
+  }
+
+  private ClubCreateRequest createRequest(Long leaderId) {
+    return new ClubCreateRequest(
+        "이름", ClubCategory.ETC, "한 줄", null, null, null, null, null, null, null, null, leaderId);
+  }
+
+  private ArgumentCaptor<ClubMember> givenCreatable() {
+    given(clubTermRepository.findTopByOrderByIdDesc())
+        .willReturn(Optional.of(BeanUtils.instantiateClass(ClubTerm.class)));
+    given(clubRepository.save(any(Club.class))).willAnswer(inv -> inv.getArgument(0));
+    return ArgumentCaptor.forClass(ClubMember.class);
+  }
+
+  @Test
+  @DisplayName("부원이 리더를 지정해 보내도 무시한다 — 본인이 리더가 되고 승인 대기다")
+  void memberCannotDesignateLeader() {
+    User me = User.builder().build();
+    ReflectionTestUtils.setField(me, "id", USER_ID);
+    given(userRepository.findById(USER_ID)).willReturn(Optional.of(me));
+    ArgumentCaptor<ClubMember> founder = givenCreatable();
+
+    service.create(USER_ID, false, createRequest(LEADER_ID));
+
+    verify(clubMemberRepository).save(founder.capture());
+    assertThat(founder.getValue().getUser().getId()).isEqualTo(USER_ID);
+    assertThat(founder.getValue().getClub().getLeader().getId()).isEqualTo(USER_ID);
+    assertThat(founder.getValue().getClub().getStatus()).isEqualTo(ClubStatus.PENDING);
+  }
+
+  @Test
+  @DisplayName("운영진이 다른 사람을 리더로 세워 열면 바로 공개되고, 운영진 본인은 멤버가 아니다")
+  void staffCreatesForAnotherLeader() {
+    given(userRepository.findById(LEADER_ID)).willReturn(Optional.of(club.getLeader()));
+    ArgumentCaptor<ClubMember> founder = givenCreatable();
+
+    service.create(USER_ID, true, createRequest(LEADER_ID));
+
+    verify(clubMemberRepository).save(founder.capture());
+    assertThat(founder.getValue().getUser().getId()).isEqualTo(LEADER_ID);
+    assertThat(founder.getValue().getClub().getLeader().getId()).isEqualTo(LEADER_ID);
+    assertThat(founder.getValue().getClub().getStatus()).isEqualTo(ClubStatus.ACTIVE);
   }
 
   @Test
@@ -247,7 +290,7 @@ class ClubServiceTest {
         CLUB_ID,
         LEADER_ID,
         new ClubCreateRequest(
-            "이름", ClubCategory.ETC, "한 줄", null, null, null, null, null, null, null, null));
+            "이름", ClubCategory.ETC, "한 줄", null, null, null, null, null, null, null, null, null));
 
     assertThat(club.getStatus()).isEqualTo(ClubStatus.PENDING);
   }

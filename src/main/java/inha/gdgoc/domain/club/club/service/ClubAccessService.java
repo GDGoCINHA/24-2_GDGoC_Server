@@ -54,4 +54,9 @@ public class ClubAccessService {
     }
     return club;
   }
+
+  /** 리더 또는 운영진. 운영진 여부는 컨트롤러가 역할로 판정해 넘긴다. */
+  public Club requireLeaderOrStaff(Long clubId, Long userId, boolean staff) {
+    return staff ? getClub(clubId) : requireLeader(clubId, userId);
+  }
 }

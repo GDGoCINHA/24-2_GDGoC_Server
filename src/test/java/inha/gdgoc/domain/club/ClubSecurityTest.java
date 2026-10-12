@@ -49,6 +49,18 @@ class ClubSecurityTest {
   }
 
   @Test
+  void memberCandidates_requireAuthentication() throws Exception {
+    mockMvc
+        .perform(get("/api/v1/clubs/1/members/candidates").param("q", "김"))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void bulkAdd_requiresAuthentication() throws Exception {
+    mockMvc.perform(post("/api/v1/clubs/1/members/bulk")).andExpect(status().isUnauthorized());
+  }
+
+  @Test
   void approve_requiresAuthentication() throws Exception {
     mockMvc.perform(post("/api/v1/admin/clubs/1/approve")).andExpect(status().isUnauthorized());
   }
