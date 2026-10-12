@@ -97,10 +97,15 @@ public class ClubService {
     return ClubDetailResponse.of(club, count, active || staff, membership);
   }
 
-  /** 개설. 승인 대기(PENDING)로 생기고, 개설자는 바로 ACTIVE 멤버(리더)가 된다. 기수를 안 주면 최신 기수. */
+  /**
+   * 개설. 리더는 바로 ACTIVE 멤버가 된다. 기수를 안 주면 최신 기수.
+   *
+   * <p>부원이 열면 승인 대기(PENDING)로 생긴다. 운영진이 열면 승인 없이 바로 공개(ACTIVE)이고, {@code leaderId} 로 다른
+   * 사람을 리더로 세울 수 있다 — 그때 운영진 본인은 멤버로 들어가지 않는다.
+   */
   @Transactional
-  public Long create(Long userId, ClubCreateRequest req) {
-    User leader = getUser(userId);
+  public Long create(Long userId, boolean staff, ClubCreateRequest req) {
+    User leader = getUser(staff && req.leaderId() != null ? req.leaderId() : userId);
     ClubTerm term = req.termId() != null ? getTerm(req.termId()) : latestTerm();
     Club club =
         clubRepository.save(
@@ -117,6 +122,9 @@ public class ClubService {
                 req.capacity(),
                 req.startDate(),
                 req.endDate()));
+    if (staff) {
+      club.approve();
+    }
     clubMemberRepository.save(ClubMember.founder(club, leader, Instant.now()));
     return club.getId();
   }
