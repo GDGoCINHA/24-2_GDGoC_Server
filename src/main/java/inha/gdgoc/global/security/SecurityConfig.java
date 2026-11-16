@@ -49,6 +49,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/board/events/{id:[0-9]+}/anonymous/form").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/board/events/{id:[0-9]+}/anonymous/applications").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/board/events/{id:[0-9]+}/anonymous/checkin").permitAll()
+                // 홈커밍데이 초대장 신청. OB 는 계정이 없어 로그인 없이 낸다. 제출 POST 하나만 연다 —
+                // 관리 경로(/api/v1/admin/homecoming/**)는 여기 없다. HomecomingSecurityTest 가 지킨다.
+                .requestMatchers(HttpMethod.POST, "/api/v1/homecoming/applications").permitAll()
                 // 소모임은 목록·상세 기본 정보만 공개다(공유 링크용). 단톡방 링크·명단은 서비스가 가린다.
                 // /clubs/me·멤버·관리 경로는 여기 없다. ClubSecurityTest 가 지킨다.
                 .requestMatchers(HttpMethod.GET, "/api/v1/clubs").permitAll()
