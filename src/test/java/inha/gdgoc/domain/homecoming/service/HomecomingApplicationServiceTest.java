@@ -154,6 +154,18 @@ class HomecomingApplicationServiceTest {
   }
 
   @Test
+  @DisplayName("마감 시각이 없으면 언제든 받는다")
+  void noDeadline() {
+    HomecomingApplicationService open =
+        new HomecomingApplicationService(
+            applicationRepository, writer, normalizer, null, Clock.fixed(CLOSE_AT.plusSeconds(86_400L * 365), ZoneOffset.UTC));
+
+    assertThat(open.isClosed()).isFalse();
+    assertThat(open.closeAt()).isNull();
+    assertThat(open.submit(req(rid(), AttendType.MAIN, "010-5656-5656")).id()).isNotNull();
+  }
+
+  @Test
   @DisplayName("필수 동의가 없으면 저장하지 않는다")
   void privacyRequired() {
     HomecomingApplyRequest r = req(rid(), AttendType.MAIN, "010-6666-6666");
