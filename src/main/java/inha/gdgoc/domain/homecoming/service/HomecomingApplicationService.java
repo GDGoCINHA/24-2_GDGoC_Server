@@ -35,6 +35,7 @@ public class HomecomingApplicationService {
   private final HomecomingApplicationRepository applicationRepository;
   private final HomecomingApplicationWriter writer;
   private final HomecomingProfileNormalizer normalizer;
+  /** 신청 마감 시각. {@code null} 이면 마감 없이 계속 받는다. */
   private final Instant closeAt;
   private final Clock clock;
 
@@ -43,13 +44,14 @@ public class HomecomingApplicationService {
       HomecomingApplicationRepository applicationRepository,
       HomecomingApplicationWriter writer,
       HomecomingProfileNormalizer normalizer,
-      // 정확한 마감 시각은 운영진 확인 전이다. 바뀌면 설정(app.homecoming.close-at)만 고친다.
-      @Value("${app.homecoming.close-at:2026-11-22T23:59:59+09:00}") OffsetDateTime closeAt) {
+      // 운영진 요청으로 마감 없이 받는다(2026-11-25). 다시 마감하려면 설정에
+      // app.homecoming.close-at=2026-12-19T23:59:59+09:00 처럼 시각만 넣는다. 비어 있으면 마감 없음.
+      @Value("${app.homecoming.close-at:}") String closeAt) {
     this(
         applicationRepository,
         writer,
         normalizer,
-        closeAt.toInstant(),
+        closeAt == null || closeAt.isBlank() ? null : OffsetDateTime.parse(closeAt.trim()).toInstant(),
         Clock.system(ZoneId.of("Asia/Seoul")));
   }
 
@@ -72,7 +74,7 @@ public class HomecomingApplicationService {
     if (replay.isPresent()) return replay.get();
 
     Instant now = clock.instant();
-    if (now.isAfter(closeAt)) throw new BusinessException(HomecomingErrorCode.CLOSED);
+    if (closedAt(now)) throw new BusinessException(HomecomingErrorCode.CLOSED);
     if (!req.privacyAgreed()) throw new BusinessException(HomecomingErrorCode.PRIVACY_REQUIRED);
 
     HomecomingProfile profile =
@@ -101,11 +103,16 @@ public class HomecomingApplicationService {
   }
 
   public boolean isClosed() {
-    return clock.instant().isAfter(closeAt);
+    return closedAt(clock.instant());
   }
 
+  /** 마감이 없으면 {@code null}. */
   public Instant closeAt() {
     return closeAt;
+  }
+
+  private boolean closedAt(Instant now) {
+    return closeAt != null && now.isAfter(closeAt);
   }
 
   private Optional<HomecomingApplyResponse> findByRequestId(String requestId) {
